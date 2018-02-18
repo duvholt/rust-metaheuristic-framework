@@ -1,0 +1,7 @@
+[package]
+authors = ["Christian Duvholt <christian@duvholt.net>"]
+name = "rustoa"
+version = "0.0.1"
+
+[dependencies]
+rand = "0.3.18"
