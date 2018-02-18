@@ -1,3 +1,9 @@
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import matplotlib.pyplot as plot
+import numpy as np
+import json
+
 # Rosenbrock variables
 a = 1.0
 b = 100.0
@@ -5,24 +11,15 @@ b = 100.0
 def rosenbrock(x,y):
       return (a-x)**2 + b* ((y-x**2))**2
 
-    
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
-import matplotlib.pyplot as plot
-import numpy as np
 
 fig = plot.figure()
 ax = fig.gca(projection='3d')
 
+json_solutions = json.load(open('solutions.json'))
 
-solutions = np.array([
-    [1, 1],
-    [1.5, -1.3],
-    [1.5, -0.5],
-    [-2.0, 2.3],
-    [1.4, 1],
-])
+solutions = np.array(list(
+    map(lambda s: [float(s['x']), float(s['y'])], json_solutions['solutions'])
+))
 
 s = 0.25   # Try s=1, 0.25, 0.1, or 0.05
 max_x, max_y = solutions.max(axis=0)
