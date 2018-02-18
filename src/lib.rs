@@ -99,6 +99,14 @@ impl Solution {
     }
 }
 
+impl Copy for Solution { }
+
+impl Clone for Solution {
+    fn clone(&self) -> Solution {
+        *self
+    }
+}
+
 fn rosenbrock(x: f64, y: f64) -> f64 {
     let a = 1.0;
     let b = 100.0;
@@ -120,6 +128,7 @@ pub fn run(config: Config) -> Solution {
     let mut i = 0;
     let mut rng = thread_rng();
     let mut neighbourhood = Neighbourhood::new(config.space);
+    let mut best = current.clone();
     while i < config.iterations {
         i += 1;
         t *= config.cooldown;
@@ -130,15 +139,20 @@ pub fn run(config: Config) -> Solution {
         let delta = current.fitness - new_solution.fitness;
         if delta > 0.0 {
             current = new_solution;
+            best = current.clone();
         } else {
             let a = (delta / t).exp();
             let r = rng.next_f64();
             if a > r {
                 current = new_solution;
+                if current.fitness < best.fitness {
+                    best = current.clone();
+                }
             }
         }
     }
-    current
+    println!("Diff {} {} {}", current.fitness, best.fitness, current.fitness - best.fitness);
+    best
 }
 
 #[cfg(test)]
