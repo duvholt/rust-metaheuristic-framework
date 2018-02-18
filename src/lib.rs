@@ -134,16 +134,19 @@ pub fn run(config: Config) -> Solution {
         t *= config.cooldown;
         let new_solution = neighbourhood.find(&current);
         if new_solution.fitness == 0.0 {
+            // Absolute best solution found
             return new_solution;
         }
         let delta = current.fitness - new_solution.fitness;
         if delta > 0.0 {
+            // Exploit
             current = new_solution;
             best = current.clone();
         } else {
             let a = (delta / t).exp();
             let r = rng.next_f64();
             if a > r {
+                // Explore
                 current = new_solution;
                 if current.fitness < best.fitness {
                     best = current.clone();
