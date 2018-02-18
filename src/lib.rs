@@ -19,39 +19,6 @@ impl Config {
             start_t, cooldown, iterations, space
         }
     }
-
-    pub fn env(mut args: std::env::Args) -> Result<Config, &'static str> {
-        args.next();
-
-        let start_t = match args.next() {
-            Some(arg) => arg.parse().unwrap(),
-            None => 1.0,
-        };
-
-        let cooldown = match args.next() {
-            Some(arg) => arg.parse().unwrap(),
-            None => 0.9,
-        };
-
-        let iterations = match args.next() {
-            Some(arg) => arg.parse().unwrap(),
-            None => 1000,
-        };
-
-        let space = match args.next() {
-            Some(arg) => arg.parse().unwrap(),
-            None => 4.0,
-        };
-
-        println!("Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}", start_t, cooldown, iterations, space);
-
-        Ok(Config {
-            start_t,
-            cooldown,
-            iterations,
-            space,
-        })
-    }
 }
 
 struct Neighbourhood {
