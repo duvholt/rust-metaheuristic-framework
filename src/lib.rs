@@ -1,10 +1,15 @@
 #![feature(test)]
 extern crate rand;
 extern crate test;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+use std::fs::File;
+use std::io::prelude::*;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
-
 
 pub struct Config {
     pub start_t: f64,
@@ -49,6 +54,12 @@ impl Neighbourhood {
     }
 }
 
+#[derive(Serialize)]
+struct Solutions {
+    solutions: Vec<Solution>,
+}
+
+#[derive(Serialize)]
 pub struct Solution {
     pub x: f64,
     pub y: f64,
@@ -96,8 +107,10 @@ pub fn run(config: Config) -> Solution {
     let mut rng = thread_rng();
     let mut neighbourhood = Neighbourhood::new(config.space);
     let mut best = current.clone();
+    let mut solutions = Solutions {
+        solutions: vec![],
+    };
     while i < config.iterations {
-        i += 1;
         t *= config.cooldown;
         let new_solution = neighbourhood.find(&current);
         if new_solution.fitness == 0.0 {
@@ -120,8 +133,16 @@ pub fn run(config: Config) -> Solution {
                 }
             }
         }
+        if i % (config.iterations / 20) == 0 {
+            println!("Iterations {} {}", i, current.fitness);
+            solutions.solutions.push(current.clone());
+        }
+        i += 1;
     }
     println!("Diff {} {} {}", current.fitness, best.fitness, current.fitness - best.fitness);
+    let mut file = File::create("solutions.json").unwrap();
+    let json_solutions = serde_json::to_string(&solutions).unwrap();
+    file.write_all(json_solutions.as_bytes()).unwrap();
     best
 }
 

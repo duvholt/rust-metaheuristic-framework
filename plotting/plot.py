@@ -15,7 +15,7 @@ def rosenbrock(x,y):
 fig = plot.figure()
 ax = fig.gca(projection='3d')
 
-json_solutions = json.load(open('solutions.json'))
+json_solutions = json.load(open('../solutions.json'))
 
 solutions = np.array(list(
     map(lambda s: [float(s['x']), float(s['y'])], json_solutions['solutions'])
