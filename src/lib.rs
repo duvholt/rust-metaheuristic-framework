@@ -41,7 +41,8 @@ impl Neighbourhood {
     }
 
     fn single_dimension_neighbour(&mut self, x: f64) -> f64 {
-        let between = Range::new(x - self.space * 0.01, x + self.space * 0.01);
+        let neighbour_space = 0.01;
+        let between = Range::new(x - self.space * neighbour_space, x + self.space * neighbour_space);
         between.ind_sample(&mut self.rng)
     }
 
