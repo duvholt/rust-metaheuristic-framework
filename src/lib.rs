@@ -10,6 +10,7 @@ use std::io::prelude::*;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
+use std::f64::consts;
 
 pub struct Config {
     pub start_t: f64,
@@ -68,7 +69,7 @@ pub struct Solution {
 
 impl Solution {
     pub fn new(x: f64, y: f64) -> Solution {
-        let fitness = zakharov(x, y);
+        let fitness = ackley(x, y);
         Solution {
             x,
             y,
@@ -83,6 +84,16 @@ impl Clone for Solution {
     fn clone(&self) -> Solution {
         *self
     }
+}
+
+fn ackley(x: f64, y: f64) -> f64 {
+    let a = 20.0;
+    let b = 0.2;
+    let c = 2.0 * consts::PI;
+    return -a *
+        (-b * (0.5 * (x.powf(2.0) + y.powf(2.0))).sqrt()).exp()
+        - (0.5 * ((c * x).cos() + (c * y).cos())).exp()
+        + a + consts::E
 }
 
 fn rosenbrock(x: f64, y: f64) -> f64 {
@@ -186,6 +197,17 @@ mod tests {
     }
 
     #[test]
+    fn ackley_optimum() {
+        // TODO: Check if this is actually the minimum
+        assert_eq!(0.0000000000000004440892098500626, ackley(0.0, 0.0));
+    }
+
+    #[test]
+    fn ackley_not_optimum() {
+        assert_ne!(0.0, ackley(2.0, -1.3));
+    }
+
+    #[test]
     fn generates_neighbour() {
         let solution = Solution::new(1., 4.);
 
@@ -194,12 +216,6 @@ mod tests {
 
         assert!(neighbour.x < (solution.x + 1.0) && neighbour.x > (solution.x - 1.0));
         assert!(neighbour.y < (solution.y + 1.0) && neighbour.y > (solution.y - 1.0));
-    }
-
-    #[test]
-    fn rosenbrock_optimum_using_solution() {
-        let solution = Solution::new(1.0, 1.0);
-        assert_eq!(0.0, solution.fitness);
     }
 
     #[bench]

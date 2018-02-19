@@ -28,6 +28,17 @@ Y = np.linspace(min_y - padding, max_y + padding, 40)
 X, Y = np.meshgrid(X, Y)
 
 
+def ackley(X, Y):
+    x = np.array([X, Y])
+    cost = np.zeros(x.shape[1:])
+    a = 20.0
+    b = 0.2
+    c = 2.0 * np.pi
+    cost = -a * np.exp(-b * np.sqrt(0.5 * (x[0]**2 + x[1]**2))) - np.exp(
+        0.5 * (np.cos(c * x[0]) + np.cos(c * x[1]))) + a + np.exp(1.0)
+    return cost
+
+
 def zakharov(X, Y):
     x = np.array([X, Y])
     c = np.zeros(x.shape[1:])
@@ -56,7 +67,8 @@ def plot_solution(x, y, z, iteration):
 
 
 # Z = rosenbrock(X, Y)
-Z = zakharov(X, Y)
+# Z = zakharov(X, Y)
+Z = ackley(X, Y)
 ax.plot_surface(
     X, Y, Z, rstride=1, cstride=1,
     linewidth=1, edgecolors='#333333',
