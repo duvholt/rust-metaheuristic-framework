@@ -28,13 +28,19 @@ Y = np.linspace(min_y - padding, max_y + padding, 40)
 X, Y = np.meshgrid(X, Y)
 
 
-def plot_rosenbrock():
-    Z = (a - X)**2 + b * (Y-X*X)**2
-    ax.plot_surface(
-        X, Y, Z, rstride=1, cstride=1,
-        linewidth=1, edgecolors='#333333',
-        cmap=cm.hot,  norm=LogNorm(vmin=Z.min(), vmax=Z.max())
-    )
+def zakharov(X, Y):
+    x = np.array([X, Y])
+    c = np.zeros(x.shape[1:])
+    # Calculate Cost
+    c = np.sum([x[i]**2 for i in range(0, 2)], axis=0) + \
+        np.sum([0.5 * (i + 1) * x[i] for i in range(0, 2)], axis=0)**2 + \
+        np.sum([0.5 * (i + 1) * x[i] for i in range(0, 2)], axis=0)**4
+    # Return Cost
+    return c
+
+
+def rosenbrock(X, Y):
+    return (a - X)**2 + b * (Y-X*X)**2
 
 
 def plot_solution(x, y, z, iteration):
@@ -49,7 +55,13 @@ def plot_solution(x, y, z, iteration):
     txt.set_path_effects([black_border])
 
 
-plot_rosenbrock()
+# Z = rosenbrock(X, Y)
+Z = zakharov(X, Y)
+ax.plot_surface(
+    X, Y, Z, rstride=1, cstride=1,
+    linewidth=1, edgecolors='#333333',
+    cmap=cm.hot,  norm=LogNorm(vmin=Z.min(), vmax=Z.max())
+)
 
 for iteration, solution in enumerate(solutions):
     plot_solution(*solution, iteration)

@@ -68,7 +68,7 @@ pub struct Solution {
 
 impl Solution {
     pub fn new(x: f64, y: f64) -> Solution {
-        let fitness = rosenbrock(x, y);
+        let fitness = zakharov(x, y);
         Solution {
             x,
             y,
@@ -89,6 +89,20 @@ fn rosenbrock(x: f64, y: f64) -> f64 {
     let a = 1.0;
     let b = 100.0;
     (a - x).powf(2.0) + b * (y - x.powf(2.0)).powf(2.0)
+}
+
+fn zakharov(x: f64, y: f64) -> f64 {
+    let mut sum1 = 0.0;
+    let mut sum2 = 0.0;
+
+    let dimensions = [x, y];
+    let mut i = 1.0;
+    dimensions.iter().for_each(|xi| {
+        sum1 = sum1 + xi.powf(2.0);
+        sum2 = sum2 + 0.5 * i * xi;
+        i += 1.0;
+    });
+    return sum1 + sum2.powf(2.0) + sum2.powf(4.0);
 }
 
 fn random_solution(config: &Config) -> Solution {
@@ -134,7 +148,7 @@ pub fn run(config: Config) -> Solution {
             }
         }
         if i % (config.iterations / 20) == 0 {
-            println!("Iterations {} f: {} t: {}", i, current.fitness, t);
+            println!("Iterations {} f: {} t: {:0.6}", i, current.fitness, t);
             solutions.solutions.push(current.clone());
         }
         i += 1;
@@ -159,6 +173,16 @@ mod tests {
     #[test]
     fn rosenbrock_not_optimum() {
         assert_ne!(0.0, rosenbrock(3.0, 2.0));
+    }
+
+    #[test]
+    fn zakharov_optimum() {
+        assert_eq!(0.0, zakharov(0.0, 0.0));
+    }
+
+    #[test]
+    fn zakharov_not_optimum() {
+        assert_ne!(0.0, zakharov(2.0, -1.3));
     }
 
     #[test]
