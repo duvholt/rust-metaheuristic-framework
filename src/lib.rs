@@ -40,7 +40,7 @@ impl Neighbourhood {
     }
 
     fn single_dimension_neighbour(&mut self, x: f64) -> f64 {
-        let between = Range::new(x - self.space * 0.1, x + self.space * 0.1);
+        let between = Range::new(x - self.space * 0.01, x + self.space * 0.01);
         between.ind_sample(&mut self.rng)
     }
 
@@ -134,7 +134,7 @@ pub fn run(config: Config) -> Solution {
             }
         }
         if i % (config.iterations / 20) == 0 {
-            println!("Iterations {} {}", i, current.fitness);
+            println!("Iterations {} f: {} t: {}", i, current.fitness, t);
             solutions.solutions.push(current.clone());
         }
         i += 1;
