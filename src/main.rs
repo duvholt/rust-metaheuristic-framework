@@ -39,7 +39,7 @@ fn main() {
     let start_t = value_t!(matches, "start_t", f64).unwrap_or(1.0);
     let cooldown = value_t!(matches, "cooldown", f64).unwrap_or(0.9);
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
-    let space = value_t!(matches, "space", f64).unwrap_or(4.0);;
+    let space = value_t!(matches, "space", f64).unwrap_or(4.0);
 
     let test_function_name = "ackley";
     let test_function = match test_function_name {

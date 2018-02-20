@@ -30,6 +30,9 @@ pub fn zakharov(x: f64, y: f64) -> f64 {
     return sum1 + sum2.powf(2.0) + sum2.powf(4.0);
 }
 
+pub fn himmelblau(x: f64, y: f64) -> f64 {
+    return (x.powf(2.0) + y - 11.0).powf(2.0) + (x + y.powf(2.0) - 7.0).powf(2.0);
+}
 
 #[cfg(test)]
 mod tests {
@@ -58,11 +61,19 @@ mod tests {
     #[test]
     fn ackley_optimum() {
         // TODO: Check if this is actually the minimum
-        assert_eq!(0.0000000000000004440892098500626, ackley(0.0, 0.0));
+        assert_approx_eq!(0.0, ackley(0.0, 0.0));
     }
 
     #[test]
     fn ackley_not_optimum() {
         assert_ne!(0.0, ackley(2.0, -1.3));
+    }
+
+    #[test]
+    fn himmelblau_optimum() {
+        assert_eq!(0.0, himmelblau(3.0,2.0));
+        assert_approx_eq!(0.0, himmelblau(-2.805118,3.131312));
+        assert_approx_eq!(0.0, himmelblau(-3.779310,-3.283186));
+        assert_approx_eq!(0.0, himmelblau(3.584428,-1.848126));
     }
 }
