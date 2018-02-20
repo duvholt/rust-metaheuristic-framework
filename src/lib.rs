@@ -1,11 +1,11 @@
 #![feature(test)]
-extern crate rand;
-extern crate test;
-extern crate serde;
 #[macro_use]
 extern crate assert_approx_eq;
+extern crate rand;
+extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate test;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
@@ -22,27 +22,27 @@ pub struct Config {
 impl Config {
     pub fn new(start_t: f64, cooldown: f64, iterations: i64, space: f64) -> Config {
         return Config {
-            start_t, cooldown, iterations, space
-        }
+            start_t,
+            cooldown,
+            iterations,
+            space,
+        };
     }
 }
 
-struct Neighbourhood<'a>
-{
+struct Neighbourhood<'a> {
     space: f64,
     rng: rand::ThreadRng,
     test_function: &'a Fn(f64, f64) -> f64,
 }
 
-impl<'a> Neighbourhood<'a>
-{
-    pub fn new<'b>(space: f64, test_function: &'b Fn(f64, f64) -> f64) -> Neighbourhood
-    {
+impl<'a> Neighbourhood<'a> {
+    pub fn new<'b>(space: f64, test_function: &'b Fn(f64, f64) -> f64) -> Neighbourhood {
         return Neighbourhood {
             space,
             rng: rand::thread_rng(),
-            test_function
-        }
+            test_function,
+        };
     }
 
     fn random_solution(&self) -> Solution {
@@ -50,10 +50,7 @@ impl<'a> Neighbourhood<'a>
         let mut rng = rand::thread_rng();
         let x = between.ind_sample(&mut rng);
         let y = between.ind_sample(&mut rng);
-        Solution::new(
-            x, y,
-            self.calculate_fitness(x, y)
-        )
+        Solution::new(x, y, self.calculate_fitness(x, y))
     }
 
     fn calculate_fitness(&self, x: f64, y: f64) -> f64 {
@@ -62,18 +59,17 @@ impl<'a> Neighbourhood<'a>
 
     fn single_dimension_neighbour(&mut self, x: f64) -> f64 {
         let neighbour_space = 0.01;
-        let between = Range::new(x - self.space * neighbour_space, x + self.space * neighbour_space);
+        let between = Range::new(
+            x - self.space * neighbour_space,
+            x + self.space * neighbour_space,
+        );
         between.ind_sample(&mut self.rng)
     }
 
     fn find(&mut self, solution: &Solution) -> Solution {
         let x = self.single_dimension_neighbour(solution.x);
         let y = self.single_dimension_neighbour(solution.y);
-        Solution::new(
-            x,
-            y,
-            self.calculate_fitness(x, y)
-        )
+        Solution::new(x, y, self.calculate_fitness(x, y))
     }
 }
 
@@ -92,15 +88,11 @@ pub struct Solution {
 
 impl Solution {
     pub fn new(x: f64, y: f64, fitness: f64) -> Solution {
-        Solution {
-            x,
-            y,
-            fitness,
-        }
+        Solution { x, y, fitness }
     }
 }
 
-impl Copy for Solution { }
+impl Copy for Solution {}
 
 impl Clone for Solution {
     fn clone(&self) -> Solution {
@@ -108,7 +100,11 @@ impl Clone for Solution {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64, test_function_name: String) -> Solutions {
+pub fn run(
+    config: Config,
+    test_function: &Fn(f64, f64) -> f64,
+    test_function_name: String,
+) -> Solutions {
     let mut t = config.start_t;
     let mut neighbourhood = Neighbourhood::new(config.space, &test_function);
     let mut current = neighbourhood.random_solution();
@@ -117,7 +113,7 @@ pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64, test_function_na
     let mut best = current.clone();
     let mut solutions = Solutions {
         solutions: vec![],
-        test_function: test_function_name
+        test_function: test_function_name,
     };
     while i < config.iterations {
         t *= config.cooldown;
@@ -150,7 +146,12 @@ pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64, test_function_na
         i += 1;
     }
     solutions.solutions.push(best);
-    println!("Diff {} {} {}", current.fitness, best.fitness, current.fitness - best.fitness);
+    println!(
+        "Diff {} {} {}",
+        current.fitness,
+        best.fitness,
+        current.fitness - best.fitness
+    );
     solutions
 }
 
@@ -159,10 +160,8 @@ mod tests {
     use super::*;
     use test::Bencher;
 
-
     #[test]
     fn generates_neighbour() {
-
         let test_function = test_functions::rosenbrock;
         let mut neighbourhood = Neighbourhood::new(1.0, &test_function);
         let solution = neighbourhood.random_solution();

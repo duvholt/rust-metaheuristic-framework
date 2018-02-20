@@ -4,10 +4,8 @@ pub fn ackley(x: f64, y: f64) -> f64 {
     let a = 20.0;
     let b = 0.2;
     let c = 2.0 * consts::PI;
-    return -a *
-        (-b * (0.5 * (x.powf(2.0) + y.powf(2.0))).sqrt()).exp()
-        - (0.5 * ((c * x).cos() + (c * y).cos())).exp()
-        + a + consts::E
+    return -a * (-b * (0.5 * (x.powf(2.0) + y.powf(2.0))).sqrt()).exp()
+        - (0.5 * ((c * x).cos() + (c * y).cos())).exp() + a + consts::E;
 }
 
 pub fn rosenbrock(x: f64, y: f64) -> f64 {
@@ -71,9 +69,9 @@ mod tests {
 
     #[test]
     fn himmelblau_optimum() {
-        assert_eq!(0.0, himmelblau(3.0,2.0));
-        assert_approx_eq!(0.0, himmelblau(-2.805118,3.131312));
-        assert_approx_eq!(0.0, himmelblau(-3.779310,-3.283186));
-        assert_approx_eq!(0.0, himmelblau(3.584428,-1.848126));
+        assert_eq!(0.0, himmelblau(3.0, 2.0));
+        assert_approx_eq!(0.0, himmelblau(-2.805118, 3.131312));
+        assert_approx_eq!(0.0, himmelblau(-3.779310, -3.283186));
+        assert_approx_eq!(0.0, himmelblau(3.584428, -1.848126));
     }
 }
