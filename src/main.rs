@@ -69,8 +69,8 @@ fn main() {
     };
 
     println!(
-        "Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}",
-        start_t, cooldown, iterations, space
+        "Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}, Function: {}",
+        start_t, cooldown, iterations, space, test_function_name
     );
 
     let config = Config::new(start_t, cooldown, iterations, space);
