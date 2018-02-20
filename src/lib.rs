@@ -3,6 +3,8 @@ extern crate rand;
 extern crate test;
 extern crate serde;
 #[macro_use]
+extern crate assert_approx_eq;
+#[macro_use]
 extern crate serde_derive;
 
 use rand::distributions::{IndependentSample, Range};
