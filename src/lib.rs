@@ -4,6 +4,8 @@ extern crate test;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
+extern crate assert_approx_eq;
+#[macro_use]
 extern crate serde_derive;
 use std::fs::File;
 use std::io::prelude::*;
