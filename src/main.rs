@@ -10,6 +10,14 @@ use std::io::prelude::*;
 
 fn main() {
     let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
+        .arg(Arg::with_name("test_function")
+            .short("f")
+            .long("test-function")
+            .value_name("test_function")
+            .help("Name of test function")
+            .required(true)
+            .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov"])
+            .takes_value(true))
         .arg(Arg::with_name("start_t")
             .short("t")
             .long("temperature")
@@ -40,9 +48,9 @@ fn main() {
     let cooldown = value_t!(matches, "cooldown", f64).unwrap_or(0.9);
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);
+    let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
-    let test_function_name = "himmelblau";
-    let test_function = match test_function_name {
+    let test_function = match test_function_name.as_ref() {
         "rosenbrock" => test_functions::rosenbrock,
         "zakharov" => test_functions::zakharov,
         "ackley" => test_functions::ackley,
