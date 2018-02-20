@@ -25,6 +25,7 @@ X = np.linspace(min_x - padding, max_x + padding, 40)
 Y = np.linspace(min_y - padding, max_y + padding, 40)
 X, Y = np.meshgrid(X, Y)
 
+
 def plot_solution(x, y, z, iteration):
     ax.plot(
         [x], [y], [z], 'o',
@@ -37,9 +38,17 @@ def plot_solution(x, y, z, iteration):
     txt.set_path_effects([black_border])
 
 
-# Z = tf.rosenbrock(X, Y)
-# Z = tf.zakharov(X, Y)
-Z = tf.himmelblau(X, Y)
+test_function_name = json_solutions['test_function']
+if test_function_name == 'rosenbrock':
+    test_function = tf.rosenbrock
+elif test_function_name == 'ackley':
+    test_function = tf.ackley
+elif test_function_name == 'zakharov':
+    test_function = tf.zakharov
+elif test_function_name == 'himmelblau':
+    test_function = tf.himmelblau
+
+Z = test_function(X, Y)
 ax.plot_surface(
     X, Y, Z, rstride=1, cstride=1,
     linewidth=1, edgecolors='#333333',
