@@ -2,11 +2,8 @@
 extern crate rand;
 extern crate test;
 extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-use std::fs::File;
-use std::io::prelude::*;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
@@ -79,8 +76,8 @@ impl<'a> Neighbourhood<'a>
 }
 
 #[derive(Serialize)]
-struct Solutions {
-    solutions: Vec<Solution>,
+pub struct Solutions {
+    pub solutions: Vec<Solution>,
 }
 
 #[derive(Serialize)]
@@ -108,7 +105,7 @@ impl Clone for Solution {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solution {
+pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solutions {
     let mut t = config.start_t;
     let mut neighbourhood = Neighbourhood::new(config.space, &test_function);
     let mut current = neighbourhood.random_solution();
@@ -123,7 +120,8 @@ pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solution {
         let new_solution = neighbourhood.find(&current);
         if new_solution.fitness == 0.0 {
             // Absolute best solution found
-            return new_solution;
+            best = new_solution;
+            break;
         }
         let delta = current.fitness - new_solution.fitness;
         if delta > 0.0 {
@@ -147,11 +145,9 @@ pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solution {
         }
         i += 1;
     }
+    solutions.solutions.push(best);
     println!("Diff {} {} {}", current.fitness, best.fitness, current.fitness - best.fitness);
-    let mut file = File::create("solutions.json").unwrap();
-    let json_solutions = serde_json::to_string(&solutions).unwrap();
-    file.write_all(json_solutions.as_bytes()).unwrap();
-    best
+    solutions
 }
 
 #[cfg(test)]

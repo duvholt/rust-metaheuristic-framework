@@ -1,9 +1,12 @@
 extern crate rustoa;
 #[macro_use]
 extern crate clap;
+extern crate serde_json;
 
 use rustoa::{Config, test_functions};
 use clap::{Arg, App};
+use std::fs::File;
+use std::io::prelude::*;
 
 fn main() {
     let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
@@ -49,7 +52,13 @@ fn main() {
     println!("Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}", start_t, cooldown, iterations, space);
 
     let config = Config::new(start_t, cooldown, iterations, space);
-    let solution = rustoa::run(config, &test_function);
+    let solutions = rustoa::run(config, &test_function);
 
-    println!("Final solution: ({:.2}, {:.2}) {}", solution.x, solution.y, solution.fitness);    
+    let best_solution = solutions.solutions .last().unwrap();
+    println!("Final solution: ({:.2}, {:.2}) {}", best_solution.x, best_solution.y, best_solution.fitness);
+
+    println!("Writing solutions to solutions.json");
+    let mut file = File::create("solutions.json").unwrap();
+    let json_solutions = serde_json::to_string(&solutions).unwrap();
+    file.write_all(json_solutions.as_bytes()).unwrap();
 }
