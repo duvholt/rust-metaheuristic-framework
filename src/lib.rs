@@ -78,6 +78,7 @@ impl<'a> Neighbourhood<'a>
 #[derive(Serialize)]
 pub struct Solutions {
     pub solutions: Vec<Solution>,
+    test_function: String,
 }
 
 #[derive(Serialize)]
@@ -105,7 +106,7 @@ impl Clone for Solution {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solutions {
+pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64, test_function_name: String) -> Solutions {
     let mut t = config.start_t;
     let mut neighbourhood = Neighbourhood::new(config.space, &test_function);
     let mut current = neighbourhood.random_solution();
@@ -114,6 +115,7 @@ pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solutions {
     let mut best = current.clone();
     let mut solutions = Solutions {
         solutions: vec![],
+        test_function: test_function_name
     };
     while i < config.iterations {
         t *= config.cooldown;

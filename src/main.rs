@@ -52,7 +52,7 @@ fn main() {
     println!("Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}", start_t, cooldown, iterations, space);
 
     let config = Config::new(start_t, cooldown, iterations, space);
-    let solutions = rustoa::run(config, &test_function);
+    let solutions = rustoa::run(config, &test_function, test_function_name.to_string());
 
     let best_solution = solutions.solutions .last().unwrap();
     println!("Final solution: ({:.2}, {:.2}) {}", best_solution.x, best_solution.y, best_solution.fitness);
