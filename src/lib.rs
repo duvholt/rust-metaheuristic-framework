@@ -10,7 +10,8 @@ use std::io::prelude::*;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
-mod test_functions;
+
+pub mod test_functions;
 
 pub struct Config {
     pub start_t: f64,
@@ -27,17 +28,37 @@ impl Config {
     }
 }
 
-struct Neighbourhood {
+struct Neighbourhood<'a>
+{
     space: f64,
     rng: rand::ThreadRng,
+    test_function: &'a Fn(f64, f64) -> f64,
 }
 
-impl Neighbourhood {
-    pub fn new(space: f64) -> Neighbourhood {
+impl<'a> Neighbourhood<'a>
+{
+    pub fn new<'b>(space: f64, test_function: &'b Fn(f64, f64) -> f64) -> Neighbourhood
+    {
         return Neighbourhood {
             space,
-            rng: rand::thread_rng()
+            rng: rand::thread_rng(),
+            test_function
         }
+    }
+
+    fn random_solution(&self) -> Solution {
+        let between = Range::new(-self.space, self.space);
+        let mut rng = rand::thread_rng();
+        let x = between.ind_sample(&mut rng);
+        let y = between.ind_sample(&mut rng);
+        Solution::new(
+            x, y,
+            self.calculate_fitness(x, y)
+        )
+    }
+
+    fn calculate_fitness(&self, x: f64, y: f64) -> f64 {
+        (self.test_function)(x, y)
     }
 
     fn single_dimension_neighbour(&mut self, x: f64) -> f64 {
@@ -52,6 +73,7 @@ impl Neighbourhood {
         Solution::new(
             x,
             y,
+            self.calculate_fitness(x, y)
         )
     }
 }
@@ -69,8 +91,7 @@ pub struct Solution {
 }
 
 impl Solution {
-    pub fn new(x: f64, y: f64) -> Solution {
-        let fitness = test_functions::ackley(x, y);
+    pub fn new(x: f64, y: f64, fitness: f64) -> Solution {
         Solution {
             x,
             y,
@@ -87,21 +108,12 @@ impl Clone for Solution {
     }
 }
 
-fn random_solution(config: &Config) -> Solution {
-    let between = Range::new(-config.space, config.space);
-    let mut rng = rand::thread_rng(); 
-    Solution::new(
-        between.ind_sample(&mut rng),
-        between.ind_sample(&mut rng),
-    )
-}
-
-pub fn run(config: Config) -> Solution {
+pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Solution {
     let mut t = config.start_t;
-    let mut current = random_solution(&config);
+    let mut neighbourhood = Neighbourhood::new(config.space, &test_function);
+    let mut current = neighbourhood.random_solution();
     let mut i = 0;
     let mut rng = thread_rng();
-    let mut neighbourhood = Neighbourhood::new(config.space);
     let mut best = current.clone();
     let mut solutions = Solutions {
         solutions: vec![],
@@ -150,9 +162,10 @@ mod tests {
 
     #[test]
     fn generates_neighbour() {
-        let solution = Solution::new(1., 4.);
 
-        let mut neighbourhood = Neighbourhood::new(1.0);
+        let test_function = test_functions::rosenbrock;
+        let mut neighbourhood = Neighbourhood::new(1.0, &test_function);
+        let solution = neighbourhood.random_solution();
         let neighbour = neighbourhood.find(&solution);
 
         assert!(neighbour.x < (solution.x + 1.0) && neighbour.x > (solution.x - 1.0));
@@ -163,7 +176,8 @@ mod tests {
     fn test_run(b: &mut Bencher) {
         b.iter(|| {
             let config = Config::new(1.0, 0.9, 1000, 4.0);
-            run(config);
+            let test_function = test_functions::rosenbrock;
+            run(config, &test_function);
         });
     }
 }

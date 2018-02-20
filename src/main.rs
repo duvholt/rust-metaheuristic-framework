@@ -2,7 +2,7 @@ extern crate rustoa;
 #[macro_use]
 extern crate clap;
 
-use rustoa::Config;
+use rustoa::{Config, test_functions};
 use clap::{Arg, App};
 
 fn main() {
@@ -38,10 +38,18 @@ fn main() {
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);;
 
+    let test_function_name = "ackley";
+    let test_function = match test_function_name {
+        "rosenbrock" => test_functions::rosenbrock,
+        "zakharov" => test_functions::zakharov,
+        "ackley" => test_functions::ackley,
+        _ => panic!("Test function does not exist"),
+    };
+
     println!("Start T: {}, Cooldown: {}, Max iterations: {}, Space: {}", start_t, cooldown, iterations, space);
 
     let config = Config::new(start_t, cooldown, iterations, space);
-    let solution = rustoa::run(config);
+    let solution = rustoa::run(config, &test_function);
 
     println!("Final solution: ({:.2}, {:.2}) {}", solution.x, solution.y, solution.fitness);    
 }
