@@ -6,9 +6,21 @@ extern crate serde_json;
 use rustoa::test_functions;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
+use rustoa::solution::{Solution, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
 use std::io::prelude::*;
+
+fn write_solutions(filename: &str, solutions: Vec<Solution>, test_function: String) {
+    println!("Writing solutions to {}", filename);
+    let mut file = File::create(filename).unwrap();
+    let solutions_struct = Solutions {
+        solutions,
+        test_function,
+    };
+    let json_solutions = serde_json::to_string(&solutions_struct).unwrap();
+    file.write_all(json_solutions.as_bytes()).unwrap();
+}
 
 fn main() {
     let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
@@ -97,28 +109,26 @@ fn main() {
             );
             let config = sa::Config::new(start_t, cooldown, iterations, space);
 
-            sa::run(config, &test_function, test_function_name.to_string())
-        },
+            sa::run(config, &test_function)
+        }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
             println!("Running dummy solver with example: {}", example);
             let config = dummy::Config::new(example);
 
-            dummy::run(&config, &test_function, test_function_name.to_string())
+            dummy::run(config, &test_function)
         }
         _ => {
             panic!("Algorithm was not specified!");
         }
     };
 
-    let best_solution = solutions.solutions.last().unwrap();
-    println!(
-        "Final solution: ({:.2}, {:.2}) {}",
-        best_solution.x, best_solution.y, best_solution.fitness
-    );
+    if let Some(solution) = solutions.last() {
+        println!(
+            "Final solution: ({:.2}, {:.2}) {}",
+            solution.x, solution.y, solution.fitness
+        );
+    }
 
-    println!("Writing solutions to solutions.json");
-    let mut file = File::create("solutions.json").unwrap();
-    let json_solutions = serde_json::to_string(&solutions).unwrap();
-    file.write_all(json_solutions.as_bytes()).unwrap();
+    write_solutions("solutions.json", solutions, test_function_name);
 }
