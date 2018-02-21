@@ -1,4 +1,4 @@
-use solution::{Neighbourhood, Solutions};
+use solution::{Neighbourhood, Solution};
 use rand::{thread_rng, Rng};
 
 pub struct Config {
@@ -19,21 +19,14 @@ impl Config {
     }
 }
 
-pub fn run(
-    config: Config,
-    test_function: &Fn(f64, f64) -> f64,
-    test_function_name: String,
-) -> Solutions {
+pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Vec<Solution> {
     let mut t = config.start_t;
     let mut neighbourhood = Neighbourhood::new(config.space, &test_function);
     let mut current = neighbourhood.random_solution();
     let mut i = 0;
     let mut rng = thread_rng();
     let mut best = current.clone();
-    let mut solutions = Solutions {
-        solutions: vec![],
-        test_function: test_function_name,
-    };
+    let mut solutions = vec![];
     while i < config.iterations {
         t *= config.cooldown;
         let new_solution = neighbourhood.find(&current);
@@ -60,11 +53,11 @@ pub fn run(
         }
         if i % (config.iterations / 20) == 0 {
             println!("Iterations {} f: {} t: {:0.6}", i, current.fitness, t);
-            solutions.solutions.push(current.clone());
+            solutions.push(current.clone());
         }
         i += 1;
     }
-    solutions.solutions.push(best);
+    solutions.push(best);
     println!(
         "Diff {} {} {}",
         current.fitness,

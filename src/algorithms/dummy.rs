@@ -1,4 +1,4 @@
-use solution::{Solution, Solutions};
+use solution::Solution;
 
 pub struct Config {
     example: f64,
@@ -10,14 +10,7 @@ impl Config {
     }
 }
 
-pub fn run(
-    config: &Config,
-    test_function: &Fn(f64, f64) -> f64,
-    test_function_name: String,
-) -> Solutions {
+pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Vec<Solution> {
     println!("Running dummy solver. Example: {}", config.example);
-    Solutions {
-        solutions: vec![Solution::new(0.0, 0.0, (test_function)(0.0, 0.0))],
-        test_function: test_function_name,
-    }
+    vec![Solution::new(0.0, 0.0, (test_function)(0.0, 0.0))]
 }
