@@ -86,31 +86,39 @@ fn main() {
         iterations, space, test_function_name
     );
 
-    if let Some(matches) = matches.subcommand_matches("sa") {
-        let start_t = value_t!(matches, "start_t", f64).unwrap_or(1.0);
-        let cooldown = value_t!(matches, "cooldown", f64).unwrap_or(0.9);
+    let solutions = match matches.subcommand() {
+        ("sa", Some(sub_m)) => {
+            let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
+            let cooldown = value_t!(sub_m, "cooldown", f64).unwrap_or(0.9);
 
-        println!(
-            "Running SA with start T: {}, cooldown: {}",
-            start_t, cooldown
-        );
-        let config = sa::Config::new(start_t, cooldown, iterations, space);
-        let solutions = sa::run(config, &test_function, test_function_name.to_string());
+            println!(
+                "Running SA with start T: {}, cooldown: {}",
+                start_t, cooldown
+            );
+            let config = sa::Config::new(start_t, cooldown, iterations, space);
 
-        let best_solution = solutions.solutions.last().unwrap();
-        println!(
-            "Final solution: ({:.2}, {:.2}) {}",
-            best_solution.x, best_solution.y, best_solution.fitness
-        );
+            sa::run(config, &test_function, test_function_name.to_string())
+        },
+        ("dummy", Some(sub_m)) => {
+            let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
+            println!("Running dummy solver with example: {}", example);
+            let config = dummy::Config::new(example);
 
-        println!("Writing solutions to solutions.json");
-        let mut file = File::create("solutions.json").unwrap();
-        let json_solutions = serde_json::to_string(&solutions).unwrap();
-        file.write_all(json_solutions.as_bytes()).unwrap();
-    } else if let Some(matches) = matches.subcommand_matches("dummy") {
-        let example = value_t!(matches, "example", f64).unwrap_or(1.0);
-        println!("Running dummy solver with example: {}", example);
-        let config = dummy::Config::new(example);
-        dummy::run(&config, &test_function, test_function_name.to_string());
-    }
+            dummy::run(&config, &test_function, test_function_name.to_string())
+        }
+        _ => {
+            panic!("Algorithm was not specified!");
+        }
+    };
+
+    let best_solution = solutions.solutions.last().unwrap();
+    println!(
+        "Final solution: ({:.2}, {:.2}) {}",
+        best_solution.x, best_solution.y, best_solution.fitness
+    );
+
+    println!("Writing solutions to solutions.json");
+    let mut file = File::create("solutions.json").unwrap();
+    let json_solutions = serde_json::to_string(&solutions).unwrap();
+    file.write_all(json_solutions.as_bytes()).unwrap();
 }
