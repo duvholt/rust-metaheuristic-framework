@@ -78,8 +78,7 @@ mod tests {
         b.iter(|| {
             let config = Config::new(1.0, 0.9, 1000, 4.0);
             let test_function = test_functions::rosenbrock;
-            let test_function_name = "rosenrock";
-            run(config, &test_function, test_function_name.to_string());
+            run(config, &test_function);
         });
     }
 }
