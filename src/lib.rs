@@ -79,26 +79,18 @@ pub struct Solutions {
     test_function: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Copy)]
 pub struct Solution {
     pub x: f64,
     pub y: f64,
     pub fitness: f64,
 }
-
 impl Solution {
     pub fn new(x: f64, y: f64, fitness: f64) -> Solution {
         Solution { x, y, fitness }
     }
 }
 
-impl Copy for Solution {}
-
-impl Clone for Solution {
-    fn clone(&self) -> Solution {
-        *self
-    }
-}
 
 pub fn run(
     config: Config,
