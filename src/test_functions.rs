@@ -74,4 +74,9 @@ mod tests {
         assert_approx_eq!(0.0, himmelblau(-3.779310, -3.283186));
         assert_approx_eq!(0.0, himmelblau(3.584428, -1.848126));
     }
+
+    #[test]
+    fn himmelblau_not_optimum() {
+        assert_ne!(0.0, himmelblau(4.0, 6.0));
+    }
 }
