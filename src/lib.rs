@@ -37,7 +37,7 @@ struct Neighbourhood<'a> {
 }
 
 impl<'a> Neighbourhood<'a> {
-    pub fn new<'b>(space: f64, test_function: &'b Fn(f64, f64) -> f64) -> Neighbourhood {
+    pub fn new(space: f64, test_function: &'a Fn(f64, f64) -> f64) -> Neighbourhood {
         return Neighbourhood {
             space,
             rng: rand::thread_rng(),
