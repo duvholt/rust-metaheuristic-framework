@@ -3,7 +3,8 @@ extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
-use rustoa::{test_functions, Config};
+use rustoa::test_functions;
+use rustoa::algorithms::sa;
 use clap::{App, Arg};
 use std::fs::File;
 use std::io::prelude::*;
@@ -73,8 +74,8 @@ fn main() {
         start_t, cooldown, iterations, space, test_function_name
     );
 
-    let config = Config::new(start_t, cooldown, iterations, space);
-    let solutions = rustoa::run(config, &test_function, test_function_name.to_string());
+    let config = sa::Config::new(start_t, cooldown, iterations, space);
+    let solutions = sa::run(config, &test_function, test_function_name.to_string());
 
     let best_solution = solutions.solutions.last().unwrap();
     println!(
