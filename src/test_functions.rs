@@ -14,16 +14,13 @@ pub fn ackley(x: &Vec<f64>) -> f64 {
 pub fn rosenbrock(x: &Vec<f64>) -> f64 {
     let a = 1.0;
     let b = 100.0;
-    let half_dimension = x.len() / 2;
-    println!("{}", half_dimension);
-    let sum1 = (0..half_dimension)
+    (0..x.len() / 2)
         .map(|i| {
             let i1 = 2 * i;
             let i2 = i1 + 1;
             b * (x[i1].powf(2.0) - x[i2]).powf(2.0) + (x[i1] - a).powf(2.0)
         })
-        .sum();
-    sum1
+        .sum()
 }
 
 pub fn zakharov(x: &Vec<f64>) -> f64 {
