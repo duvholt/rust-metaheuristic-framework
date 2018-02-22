@@ -6,6 +6,7 @@ extern crate serde_json;
 use rustoa::test_functions;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
+use rustoa::algorithms::pso;
 use rustoa::solution::{Solution, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
@@ -87,6 +88,31 @@ fn main() {
                     .takes_value(true),
             ),
         )
+        .subcommand(
+            SubCommand::with_name("pso")
+                .about("particle swarm optimization")
+                .arg(
+                    Arg::with_name("c1")
+                        .long("c1")
+                        .value_name("c1")
+                        .help("C1 constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("c2")
+                        .long("c2")
+                        .value_name("c2")
+                        .help("C2 constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("inertia")
+                        .long("inertia")
+                        .value_name("inertia")
+                        .help("inertia constant")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
 
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
@@ -119,6 +145,25 @@ fn main() {
             let config = sa::Config::new(start_t, cooldown, iterations, space, dimension);
 
             sa::run(config, &test_function)
+        }
+        ("pso", Some(sub_m)) => {
+            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
+            let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
+            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(1.1);
+            println!(
+                "Running PSO with C1: {}, C2: {} inertia: {}",
+                c1, c2, inertia
+            );
+
+            let config = pso::Config {
+                space,
+                dimension,
+                iterations,
+                c1: 0.3,
+                c2: 0.5,
+                inertia: 0.5,
+            };
+            pso::run(config, &test_function)
         }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
