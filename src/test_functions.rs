@@ -51,6 +51,7 @@ pub fn himmelblau(x: &Vec<f64>) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::Bencher;
 
     #[test]
     fn rosenbrock_optimum() {
@@ -100,5 +101,37 @@ mod tests {
     #[test]
     fn himmelblau_not_optimum() {
         assert_ne!(0.0, himmelblau(&vec![4.0, 6.0]));
+    }
+
+    #[bench]
+    fn bench_ackley(b: &mut Bencher) {
+        let x = vec![1.0, 3.0];
+        b.iter(|| {
+            ackley(&x);
+        });
+    }
+
+    #[bench]
+    fn bench_rosenbrock(b: &mut Bencher) {
+        let x = vec![1.0, 3.0];
+        b.iter(|| {
+            rosenbrock(&x);
+        });
+    }
+
+    #[bench]
+    fn bench_zakharov(b: &mut Bencher) {
+        let x = vec![1.0, 3.0];
+        b.iter(|| {
+            zakharov(&x);
+        });
+    }
+
+    #[bench]
+    fn bench_himmelblau(b: &mut Bencher) {
+        let x = vec![1.0, 3.0];
+        b.iter(|| {
+            himmelblau(&x);
+        });
     }
 }
