@@ -1,6 +1,7 @@
 use solution::Solution;
 use rand::distributions::{IndependentSample, Range};
 use rand;
+use std::cmp::Ordering;
 
 type Position = Vec<f64>;
 type TestFunction = Fn(&Vec<f64>) -> f64;
@@ -13,6 +14,7 @@ pub struct Config {
     inertia: f64,
 }
 
+#[derive(Clone)]
 struct Particle {
     position: Position,
     pbest: Position,
@@ -51,7 +53,7 @@ impl<'a> Swarm<'a> {
     fn generate_population(&self, size: i32) -> Vec<Particle> {
         (0..size)
             .map(|_| {
-                let position = vec![0.0, 1.0];
+                let position = self.random_position();
                 let fitness = self.calculate_fitness(&position);
                 Particle {
                     position: position.to_vec(),
@@ -62,9 +64,15 @@ impl<'a> Swarm<'a> {
             .collect()
     }
 
-    fn find_leader(population: &Vec<Particle>) {}
+    fn find_leader(population: &Vec<Particle>) -> Option<&Particle> {
+        population
+            .iter()
+            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal))
+    }
 
-    pub fn update_leader(&self) {}
+    pub fn update_leader(&mut self) {
+        self.leader = Swarm::find_leader(&self.population).cloned();
+    }
 
     pub fn solutions(&self) -> Vec<Solution> {
         self.population
@@ -117,5 +125,46 @@ mod tests {
                 config.space
             );
         }
+    }
+
+    #[test]
+    fn generates_population() {
+        let config = Config {
+            space: 4.0,
+            dimension: 2,
+            c1: 0.2,
+            c2: 0.3,
+            inertia: 0.5,
+        };
+        let swarm = Swarm::new(&config, &rosenbrock);
+
+        let population = swarm.generate_population(10);
+
+        assert_eq!(population.len(), 10);
+    }
+
+    #[test]
+    fn finds_leader() {
+        let population = vec![
+            Particle {
+                position: vec![0.0, 1.0],
+                pbest: vec![0.0, 1.0],
+                fitness: 1.0,
+            },
+            Particle {
+                position: vec![0.0, 1.0],
+                pbest: vec![0.0, 1.0],
+                fitness: 0.001,
+            },
+            Particle {
+                position: vec![0.0, 1.0],
+                pbest: vec![0.0, 1.0],
+                fitness: 2.0,
+            },
+        ];
+
+        let leader = Swarm::find_leader(&population).unwrap();
+
+        assert_eq!(leader.fitness, 0.001);
     }
 }
