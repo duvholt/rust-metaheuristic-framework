@@ -10,7 +10,9 @@ impl Config {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(f64, f64) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
     println!("Running dummy solver. Example: {}", config.example);
-    vec![Solution::new(0.0, 0.0, (test_function)(0.0, 0.0))]
+    vec![
+        Solution::new(vec![0.0, 0.0], (test_function)(&vec![0.0, 0.0])),
+    ]
 }

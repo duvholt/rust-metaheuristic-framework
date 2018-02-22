@@ -13,14 +13,18 @@ ax = Axes3D(fig)
 
 json_solutions = json.load(open('../solutions.json'))
 
+# TODO: Plotting for more than two dimenions doesn't work
+if len(json_solutions['solutions'][0]['x']) > 2:
+    print('WARNING! Solutions with more than two dimensions is not supported!')
+
 solutions = np.array(list(
-    map(lambda s: [float(s['x']), float(s['y']),
+    map(lambda s: [*s['x'][:2],
                    float(s['fitness'])], json_solutions['solutions'])
 ))
 
 max_x, max_y, _ = solutions.max(axis=0)
 min_x, min_y, _ = solutions.min(axis=0)
-padding = 0
+padding = (max_y - min_y) * 0.1
 X = np.linspace(min_x - padding, max_x + padding, 40)
 Y = np.linspace(min_y - padding, max_y + padding, 40)
 X, Y = np.meshgrid(X, Y)

@@ -1,26 +1,37 @@
 use std::f64::consts;
 
-pub fn ackley(x: f64, y: f64) -> f64 {
+pub fn ackley(x: &Vec<f64>) -> f64 {
     let a = 20.0;
     let b = 0.2;
     let c = 2.0 * consts::PI;
-    return -a * (-b * (0.5 * (x.powf(2.0) + y.powf(2.0))).sqrt()).exp()
-        - (0.5 * ((c * x).cos() + (c * y).cos())).exp() + a + consts::E;
+    let d = x.len() as f64;
+    let pow_sum: f64 = x.iter().map(|x_i| x_i.powf(2.0)).sum();
+    let cos_sum: f64 = x.iter().map(|x_i| (c * x_i).cos()).sum();
+    return -a * (-b * ((1.0 / d) * (pow_sum)).sqrt()).exp() - ((1.0 / d) * (cos_sum)).exp() + a
+        + consts::E;
 }
 
-pub fn rosenbrock(x: f64, y: f64) -> f64 {
+pub fn rosenbrock(x: &Vec<f64>) -> f64 {
     let a = 1.0;
     let b = 100.0;
-    (a - x).powf(2.0) + b * (y - x.powf(2.0)).powf(2.0)
+    let half_dimension = x.len() / 2;
+    println!("{}", half_dimension);
+    let sum1 = (0..half_dimension)
+        .map(|i| {
+            let i1 = 2 * i;
+            let i2 = i1 + 1;
+            b * (x[i1].powf(2.0) - x[i2]).powf(2.0) + (x[i1] - a).powf(2.0)
+        })
+        .sum();
+    sum1
 }
 
-pub fn zakharov(x: f64, y: f64) -> f64 {
+pub fn zakharov(x: &Vec<f64>) -> f64 {
     let mut sum1 = 0.0;
     let mut sum2 = 0.0;
 
-    let dimensions = [x, y];
     let mut i = 1.0;
-    dimensions.iter().for_each(|xi| {
+    x.iter().for_each(|xi| {
         sum1 = sum1 + xi.powf(2.0);
         sum2 = sum2 + 0.5 * i * xi;
         i += 1.0;
@@ -28,8 +39,13 @@ pub fn zakharov(x: f64, y: f64) -> f64 {
     return sum1 + sum2.powf(2.0) + sum2.powf(4.0);
 }
 
-pub fn himmelblau(x: f64, y: f64) -> f64 {
-    return (x.powf(2.0) + y - 11.0).powf(2.0) + (x + y.powf(2.0) - 7.0).powf(2.0);
+pub fn himmelblau(x: &Vec<f64>) -> f64 {
+    if x.len() != 2 {
+        panic!("Himmelblau only supports two dimensions!");
+    }
+    let x_1 = x[0];
+    let x_2 = x[1];
+    return (x_1.powf(2.0) + x_2 - 11.0).powf(2.0) + (x_1 + x_2.powf(2.0) - 7.0).powf(2.0);
 }
 
 #[cfg(test)]
@@ -38,45 +54,51 @@ mod tests {
 
     #[test]
     fn rosenbrock_optimum() {
-        assert_eq!(0.0, rosenbrock(1.0, 1.0));
+        assert_eq!(0.0, rosenbrock(&vec![1.0, 1.0]));
+        assert_eq!(0.0, rosenbrock(&vec![1.0, 1.0, 1.0]));
+        assert_eq!(0.0, rosenbrock(&vec![1.0, 1.0, 1.0, 1.0]));
     }
 
     #[test]
     fn rosenbrock_not_optimum() {
-        assert_ne!(0.0, rosenbrock(3.0, 2.0));
+        assert_ne!(0.0, rosenbrock(&vec![3.0, 2.0]));
     }
 
     #[test]
     fn zakharov_optimum() {
-        assert_eq!(0.0, zakharov(0.0, 0.0));
+        assert_eq!(0.0, zakharov(&vec![0.0, 0.0]));
+        assert_eq!(0.0, zakharov(&vec![0.0, 0.0, 0.0]));
+        assert_eq!(0.0, zakharov(&vec![0.0, 0.0, 0.0, 0.0]));
+        assert_eq!(0.0, zakharov(&vec![0.0, 0.0, 0.0, 0.0, 0.0]));
     }
 
     #[test]
     fn zakharov_not_optimum() {
-        assert_ne!(0.0, zakharov(2.0, -1.3));
+        assert_ne!(0.0, zakharov(&vec![2.0, -1.3]));
     }
 
     #[test]
     fn ackley_optimum() {
-        // TODO: Check if this is actually the minimum
-        assert_approx_eq!(0.0, ackley(0.0, 0.0));
+        assert_approx_eq!(0.0, ackley(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, ackley(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, ackley(&vec![0.0, 0.0, 0.0, 0.0]));
     }
 
     #[test]
     fn ackley_not_optimum() {
-        assert_ne!(0.0, ackley(2.0, -1.3));
+        assert_ne!(0.0, ackley(&vec![2.0, -1.3]));
     }
 
     #[test]
     fn himmelblau_optimum() {
-        assert_eq!(0.0, himmelblau(3.0, 2.0));
-        assert_approx_eq!(0.0, himmelblau(-2.805118, 3.131312));
-        assert_approx_eq!(0.0, himmelblau(-3.779310, -3.283186));
-        assert_approx_eq!(0.0, himmelblau(3.584428, -1.848126));
+        assert_eq!(0.0, himmelblau(&vec![3.0, 2.0]));
+        assert_approx_eq!(0.0, himmelblau(&vec![-2.805118, 3.131312]));
+        assert_approx_eq!(0.0, himmelblau(&vec![-3.779310, -3.283186]));
+        assert_approx_eq!(0.0, himmelblau(&vec![3.584428, -1.848126]));
     }
 
     #[test]
     fn himmelblau_not_optimum() {
-        assert_ne!(0.0, himmelblau(4.0, 6.0));
+        assert_ne!(0.0, himmelblau(&vec![4.0, 6.0]));
     }
 }
