@@ -103,6 +103,7 @@ impl<'a> Swarm<'a> {
                 let r1 = rng.next_f64();
                 let r2 = rng.next_f64();
                 let mut velocity = vec![];
+                let mut position = vec![];
                 for i in 0..self.config.dimension as usize {
                     let v = particle.velocity[i];
                     let x = particle.position[i];
@@ -112,13 +113,8 @@ impl<'a> Swarm<'a> {
                     let new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
                         + self.config.c2 * r2 * (x_l - x);
                     velocity.push(new_v);
+                    position.push(new_v + x);
                 }
-                let position: Vec<f64> = particle
-                    .position
-                    .iter()
-                    .zip(velocity.iter())
-                    .map(|(x, v)| x + v)
-                    .collect();
                 let fitness = self.calculate_fitness(&position);
                 let pbest = if fitness < particle.fitness {
                     position.clone()
