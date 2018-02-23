@@ -174,15 +174,16 @@ pub fn run(config: Config, test_function: &TestFunction) -> Vec<Solution> {
 mod tests {
     use super::*;
     use test_functions::rosenbrock;
+    use test::Bencher;
 
     fn create_config() -> Config {
         Config {
             space: 4.0,
             dimension: 2,
-            c1: 0.2,
-            c2: 0.3,
-            inertia: 0.5,
-            iterations: 10,
+            iterations: 20,
+            c1: 2.0,
+            c2: 2.0,
+            inertia: 1.1,
         }
     }
 
@@ -197,14 +198,7 @@ mod tests {
 
     #[test]
     fn creates_random_solution() {
-        let config = Config {
-            space: 4.0,
-            dimension: 2,
-            iterations: 1,
-            c1: 0.2,
-            c2: 0.3,
-            inertia: 0.5,
-        };
+        let config = create_config();
         let swarm = Swarm::new(&config, &rosenbrock);
 
         let position = swarm.random_position();
@@ -284,5 +278,13 @@ mod tests {
         swarm.update_leader();
 
         assert_eq!(swarm.leader.unwrap().fitness, 0.02);
+    }
+
+    #[bench]
+    fn bench_pso(b: &mut Bencher) {
+        b.iter(|| {
+            let config = create_config();
+            run(config, &rosenbrock);
+        });
     }
 }
