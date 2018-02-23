@@ -279,6 +279,25 @@ mod tests {
     }
 
     #[bench]
+    fn bench_move(b: &mut Bencher) {
+        let config = create_config();
+        let swarm = Swarm {
+            population: vec![
+                create_particle_with_fitness(1.0),
+                create_particle_with_fitness(0.1),
+            ],
+            leader: Some(create_particle_with_fitness(0.02)),
+            config: &config,
+            test_function: &rosenbrock,
+        };
+        let particle = create_particle_with_fitness(2.0);
+        let leader = swarm.get_leader();
+        b.iter(|| {
+            swarm.particle_move(&particle, &leader);
+        });
+    }
+
+    #[bench]
     fn bench_pso(b: &mut Bencher) {
         b.iter(|| {
             let config = create_config();
