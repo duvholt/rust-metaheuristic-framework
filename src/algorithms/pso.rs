@@ -94,40 +94,42 @@ impl<'a> Swarm<'a> {
         solutions
     }
 
-    fn update_positions(&mut self) {
+    fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
         let mut rng = thread_rng();
+        let r1 = rng.next_f64();
+        let r2 = rng.next_f64();
+        let mut velocity = vec![];
+        let mut position = vec![];
+        for i in 0..self.config.dimension as usize {
+            let v = particle.velocity[i];
+            let x = particle.position[i];
+            let x_p = particle.pbest[i];
+            let x_l = leader.position[i];
+
+            let new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
+                + self.config.c2 * r2 * (x_l - x);
+            velocity.push(new_v);
+            position.push(new_v + x);
+        }
+        let fitness = self.calculate_fitness(&position);
+        let pbest = if fitness < particle.fitness {
+            position.clone()
+        } else {
+            particle.pbest.clone()
+        };
+        Particle {
+            position,
+            pbest,
+            fitness,
+            velocity: velocity,
+        }
+    }
+
+    fn update_positions(&mut self) {
         let leader = self.get_leader();
         self.population = self.population
             .iter()
-            .map(|particle| {
-                let r1 = rng.next_f64();
-                let r2 = rng.next_f64();
-                let mut velocity = vec![];
-                let mut position = vec![];
-                for i in 0..self.config.dimension as usize {
-                    let v = particle.velocity[i];
-                    let x = particle.position[i];
-                    let x_p = particle.pbest[i];
-                    let x_l = leader.position[i];
-
-                    let new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
-                        + self.config.c2 * r2 * (x_l - x);
-                    velocity.push(new_v);
-                    position.push(new_v + x);
-                }
-                let fitness = self.calculate_fitness(&position);
-                let pbest = if fitness < particle.fitness {
-                    position.clone()
-                } else {
-                    particle.pbest.clone()
-                };
-                Particle {
-                    position,
-                    pbest,
-                    fitness,
-                    velocity: velocity,
-                }
-            })
+            .map(|particle| self.particle_move(particle, &leader))
             .collect();
     }
 
