@@ -77,13 +77,21 @@ impl<'a> Swarm<'a> {
     }
 
     pub fn solutions(&self) -> Vec<Solution> {
-        self.population
+        let mut solutions: Vec<Solution> = self.population
             .iter()
             .map(|particle| Solution {
                 x: particle.position.to_vec(),
                 fitness: particle.fitness,
             })
-            .collect()
+            .collect();
+        let leader = self.get_leader();
+        solutions.push(Solution {
+            x: leader.position,
+            fitness: leader.fitness,
+        });
+        solutions
+            .sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
+        solutions
     }
 
     fn update_positions(&mut self) {
