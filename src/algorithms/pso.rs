@@ -106,10 +106,20 @@ impl<'a> Swarm<'a> {
             let x_p = particle.pbest[i];
             let x_l = leader.position[i];
 
-            let new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
+            let mut new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
                 + self.config.c2 * r2 * (x_l - x);
+            let mut new_x = new_v + x;
+            if new_v + x > self.config.space {
+                // Bound hit, move in opposite direction
+                new_v *= -1.0;
+                new_x = self.config.space;
+            } else if (new_v + x) < -self.config.space {
+                // Bound hit, move in opposite direction
+                new_v *= -1.0;
+                new_x = -self.config.space;
+            }
             velocity.push(new_v);
-            position.push(new_v + x);
+            position.push(new_x);
         }
         let fitness = self.calculate_fitness(&position);
         let pbest = if fitness < particle.fitness {
