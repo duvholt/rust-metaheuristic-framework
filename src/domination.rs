@@ -15,15 +15,8 @@ pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
 pub fn find_non_dominated(solutions: &Vec<Vec<f64>>) -> HashSet<usize> {
     let mut non_dominated = HashSet::new();
     for (p_i, p) in solutions.iter().enumerate() {
-        if non_dominated.contains(&p_i) {
-            continue;
-        }
-        non_dominated.insert(p_i);
         let mut dominated = false;
         non_dominated.retain(|&q_i| {
-            if q_i == p_i {
-                return true;
-            }
             let q = &solutions[q_i];
             if dominates(&p, &q) {
                 return false;
@@ -32,8 +25,8 @@ pub fn find_non_dominated(solutions: &Vec<Vec<f64>>) -> HashSet<usize> {
             }
             return true;
         });
-        if dominated {
-            non_dominated.remove(&p_i);
+        if !dominated {
+            non_dominated.insert(p_i);
         }
     }
     non_dominated
