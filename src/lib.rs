@@ -11,3 +11,4 @@ extern crate test;
 pub mod test_functions;
 pub mod algorithms;
 pub mod solution;
+pub mod domination;
