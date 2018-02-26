@@ -4,8 +4,6 @@ use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
 pub struct Config {
-    // pub cd: f64, //core dandelion
-    // pub ad: f64, //assistant dandelion
     pub iterations: i64,
     pub space: f64,
     pub dimensions: i32,
@@ -59,14 +57,6 @@ impl<'a> Swarm<'a> {
             return self.config.min_seeds;
         }
     }
-    fn generate_normal_seeds(&self) {
-        //Calculate number of seeds M_i
-        //Calculate the ADs of sowing radius R_i
-        //Calculate the CD of sowing radious R_cd
-        //Set z = random(1,d)
-    }
-
-    fn generate_mutation_sparks(&self) {}
 
     fn calculate_assistant_radius(
         &self,
@@ -84,12 +74,17 @@ impl<'a> Swarm<'a> {
             return w * prev_radius + (core_best - current_best);
         }
     }
-    
-    fn calculate_core_radius(&self, current_iteration: i64, prev_radius: f64, prev_fitness: f64, current_fitness: f64) -> f64 {
+
+    fn calculate_core_radius(
+        &self,
+        current_iteration: i64,
+        prev_radius: f64,
+        prev_fitness: f64,
+        current_fitness: f64,
+    ) -> f64 {
         if current_iteration == 1 {
             return self.config.space * 2.0;
-        }
-        else {
+        } else {
             if current_fitness == prev_fitness {
                 return prev_radius * self.config.r;
             } else {
@@ -97,30 +92,21 @@ impl<'a> Swarm<'a> {
             }
         }
     }
-
-    fn calculate_a() {
-
-    }
 }
+
 fn find_vector_max_value(vec: &Vec<f64>) -> f64 {
     vec.iter()
-    .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal)).cloned().unwrap()
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal))
+        .cloned()
+        .unwrap()
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
     let popuation = 2;
     let mutation_popuation = 2;
     let mut solutions = vec![];
-
-    //Randomly choose N dandelions
-
-    //assess their fitness
-
     let mut i = 0;
-
     while i < config.iterations {
-        //find R_i (except for R_cd)
-        println!("LOOOL");
         i += 1;
     }
 
@@ -169,12 +155,24 @@ mod tests {
             position: vec![2.0],
         };
 
-        assert_eq!(swarm.calculate_assistant_radius(1, 2.0, &current, &core), 8.0);
-        assert_eq!(swarm.calculate_assistant_radius(2, 2.0, &current, &core), -0.96);
-        assert_approx_eq!(swarm.calculate_assistant_radius(23, 3.4, &current, &core), -0.218);
+        assert_eq!(
+            swarm.calculate_assistant_radius(1, 2.0, &current, &core),
+            8.0
+        );
+        assert_eq!(
+            swarm.calculate_assistant_radius(2, 2.0, &current, &core),
+            -0.96
+        );
+        assert_approx_eq!(
+            swarm.calculate_assistant_radius(23, 3.4, &current, &core),
+            -0.218
+        );
         current.position.push(3.0);
         core.position.push(1.1);
-        assert_approx_eq!(swarm.calculate_assistant_radius(23, 3.4, &current, &core), -1.118);
+        assert_approx_eq!(
+            swarm.calculate_assistant_radius(23, 3.4, &current, &core),
+            -1.118
+        );
     }
 
     #[test]
