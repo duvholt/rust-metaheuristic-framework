@@ -20,7 +20,7 @@ pub fn find_non_dominated(solutions: &Vec<Vec<f64>>) -> HashSet<usize> {
             let q = &solutions[q_i];
             if dominates(&p, &q) {
                 return false;
-            } else if dominates(&q, &p) {
+            } else if !dominated && dominates(&q, &p) {
                 dominated = true;
             }
             return true;
