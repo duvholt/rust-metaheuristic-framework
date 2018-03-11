@@ -6,11 +6,11 @@ pub struct Config {
     pub cooldown: f64,
     pub iterations: i64,
     pub space: f64,
-    pub dimension: i32,
+    pub dimension: usize,
 }
 
 impl Config {
-    pub fn new(start_t: f64, cooldown: f64, iterations: i64, space: f64, dimension: i32) -> Config {
+    pub fn new(start_t: f64, cooldown: f64, iterations: i64, space: f64, dimension: usize) -> Config {
         return Config {
             start_t,
             cooldown,

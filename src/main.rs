@@ -151,8 +151,8 @@ fn main() {
 
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);
-    let dimension = value_t!(matches, "dimension", i32).unwrap_or(2);
-    let population = value_t!(matches, "population", i32).unwrap_or(50);
+    let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
+    let population = value_t!(matches, "population", usize).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
     let test_function = match test_function_name.as_ref() {
@@ -202,7 +202,7 @@ fn main() {
             pso::run(config, &test_function)
         }
         ("ewa", Some(sub_m)) => {
-            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(50);
+            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(0);
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
             let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
             println!(

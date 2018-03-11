@@ -7,9 +7,9 @@ use selection::{roulette_wheel, Fitness};
 #[derive(Debug)]
 pub struct Config {
     pub space: f64,
-    pub dimension: i32,
+    pub dimension: usize,
     pub iterations: i64,
-    pub population: i32,
+    pub population: usize,
     pub n_kew: usize,
     pub beta: f64,
     pub similarity: f64,
@@ -65,7 +65,7 @@ impl<'a> Worms<'a> {
         Worm { position, fitness }
     }
 
-    fn generate_population(&self, size: i32) -> Vec<Worm> {
+    fn generate_population(&self, size: usize) -> Vec<Worm> {
         (0..size)
             .map(|_| self.create_worm(self.random_position()))
             .collect()
@@ -93,7 +93,7 @@ impl<'a> Worms<'a> {
         let minmax = -self.config.space + self.config.space;
         let alpha = self.config.similarity;
         let mut new_position = vec![];
-        for j in 0..self.config.dimension as usize {
+        for j in 0..self.config.dimension {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
@@ -122,7 +122,7 @@ impl<'a> Worms<'a> {
         let mut pos1 = vec![];
         let mut pos2 = vec![];
         let mut rng = thread_rng();
-        for j in 0..self.config.dimension as usize {
+        for j in 0..self.config.dimension {
             let r = rng.next_f64();
             let p1j = parent1.position[j];
             let p2j = parent2.position[j];
@@ -142,7 +142,7 @@ impl<'a> Worms<'a> {
         let w2 = f1 / (f1 + f2);
 
         let mut position = vec![];
-        for j in 0..self.config.dimension as usize {
+        for j in 0..self.config.dimension {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
         let fitness = self.calculate_fitness(&position);
@@ -152,7 +152,7 @@ impl<'a> Worms<'a> {
     fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
         let mut new_position = vec![];
-        for j in 0..self.config.dimension as usize {
+        for j in 0..self.config.dimension {
             let x_j = beta * worm1.position[j] + (1.0 - beta) * worm2.position[j];
             new_position.push(x_j);
         }
@@ -167,7 +167,7 @@ impl<'a> Worms<'a> {
         let mut rng = thread_rng();
         let mut other_index = worm_index;
         while other_index == worm_index {
-            other_index = rng.gen_range(0, self.config.population as usize);
+            other_index = rng.gen_range(0, self.config.population);
         }
         self.population[other_index].clone()
     }
@@ -218,7 +218,7 @@ mod tests {
     fn sorts_population_by_ascending_fitness() {
         let config = create_config();
         let mut worms = Worms::new(&config, &rosenbrock);
-        let dimension = config.dimension as usize;
+        let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
         let worm2 = worms.create_worm(vec![0.2; dimension]);
         let worm3 = worms.create_worm(vec![0.02; dimension]);
@@ -234,7 +234,7 @@ mod tests {
     fn reproduction1_generates_offspring() {
         let config = create_config();
         let worms = Worms::new(&config, &rosenbrock);
-        let dimension = config.dimension as usize;
+        let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
 
         let offspring = worms.reproduction1(&worm1);
@@ -249,7 +249,7 @@ mod tests {
     fn combines_worms_initial() {
         let config = create_config();
         let worms = Worms::new(&config, &rosenbrock);
-        let dimension = config.dimension as usize;
+        let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
 
@@ -262,7 +262,7 @@ mod tests {
     fn combines_worms_iteration2() {
         let config = create_config();
         let worms = Worms::new(&config, &rosenbrock);
-        let dimension = config.dimension as usize;
+        let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
 
