@@ -194,6 +194,7 @@ fn main() {
                 space,
                 dimension,
                 iterations,
+                population,
                 c1: 0.3,
                 c2: 0.5,
                 inertia: 0.5,
