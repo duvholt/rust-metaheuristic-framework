@@ -53,16 +53,14 @@ impl<'a> Worms<'a> {
             .collect()
     }
 
+    fn create_worm(&self, position: Vec<f64>) -> Worm {
+        let fitness = self.calculate_fitness(&position);
+        Worm { position, fitness }
+    }
+
     fn generate_population(&self, size: i32) -> Vec<Worm> {
         (0..size)
-            .map(|_| {
-                let position = self.random_position();
-                let fitness = self.calculate_fitness(&position);
-                Worm {
-                    position: position.to_vec(),
-                    fitness,
-                }
-            })
+            .map(|_| self.create_worm(self.random_position()))
             .collect()
     }
 
@@ -83,26 +81,58 @@ impl<'a> Worms<'a> {
         self.population
             .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
     }
+
+    fn reproduction1(&self, worm: &Worm) -> Worm {
+        let minmax = -self.config.space + self.config.space;
+        let alpha = self.config.similarity;
+        let mut new_position = vec![];
+        for j in 0..self.config.dimension as usize {
+            let x_j = minmax - alpha * worm.position[j];
+            new_position.push(x_j);
+        }
+        let fitness = self.calculate_fitness(&new_position);
+        Worm {
+            position: new_position,
+            fitness,
+        }
+    }
+
+    fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
+        let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
+        let mut new_position = vec![];
+        for j in 0..self.config.dimension as usize {
+            let x_j = beta * worm1.position[j] + (1.0 - beta) * worm2.position[j];
+            new_position.push(x_j);
+        }
+        let fitness = self.calculate_fitness(&new_position);
+        Worm {
+            position: new_position,
+            fitness,
+        }
+    }
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
     println!("Running Earth Worm Optimization. Example: {:?}", config);
     let mut worms = Worms::new(&config, &test_function);
     worms.population = worms.generate_population(config.population);
-    for _ in 0..config.iterations {
+    for iteration in 0..config.iterations {
         worms.sort_population();
         let mut new_worms = vec![];
-        for (worm_index, _worm) in worms.population.iter().enumerate() {
-            // Reproduction 1
+        for (worm_index, worm) in worms.population.iter().enumerate() {
+            let offspring1 = worms.reproduction1(&worm);
+            // TODO: Remove
+            let offspring2 = worm.clone();
             if worm_index < config.n_kew {
                 // Reproduction 2
             } else {
                 // Select random from worms
             }
-            // Combine
+            let new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             if worm_index < config.n_kew {
                 // Cauchy mutation
             }
+            new_worms.push(new_worm);
         }
         worms.population = new_worms;
     }
@@ -126,25 +156,60 @@ mod tests {
         }
     }
 
-    fn create_worm(fitness: f64, dimension: i32) -> Worm {
-        Worm {
-            position: vec![fitness; dimension as usize],
-            fitness,
-        }
-    }
-
     #[test]
     fn sorts_population_by_ascending_fitness() {
         let config = create_config();
         let mut worms = Worms::new(&config, &rosenbrock);
-        let worm1 = create_worm(0.3, config.dimension);
-        let worm2 = create_worm(0.2, config.dimension);
-        let worm3 = create_worm(0.02, config.dimension);
-        let worm4 = create_worm(0.4, config.dimension);
+        let dimension = config.dimension as usize;
+        let worm1 = worms.create_worm(vec![0.3; dimension]);
+        let worm2 = worms.create_worm(vec![0.2; dimension]);
+        let worm3 = worms.create_worm(vec![0.02; dimension]);
+        let worm4 = worms.create_worm(vec![0.4; dimension]);
         worms.population = vec![worm1.clone(), worm2.clone(), worm3.clone(), worm4.clone()];
 
         worms.sort_population();
 
         assert_eq!(worms.population, vec![worm3, worm2, worm1, worm4]);
+    }
+
+    #[test]
+    fn reproduction1_generates_offspring() {
+        let config = create_config();
+        let mut worms = Worms::new(&config, &rosenbrock);
+        let dimension = config.dimension as usize;
+        let worm1 = worms.create_worm(vec![0.3; dimension]);
+
+        let offspring = worms.reproduction1(&worm1);
+
+        assert_eq!(
+            offspring.position,
+            vec![-0.3 * config.similarity; dimension]
+        );
+    }
+
+    #[test]
+    fn combines_worms_initial() {
+        let config = create_config();
+        let mut worms = Worms::new(&config, &rosenbrock);
+        let dimension = config.dimension as usize;
+        let worm1 = worms.create_worm(vec![1.0; dimension]);
+        let worm2 = worms.create_worm(vec![2.0; dimension]);
+
+        let combined = worms.combine_worms(&worm1, &worm2, 0);
+
+        assert_eq!(combined.position, vec![1.0; dimension]);
+    }
+
+    #[test]
+    fn combines_worms_iteration2() {
+        let config = create_config();
+        let mut worms = Worms::new(&config, &rosenbrock);
+        let dimension = config.dimension as usize;
+        let worm1 = worms.create_worm(vec![1.0; dimension]);
+        let worm2 = worms.create_worm(vec![2.0; dimension]);
+
+        let combined = worms.combine_worms(&worm1, &worm2, 2);
+
+        assert_eq!(combined.position, vec![1.19; dimension]);
     }
 }
