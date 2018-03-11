@@ -11,6 +11,7 @@ pub struct Config {
     pub space: f64,
     pub dimension: i32,
     pub iterations: i64,
+    pub population: i32,
     pub c1: f64,
     pub c2: f64,
     pub inertia: f64,
@@ -164,7 +165,7 @@ impl<'a> Swarm<'a> {
 
 pub fn run(config: Config, test_function: &TestFunction) -> Vec<Solution> {
     let mut swarm = Swarm::new(&config, &test_function);
-    swarm.population = swarm.generate_population(100);
+    swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
         swarm.update_leader();
@@ -189,6 +190,7 @@ mod tests {
             space: 4.0,
             dimension: 2,
             iterations: 20,
+            population: 100,
             c1: 2.0,
             c2: 2.0,
             inertia: 1.1,
