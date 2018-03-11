@@ -60,6 +60,14 @@ fn main() {
                 .help("Solution dimension size")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("population")
+                .short("p")
+                .long("population")
+                .value_name("population")
+                .help("Population size")
+                .takes_value(true),
+        )
         .subcommand(
             SubCommand::with_name("sa")
                 .about("simulated annealing")
@@ -144,6 +152,7 @@ fn main() {
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);
     let dimension = value_t!(matches, "dimension", i32).unwrap_or(2);
+    let population = value_t!(matches, "population", i32).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
     let test_function = match test_function_name.as_ref() {
@@ -155,8 +164,8 @@ fn main() {
     };
 
     println!(
-        "Max iterations: {}, Space: {}, Function: {}",
-        iterations, space, test_function_name
+        "Max iterations: {}, Space: {}, Function: {}, Population: {}",
+        iterations, space, test_function_name, population
     );
 
     let solutions = match matches.subcommand() {
@@ -204,7 +213,7 @@ fn main() {
                 space,
                 dimension,
                 iterations,
-                population: 50,
+                population,
                 n_kew,
                 beta,
                 similarity,
