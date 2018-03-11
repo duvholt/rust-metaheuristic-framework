@@ -1,6 +1,6 @@
 use solution::Solution;
 use rand::distributions::{IndependentSample, Range};
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
 #[derive(Debug)]
@@ -110,6 +110,15 @@ impl<'a> Worms<'a> {
             fitness,
         }
     }
+
+    fn random_other_worm(&self, worm_index: usize) -> Worm {
+        let mut rng = thread_rng();
+        let mut other_index = worm_index;
+        while other_index == worm_index {
+            other_index = rng.gen_range(0, self.config.population as usize);
+        }
+        self.population[other_index].clone()
+    }
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
@@ -121,13 +130,11 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
         let mut new_worms = vec![];
         for (worm_index, worm) in worms.population.iter().enumerate() {
             let offspring1 = worms.reproduction1(&worm);
-            // TODO: Remove
-            let offspring2 = worm.clone();
-            if worm_index < config.n_kew {
-                // Reproduction 2
+            let offspring2 = if worm_index < config.n_kew {
+                worms.random_other_worm(worm_index)
             } else {
-                // Select random from worms
-            }
+                worms.random_other_worm(worm_index)
+            };
             let new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             if worm_index < config.n_kew {
                 // Cauchy mutation
@@ -175,7 +182,7 @@ mod tests {
     #[test]
     fn reproduction1_generates_offspring() {
         let config = create_config();
-        let mut worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, &rosenbrock);
         let dimension = config.dimension as usize;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
 
@@ -190,7 +197,7 @@ mod tests {
     #[test]
     fn combines_worms_initial() {
         let config = create_config();
-        let mut worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, &rosenbrock);
         let dimension = config.dimension as usize;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
@@ -203,7 +210,7 @@ mod tests {
     #[test]
     fn combines_worms_iteration2() {
         let config = create_config();
-        let mut worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, &rosenbrock);
         let dimension = config.dimension as usize;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
@@ -211,5 +218,19 @@ mod tests {
         let combined = worms.combine_worms(&worm1, &worm2, 2);
 
         assert_eq!(combined.position, vec![1.19; dimension]);
+    }
+
+    #[test]
+    fn selects_random_other_worm() {
+        let mut config = create_config();
+        config.population = 3;
+        let mut worms = Worms::new(&config, &rosenbrock);
+        worms.population = worms.generate_population(config.population);
+        let worm_index = 1;
+
+        let other_worm = worms.random_other_worm(worm_index);
+
+        let initial_worm = worms.population[worm_index].clone();
+        assert!(other_worm != initial_worm, "Other worm {:?} should not equal initial worm {:?}", other_worm, initial_worm);
     }
 }
