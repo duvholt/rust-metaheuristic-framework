@@ -10,7 +10,13 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(start_t: f64, cooldown: f64, iterations: i64, space: f64, dimension: usize) -> Config {
+    pub fn new(
+        start_t: f64,
+        cooldown: f64,
+        iterations: i64,
+        space: f64,
+        dimension: usize,
+    ) -> Config {
         return Config {
             start_t,
             cooldown,
