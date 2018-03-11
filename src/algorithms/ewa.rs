@@ -5,13 +5,13 @@ use std::cmp::Ordering;
 
 #[derive(Debug)]
 pub struct Config {
-    space: f64,
-    dimension: i32,
-    iterations: i64,
-    population: i32,
-    n_kew: usize,
-    beta: f64,
-    similarity: f64,
+    pub space: f64,
+    pub dimension: i32,
+    pub iterations: i64,
+    pub population: i32,
+    pub n_kew: usize,
+    pub beta: f64,
+    pub similarity: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -131,6 +131,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
         for (worm_index, worm) in worms.population.iter().enumerate() {
             let offspring1 = worms.reproduction1(&worm);
             let offspring2 = if worm_index < config.n_kew {
+                // TODO: Reproduction 2
                 worms.random_other_worm(worm_index)
             } else {
                 worms.random_other_worm(worm_index)
@@ -231,6 +232,11 @@ mod tests {
         let other_worm = worms.random_other_worm(worm_index);
 
         let initial_worm = worms.population[worm_index].clone();
-        assert!(other_worm != initial_worm, "Other worm {:?} should not equal initial worm {:?}", other_worm, initial_worm);
+        assert!(
+            other_worm != initial_worm,
+            "Other worm {:?} should not equal initial worm {:?}",
+            other_worm,
+            initial_worm
+        );
     }
 }
