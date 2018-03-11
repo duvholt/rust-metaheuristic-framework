@@ -7,6 +7,7 @@ use rustoa::test_functions;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
+use rustoa::algorithms::ewa;
 use rustoa::solution::{Solution, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
@@ -113,6 +114,31 @@ fn main() {
                         .takes_value(true),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("ewa")
+                .about("earth worm optimization algorithm")
+                .arg(
+                    Arg::with_name("n_kew")
+                        .long("n-kew")
+                        .value_name("n_kew")
+                        .help("non-kept earth worms")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("beta")
+                        .long("beta")
+                        .value_name("beta")
+                        .help("beta constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("similarity")
+                        .long("similarity")
+                        .value_name("similarity")
+                        .help("similarity constant")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
 
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
@@ -164,6 +190,26 @@ fn main() {
                 inertia: 0.5,
             };
             pso::run(config, &test_function)
+        }
+        ("ewa", Some(sub_m)) => {
+            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(50);
+            let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
+            let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
+            println!(
+                "Running EWA with n_kew: {}, beta: {} similarity: {}",
+                n_kew, beta, similarity
+            );
+
+            let config = ewa::Config {
+                space,
+                dimension,
+                iterations,
+                population: 50,
+                n_kew,
+                beta,
+                similarity,
+            };
+            ewa::run(config, &test_function)
         }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
