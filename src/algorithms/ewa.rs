@@ -2,6 +2,7 @@ use solution::Solution;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
+use selection::{roulette_wheel, Fitness};
 
 #[derive(Debug)]
 pub struct Config {
@@ -23,6 +24,12 @@ struct Worm {
 impl PartialEq for Worm {
     fn eq(&self, other: &Worm) -> bool {
         self.position == other.position && self.fitness == other.fitness
+    }
+}
+
+impl Fitness for Worm {
+    fn fitness(&self) -> f64 {
+        self.fitness
     }
 }
 
@@ -97,6 +104,51 @@ impl<'a> Worms<'a> {
         }
     }
 
+    fn reproduction2(&self) -> Worm {
+        let parent1 = roulette_wheel(&self.population);
+        let worms_without_parent1: Vec<Worm> = self.population
+            .iter()
+            .cloned()
+            .filter(|p| p != parent1)
+            .collect();
+        println!(
+            "{:?}, {}",
+            worms_without_parent1.len(),
+            self.population.len()
+        );
+        let parent2 = roulette_wheel(&self.population);
+
+        // uniform crossover
+        let mut pos1 = vec![];
+        let mut pos2 = vec![];
+        let mut rng = thread_rng();
+        for j in 0..self.config.dimension as usize {
+            let r = rng.next_f64();
+            let p1j = parent1.position[j];
+            let p2j = parent2.position[j];
+            if r > 0.5 {
+                pos1.push(p1j);
+                pos2.push(p2j);
+            } else {
+                pos1.push(p2j);
+                pos2.push(p1j);
+            }
+        }
+
+        let f1 = self.calculate_fitness(&pos1);
+        let f2 = self.calculate_fitness(&pos2);
+
+        let w1 = f2 / (f1 + f2);
+        let w2 = f1 / (f1 + f2);
+
+        let mut position = vec![];
+        for j in 0..self.config.dimension as usize {
+            position.push(w1 * pos1[j] + w2 * pos2[j]);
+        }
+        let fitness = self.calculate_fitness(&position);
+        Worm { position, fitness }
+    }
+
     fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
         let mut new_position = vec![];
@@ -122,7 +174,6 @@ impl<'a> Worms<'a> {
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
-    println!("Running Earth Worm Optimization. Example: {:?}", config);
     let mut worms = Worms::new(&config, &test_function);
     worms.population = worms.generate_population(config.population);
     for iteration in 0..config.iterations {
@@ -131,8 +182,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
         for (worm_index, worm) in worms.population.iter().enumerate() {
             let offspring1 = worms.reproduction1(&worm);
             let offspring2 = if worm_index < config.n_kew {
-                // TODO: Reproduction 2
-                worms.random_other_worm(worm_index)
+                worms.reproduction2()
             } else {
                 worms.random_other_worm(worm_index)
             };
