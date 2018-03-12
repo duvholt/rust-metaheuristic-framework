@@ -4,21 +4,21 @@ pub trait Fitness {
     fn fitness(&self) -> f64;
 }
 
-pub fn roulette_wheel<F>(population: &[F]) -> &F
+pub fn roulette_wheel<F>(population: &[F]) -> (usize, &F)
 where
     F: Fitness,
 {
     let mut rng = thread_rng();
     let weight_sum: f64 = population.iter().map(|p| p.fitness()).sum();
     let mut threshold = rng.next_f64() * weight_sum;
-    for p in population {
+    for (p_i, p) in population.iter().enumerate() {
         threshold -= p.fitness();
         if threshold < 0.0 {
-            return p;
+            return (p_i, p);
         }
     }
     // Return last element if none was selected because of float arithmetic
-    population.last().unwrap()
+    (population.len() - 1, population.last().unwrap())
 }
 
 #[cfg(test)]
@@ -49,7 +49,8 @@ mod tests {
         let fitness3 = TestFitness { fitness: 1.0 };
         let population = vec![fitness1.clone(), fitness2.clone(), fitness3.clone()];
 
-        let selected = roulette_wheel(&population).clone();
+        let (index, selected) = roulette_wheel(&population).clone();
+        assert_eq!(index, 2);
         assert_eq!(selected, fitness3);
     }
 
@@ -60,7 +61,8 @@ mod tests {
         let fitness3 = TestFitness { fitness: 0.0 };
         let population = vec![fitness1.clone(), fitness2.clone(), fitness3.clone()];
 
-        let selected = roulette_wheel(&population).clone();
+        let (index, selected) = roulette_wheel(&population).clone();
+        assert_eq!(index, 1);
         assert_eq!(selected, fitness2);
     }
 }
