@@ -3,6 +3,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 use selection::{roulette_wheel, Fitness};
+use distribution::cauchy;
 
 #[derive(Debug)]
 pub struct Config {
@@ -171,6 +172,24 @@ impl<'a> Worms<'a> {
         }
         self.population[other_index].clone()
     }
+
+    fn cauchy_mutation(&self, worm: &Worm) -> Worm {
+        let population_size = self.population.len();
+        let mut rng = thread_rng();
+        let position = worm.position
+            .iter()
+            .enumerate()
+            .map(|(j, value)| {
+                println!("{} {}", j, value);
+                let sum_j: f64 = self.population.iter().map(|p| p.position[j as usize]).sum();
+                let average_j = sum_j / population_size as f64;
+                let r = rng.next_f64();
+                value + average_j * cauchy(r, 1.0)
+            })
+            .collect();
+        let fitness = self.calculate_fitness(&position);
+        Worm { position, fitness }
+    }
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
@@ -186,9 +205,9 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
             } else {
                 worms.random_other_worm(worm_index)
             };
-            let new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
-            if worm_index < config.n_kew {
-                // Cauchy mutation
+            let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
+            if worm_index > config.n_kew {
+                new_worm = worms.cauchy_mutation(&new_worm);
             }
             new_worms.push(new_worm);
         }
