@@ -183,10 +183,11 @@ impl<'a> Worms<'a> {
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
     let mut worms = Worms::new(&config, &test_function);
     worms.population = worms.generate_population(config.population);
+    let elites = 2;
     for iteration in 0..config.iterations {
         worms.sort_population();
         let mut new_worms = vec![];
-        for (worm_index, worm) in worms.population.iter().enumerate() {
+        for (worm_index, worm) in worms.population.iter().skip(elites).enumerate() {
             let offspring1 = worms.reproduction1(&worm);
             let offspring2 = if worm_index < config.n_kew {
                 worms.reproduction2()
@@ -199,7 +200,8 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
             }
             new_worms.push(new_worm);
         }
-        worms.population = new_worms;
+        worms.population = worms.population[..elites].to_vec();
+        worms.population.append(&mut new_worms);
     }
     worms.solutions()
 }
