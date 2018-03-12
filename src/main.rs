@@ -202,7 +202,7 @@ fn main() {
             pso::run(config, &test_function)
         }
         ("ewa", Some(sub_m)) => {
-            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(0);
+            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(population);
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
             let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
             println!(
