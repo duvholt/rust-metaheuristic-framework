@@ -11,7 +11,6 @@ pub struct Config {
     pub dimension: usize,
     pub iterations: i64,
     pub population: usize,
-    pub n_kew: usize,
     pub beta: f64,
     pub similarity: f64,
 }
@@ -186,21 +185,34 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
     for iteration in 0..config.iterations {
         worms.sort_population();
         let mut new_worms = vec![];
-        for (worm_index, worm) in worms.population.iter().skip(elites).enumerate() {
-            let offspring1 = worms.reproduction1(&worm);
-            let offspring2 = if worm_index < config.n_kew {
+        for (worm_index, worm) in worms.population.iter().enumerate() {
+            let offspring1 = worm.clone();
+            let offspring2 = if worm_index > elites {
                 worms.reproduction2()
             } else {
-                worms.random_other_worm(worm_index)
+                // worms.random_other_worm(worm_index)
+                worms.reproduction1(&worm)
             };
             let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
-            if worm_index > config.n_kew {
-                new_worm = worms.cauchy_mutation(&new_worm);
-            }
             new_worms.push(new_worm);
         }
+        // The following code was introduced when looking at the matlab version of EWA
+        // It does not seem to perform any better though
+        new_worms
+            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+        let mut rng = thread_rng();
+        for worm in &mut new_worms {
+            let r = rng.next_f64();
+            if 0.01 > r {
+                *worm = worms.cauchy_mutation(&worm);
+            }
+        }
+        new_worms
+            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
         worms.population = worms.population[..elites].to_vec();
-        worms.population.append(&mut new_worms);
+        worms
+            .population
+            .append(&mut new_worms[..config.population - elites].to_vec());
     }
     worms.solutions()
 }
@@ -216,7 +228,6 @@ mod tests {
             dimension: 2,
             iterations: 50,
             population: 50,
-            n_kew: 50,
             beta: 1.0,
             similarity: 0.98,
         }

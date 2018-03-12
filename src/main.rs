@@ -126,13 +126,6 @@ fn main() {
             SubCommand::with_name("ewa")
                 .about("earth worm optimization algorithm")
                 .arg(
-                    Arg::with_name("n_kew")
-                        .long("n-kew")
-                        .value_name("n_kew")
-                        .help("non-kept earth worms")
-                        .takes_value(true),
-                )
-                .arg(
                     Arg::with_name("beta")
                         .long("beta")
                         .value_name("beta")
@@ -202,20 +195,15 @@ fn main() {
             pso::run(config, &test_function)
         }
         ("ewa", Some(sub_m)) => {
-            let n_kew = value_t!(sub_m, "n_kew", usize).unwrap_or(population);
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
             let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
-            println!(
-                "Running EWA with n_kew: {}, beta: {} similarity: {}",
-                n_kew, beta, similarity
-            );
+            println!("Running EWA with beta: {} similarity: {}", beta, similarity);
 
             let config = ewa::Config {
                 space,
                 dimension,
                 iterations,
                 population,
-                n_kew,
                 beta,
                 similarity,
             };
