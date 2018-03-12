@@ -106,9 +106,8 @@ impl<'a> Worms<'a> {
     }
 
     fn reproduction2(&self) -> Worm {
-        let parent1 = roulette_wheel(&self.population);
-        // TODO: Prevent selecting the same parent
-        let parent2 = roulette_wheel(&self.population);
+        let (parent1index, parent1) = roulette_wheel(&self.population);
+        let parent2 = self.random_other_worm(parent1index);
 
         // uniform crossover
         let mut pos1 = vec![];
