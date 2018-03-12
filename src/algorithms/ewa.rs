@@ -152,11 +152,9 @@ impl<'a> Worms<'a> {
 
     fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
-        let mut new_position = vec![];
-        for j in 0..self.config.dimension {
-            let x_j = beta * worm1.position[j] + (1.0 - beta) * worm2.position[j];
-            new_position.push(x_j);
-        }
+        let new_position = (0..self.config.dimension)
+            .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
+            .collect();
         let fitness = self.calculate_fitness(&new_position);
         Worm {
             position: new_position,
