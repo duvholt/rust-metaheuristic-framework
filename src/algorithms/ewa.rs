@@ -107,16 +107,7 @@ impl<'a> Worms<'a> {
 
     fn reproduction2(&self) -> Worm {
         let parent1 = roulette_wheel(&self.population);
-        let worms_without_parent1: Vec<Worm> = self.population
-            .iter()
-            .cloned()
-            .filter(|p| p != parent1)
-            .collect();
-        println!(
-            "{:?}, {}",
-            worms_without_parent1.len(),
-            self.population.len()
-        );
+        // TODO: Prevent selecting the same parent
         let parent2 = roulette_wheel(&self.population);
 
         // uniform crossover
@@ -178,7 +169,6 @@ impl<'a> Worms<'a> {
             .iter()
             .enumerate()
             .map(|(j, value)| {
-                println!("{} {}", j, value);
                 let sum_j: f64 = self.population.iter().map(|p| p.position[j as usize]).sum();
                 let average_j = sum_j / population_size as f64;
                 let r = rng.next_f64();
