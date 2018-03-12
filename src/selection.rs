@@ -51,7 +51,7 @@ mod tests {
 
         let (index, selected) = roulette_wheel(&population).clone();
         assert_eq!(index, 2);
-        assert_eq!(selected, fitness3);
+        assert_eq!(selected, &fitness3);
     }
 
     #[test]
@@ -63,6 +63,6 @@ mod tests {
 
         let (index, selected) = roulette_wheel(&population).clone();
         assert_eq!(index, 1);
-        assert_eq!(selected, fitness2);
+        assert_eq!(selected, &fitness2);
     }
 }
