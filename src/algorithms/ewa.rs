@@ -1,7 +1,7 @@
-use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 use selection::roulette_wheel;
+use position::random_position;
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use distribution::cauchy;
 
@@ -57,11 +57,7 @@ impl<'a> Worms<'a> {
     }
 
     fn random_position(&self) -> Vec<f64> {
-        let between = Range::new(-self.config.space, self.config.space);
-        let mut rng = thread_rng();
-        (0..self.config.dimension)
-            .map(|_| between.ind_sample(&mut rng))
-            .collect()
+        random_position(-self.config.space, self.config.space, self.config.dimension)
     }
 
     fn create_worm(&self, position: Vec<f64>) -> Worm {
