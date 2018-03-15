@@ -2,7 +2,7 @@ use rand::distributions::{IndependentSample, Range};
 use rand;
 
 pub struct Neighbourhood<'a> {
-    dimonension: i32,
+    dimonension: usize,
     space: f64,
     rng: rand::ThreadRng,
     test_function: &'a Fn(&Vec<f64>) -> f64,
@@ -10,7 +10,7 @@ pub struct Neighbourhood<'a> {
 
 impl<'a> Neighbourhood<'a> {
     pub fn new(
-        dimonension: i32,
+        dimonension: usize,
         space: f64,
         test_function: &'a Fn(&Vec<f64>) -> f64,
     ) -> Neighbourhood {

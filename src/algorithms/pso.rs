@@ -9,8 +9,9 @@ type TestFunction = Fn(&Vec<f64>) -> f64;
 
 pub struct Config {
     pub space: f64,
-    pub dimension: i32,
+    pub dimension: usize,
     pub iterations: i64,
+    pub population: usize,
     pub c1: f64,
     pub c2: f64,
     pub inertia: f64,
@@ -53,7 +54,7 @@ impl<'a> Swarm<'a> {
         (self.test_function)(x)
     }
 
-    fn generate_population(&self, size: i32) -> Vec<Particle> {
+    fn generate_population(&self, size: usize) -> Vec<Particle> {
         (0..size)
             .map(|_| {
                 let position = self.random_position();
@@ -100,7 +101,7 @@ impl<'a> Swarm<'a> {
         let r2 = rng.next_f64();
         let mut velocity = vec![];
         let mut position = vec![];
-        for i in 0..self.config.dimension as usize {
+        for i in 0..self.config.dimension {
             let v = particle.velocity[i];
             let x = particle.position[i];
             let x_p = particle.pbest[i];
@@ -164,7 +165,7 @@ impl<'a> Swarm<'a> {
 
 pub fn run(config: Config, test_function: &TestFunction) -> Vec<Solution> {
     let mut swarm = Swarm::new(&config, &test_function);
-    swarm.population = swarm.generate_population(100);
+    swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
         swarm.update_leader();
@@ -189,6 +190,7 @@ mod tests {
             space: 4.0,
             dimension: 2,
             iterations: 20,
+            population: 100,
             c1: 2.0,
             c2: 2.0,
             inertia: 1.1,
@@ -211,7 +213,7 @@ mod tests {
 
         let position = swarm.random_position();
 
-        assert_eq!(position.len(), config.dimension as usize);
+        assert_eq!(position.len(), config.dimension);
         for coordinate in position {
             println!("{}", coordinate);
             assert!(
