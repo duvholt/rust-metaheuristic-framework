@@ -1,5 +1,5 @@
 use solution::{solutions_to_json, Solution, SolutionJSON};
-use rand::distributions::{IndependentSample, Range};
+use position::random_position;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
@@ -53,11 +53,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        let between = Range::new(-self.config.space, self.config.space);
-        let mut rng = thread_rng();
-        (0..self.config.dimension)
-            .map(|_| between.ind_sample(&mut rng))
-            .collect()
+        random_position(-self.config.space, self.config.space, self.config.dimension)
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
@@ -201,31 +197,6 @@ mod tests {
             velocity: vec![0.0, 1.0],
             pbest: vec![0.0, 1.0],
             fitness,
-        }
-    }
-
-    #[test]
-    fn creates_random_solution() {
-        let config = create_config();
-        let swarm = Swarm::new(&config, &rosenbrock);
-
-        let position = swarm.random_position();
-
-        assert_eq!(position.len(), config.dimension);
-        for coordinate in position {
-            println!("{}", coordinate);
-            assert!(
-                coordinate >= -config.space,
-                "Coordinate({}) is outside the allowed solution space({}!",
-                coordinate,
-                -config.space
-            );
-            assert!(
-                coordinate <= config.space,
-                "Coordinate({}) is outside the allowed solution space({}!",
-                coordinate,
-                config.space
-            );
         }
     }
 
