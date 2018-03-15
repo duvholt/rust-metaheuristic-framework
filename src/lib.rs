@@ -12,3 +12,5 @@ pub mod test_functions;
 pub mod algorithms;
 pub mod solution;
 pub mod domination;
+pub mod selection;
+pub mod distribution;

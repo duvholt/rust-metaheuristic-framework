@@ -7,6 +7,7 @@ use rustoa::test_functions;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
+use rustoa::algorithms::ewa;
 use rustoa::solution::{Solution, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
@@ -57,6 +58,14 @@ fn main() {
                 .long("dimension")
                 .value_name("dimension")
                 .help("Solution dimension size")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("population")
+                .short("p")
+                .long("population")
+                .value_name("population")
+                .help("Population size")
                 .takes_value(true),
         )
         .subcommand(
@@ -113,11 +122,30 @@ fn main() {
                         .takes_value(true),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("ewa")
+                .about("earth worm optimization algorithm")
+                .arg(
+                    Arg::with_name("beta")
+                        .long("beta")
+                        .value_name("beta")
+                        .help("beta constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("similarity")
+                        .long("similarity")
+                        .value_name("similarity")
+                        .help("similarity constant")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
 
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);
-    let dimension = value_t!(matches, "dimension", i32).unwrap_or(2);
+    let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
+    let population = value_t!(matches, "population", usize).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
     let test_function = match test_function_name.as_ref() {
@@ -129,8 +157,8 @@ fn main() {
     };
 
     println!(
-        "Max iterations: {}, Space: {}, Function: {}",
-        iterations, space, test_function_name
+        "Max iterations: {}, Space: {}, Function: {}, Population: {}",
+        iterations, space, test_function_name, population
     );
 
     let solutions = match matches.subcommand() {
@@ -159,11 +187,27 @@ fn main() {
                 space,
                 dimension,
                 iterations,
+                population,
                 c1: 0.3,
                 c2: 0.5,
                 inertia: 0.5,
             };
             pso::run(config, &test_function)
+        }
+        ("ewa", Some(sub_m)) => {
+            let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
+            let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
+            println!("Running EWA with beta: {} similarity: {}", beta, similarity);
+
+            let config = ewa::Config {
+                space,
+                dimension,
+                iterations,
+                population,
+                beta,
+                similarity,
+            };
+            ewa::run(config, &test_function)
         }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
