@@ -1,4 +1,4 @@
-use solution::SolutionJSON;
+use solution::{solutions_to_json, Solution, SolutionJSON};
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
@@ -23,6 +23,16 @@ struct Particle {
     pbest: Position,
     fitness: f64,
     velocity: Velocity,
+}
+
+impl Solution for Particle {
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn position(&self) -> Vec<f64> {
+        self.position.to_vec()
+    }
 }
 
 struct Swarm<'a> {
@@ -78,21 +88,9 @@ impl<'a> Swarm<'a> {
     }
 
     pub fn solutions(&self) -> Vec<SolutionJSON> {
-        let mut solutions: Vec<SolutionJSON> = self.population
-            .iter()
-            .map(|particle| SolutionJSON {
-                x: particle.position.to_vec(),
-                fitness: particle.fitness,
-            })
-            .collect();
-        let leader = self.get_leader();
-        solutions.push(SolutionJSON {
-            x: leader.position,
-            fitness: leader.fitness,
-        });
-        solutions
-            .sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
-        solutions
+        let mut solutions = self.population.to_vec();
+        solutions.push(self.get_leader());
+        solutions_to_json(solutions)
     }
 
     fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
