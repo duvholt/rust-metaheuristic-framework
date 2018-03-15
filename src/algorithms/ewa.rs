@@ -2,7 +2,8 @@ use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
-use selection::{roulette_wheel, Fitness};
+use selection::{roulette_wheel};
+use solution::Solution;
 use distribution::cauchy;
 
 #[derive(Debug)]
@@ -27,9 +28,13 @@ impl PartialEq for Worm {
     }
 }
 
-impl Fitness for Worm {
+impl Solution for Worm {
     fn fitness(&self) -> f64 {
         self.fitness
+    }
+
+    fn position(&self) -> Vec<f64> {
+        self.position.to_vec()
     }
 }
 
