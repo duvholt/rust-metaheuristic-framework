@@ -15,3 +15,8 @@ impl SolutionJSON {
         SolutionJSON { x, fitness }
     }
 }
+
+pub trait Solution {
+    fn position(&self) -> Vec<f64>;
+    fn fitness(&self) -> f64;
+}
