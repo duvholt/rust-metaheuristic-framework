@@ -1,9 +1,8 @@
-use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
-use selection::{roulette_wheel};
-use solution::Solution;
+use selection::roulette_wheel;
+use solution::{solutions_to_json, Solution, SolutionJSON};
 use distribution::cauchy;
 
 #[derive(Debug)]
@@ -74,19 +73,6 @@ impl<'a> Worms<'a> {
         (0..size)
             .map(|_| self.create_worm(self.random_position()))
             .collect()
-    }
-
-    pub fn solutions(&self) -> Vec<SolutionJSON> {
-        let mut solutions: Vec<SolutionJSON> = self.population
-            .iter()
-            .map(|worm| SolutionJSON {
-                x: worm.position.to_vec(),
-                fitness: worm.fitness,
-            })
-            .collect();
-        solutions
-            .sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
-        solutions
     }
 
     fn sort_population(&mut self) {
@@ -219,7 +205,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
             .population
             .append(&mut new_worms[..config.population - elites].to_vec());
     }
-    worms.solutions()
+    solutions_to_json(worms.population)
 }
 
 #[cfg(test)]
