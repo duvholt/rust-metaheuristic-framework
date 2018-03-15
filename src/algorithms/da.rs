@@ -1,3 +1,18 @@
+#[cfg(windows)]
+#[link(name = "msvcrt")]
+extern "C" {
+    fn tgamma(x: f64) -> f64;
+}
+
+#[cfg(not(windows))]
+#[link(name = "m")]
+extern "C" {
+    fn tgamma(x: f64) -> f64;
+}
+fn gamma(x: f64) -> f64 {
+    unsafe { tgamma(x) }
+}
+
 use solution::Solution;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
@@ -68,7 +83,7 @@ impl<'a> Swarm<'a> {
         if current_iteration == 1 {
             return self.config.space * 2.0;
         } else {
-            let w = (current_iteration as f64 / self.config.iterations as f64);
+            let w = current_iteration as f64 / self.config.iterations as f64;
             let core_best = find_vector_max_value(&core_dandelion.position);
             let current_best = find_vector_max_value(&current_dandelion.position);
             return w * prev_radius + (core_best - current_best);
@@ -200,6 +215,11 @@ mod tests {
 
         assert_eq!(swarm.calculate_number_of_seeds(50.0, 100.0, 10.0), 56);
         assert_eq!(swarm.calculate_number_of_seeds(95.9, 100.0, 10.0), 10);
+    }
+
+    #[test]
+    fn gamma_function_test() {
+        assert_eq!(4.0 * 3.0 * 2.0 * 1.0, gamma(5.0));
     }
 
     #[bench]
