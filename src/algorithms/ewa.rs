@@ -1,4 +1,4 @@
-use solution::Solution;
+use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
@@ -71,10 +71,10 @@ impl<'a> Worms<'a> {
             .collect()
     }
 
-    pub fn solutions(&self) -> Vec<Solution> {
-        let mut solutions: Vec<Solution> = self.population
+    pub fn solutions(&self) -> Vec<SolutionJSON> {
+        let mut solutions: Vec<SolutionJSON> = self.population
             .iter()
-            .map(|worm| Solution {
+            .map(|worm| SolutionJSON {
                 x: worm.position.to_vec(),
                 fitness: worm.fitness,
             })
@@ -178,7 +178,7 @@ impl<'a> Worms<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let mut worms = Worms::new(&config, &test_function);
     worms.population = worms.generate_population(config.population);
     let elites = 2;

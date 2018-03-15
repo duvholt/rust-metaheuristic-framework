@@ -8,12 +8,12 @@ use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
-use rustoa::solution::{Solution, Solutions};
+use rustoa::solution::{SolutionJSON, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
 use std::io::prelude::*;
 
-fn write_solutions(filename: &str, solutions: Vec<Solution>, test_function: String) {
+fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);
     let mut file = File::create(filename).unwrap();
     let solutions_struct = Solutions {

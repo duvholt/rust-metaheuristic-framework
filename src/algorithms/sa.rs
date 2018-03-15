@@ -1,4 +1,4 @@
-use solution::Solution;
+use solution::SolutionJSON;
 use rand;
 use rand::{thread_rng, Rng};
 use rand::distributions::{IndependentSample, Range};
@@ -50,14 +50,14 @@ impl<'a> Neighbourhood<'a> {
         };
     }
 
-    pub fn random_solution(&self) -> Solution {
+    pub fn random_solution(&self) -> SolutionJSON {
         let between = Range::new(-self.space, self.space);
         let mut rng = rand::thread_rng();
         let x = (0..self.dimonension)
             .map(|_| between.ind_sample(&mut rng))
             .collect();
         let fitness = self.calculate_fitness(&x);
-        Solution::new(x, fitness)
+        SolutionJSON::new(x, fitness)
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
@@ -73,18 +73,18 @@ impl<'a> Neighbourhood<'a> {
         between.ind_sample(&mut self.rng)
     }
 
-    pub fn find(&mut self, solution: &Solution) -> Solution {
+    pub fn find(&mut self, solution: &SolutionJSON) -> SolutionJSON {
         let x = solution
             .x
             .iter()
             .map(|x| self.single_dimension_neighbour(x))
             .collect();
         let fitness = self.calculate_fitness(&x);
-        Solution::new(x, fitness)
+        SolutionJSON::new(x, fitness)
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let mut t = config.start_t;
     let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, &test_function);
     let mut current = neighbourhood.random_solution();

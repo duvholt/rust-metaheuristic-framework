@@ -1,4 +1,4 @@
-use solution::Solution;
+use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
@@ -77,16 +77,16 @@ impl<'a> Swarm<'a> {
             .cloned()
     }
 
-    pub fn solutions(&self) -> Vec<Solution> {
-        let mut solutions: Vec<Solution> = self.population
+    pub fn solutions(&self) -> Vec<SolutionJSON> {
+        let mut solutions: Vec<SolutionJSON> = self.population
             .iter()
-            .map(|particle| Solution {
+            .map(|particle| SolutionJSON {
                 x: particle.position.to_vec(),
                 fitness: particle.fitness,
             })
             .collect();
         let leader = self.get_leader();
-        solutions.push(Solution {
+        solutions.push(SolutionJSON {
             x: leader.position,
             fitness: leader.fitness,
         });
@@ -163,7 +163,7 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &TestFunction) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &TestFunction) -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, &test_function);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
