@@ -2,6 +2,7 @@ use solution::{solutions_to_json, MultiSolution, SolutionJSON};
 use position::random_position;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use domination::{dominates, find_non_dominated};
 
 type Position = Vec<f64>;
@@ -16,6 +17,9 @@ pub struct Config {
     pub c1: f64,
     pub c2: f64,
     pub inertia: f64,
+    pub archive_size: usize,
+    pub divisions: usize,
+    pub mutation_rate: f64,
 }
 
 #[derive(Clone)]
@@ -36,11 +40,45 @@ impl MultiSolution for Particle {
     }
 }
 
+struct Archive<'a, M: 'a>
+where
+    M: MultiSolution,
+{
+    population: Vec<M>,
+    hypercube_map: HashMap<(usize, usize), Vec<&'a M>>,
+    population_size: usize,
+    divisions: usize,
+}
+
+impl<'a> Archive<'a, Particle> {
+    fn new(population_size: usize, divisions: usize) -> Archive<'a, Particle> {
+        Archive {
+            population: vec![],
+            hypercube_map: HashMap::new(),
+            population_size,
+            divisions,
+        }
+    }
+
+    fn update(&mut self, population: &Vec<Particle>) {
+        let non_dominated = find_non_dominated(&population);
+        let nd_population = non_dominated
+            .iter()
+            .map(|p_i| population[*p_i].clone())
+            .collect();
+        self.population = nd_population;
+    }
+
+    fn select_leader(&self) -> &Particle {
+        self.population.first().unwrap()
+    }
+}
+
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Particle>,
     test_function: &'a MultiTestFunction,
-    leaders: Vec<Particle>,
+    archive: Archive<'a, Particle>,
 }
 
 impl<'a> Swarm<'a> {
@@ -49,7 +87,7 @@ impl<'a> Swarm<'a> {
             config,
             population: vec![],
             test_function,
-            leaders: vec![],
+            archive: Archive::new(config.archive_size, config.divisions),
         }
     }
 
@@ -75,13 +113,6 @@ impl<'a> Swarm<'a> {
                 }
             })
             .collect()
-    }
-
-    fn find_leader(population: &Vec<Particle>) -> Option<Particle> {
-        population
-            .iter()
-            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal))
-            .cloned()
     }
 
     // pub fn solutions(&self) -> Vec<SolutionJSON> {
@@ -131,26 +162,21 @@ impl<'a> Swarm<'a> {
     }
 
     fn update_positions(&mut self) {
-        // TODO: Properly select
-        let leader = &self.leaders[0];
+        let leader = self.archive.select_leader();
         self.population = self.population
             .iter()
             .map(|particle| self.particle_move(particle, &leader))
             .collect();
     }
-
-    fn find_leaders(&self) -> Vec<Particle> {
-        let non_dominated = find_non_dominated(&self.population);
-        non_dominated.iter().map(|p_i| self.population[*p_i].clone()).collect()
-    }
 }
 
-pub fn run(config: Config, test_function: &'static MultiTestFunction) { // -> Vec<SolutionJSON> {
+pub fn run(config: Config, test_function: &'static MultiTestFunction) {
+    // -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, &test_function);
     swarm.population = swarm.generate_population(config.population);
-    swarm.leaders = swarm.find_leaders();
     let mut i = 0;
     while i < config.iterations {
+        swarm.archive.update(&swarm.population);
         swarm.update_positions();
         i += 1;
     }
@@ -168,10 +194,13 @@ mod tests {
             space: 4.0,
             dimension: 2,
             iterations: 20,
-            population: 100,
+            population: 50,
+            archive_size: 50,
+            divisions: 30,
             c1: 2.0,
             c2: 2.0,
             inertia: 1.1,
+            mutation_rate: 0.5,
         }
     }
 
@@ -197,28 +226,21 @@ mod tests {
     #[bench]
     fn bench_move(b: &mut Bencher) {
         let config = create_config();
-        let swarm = Swarm {
-            population: vec![
-                create_particle_with_fitness(1.0),
-                create_particle_with_fitness(0.1),
-            ],
-            leaders: vec![create_particle_with_fitness(0.1)],
-            config: &config,
-            test_function: &multi_dummy,
-        };
+        let population = vec![
+            create_particle_with_fitness(1.0),
+            create_particle_with_fitness(0.1),
+        ];
+        let mut swarm = Swarm::new(&config, &multi_dummy);
+        swarm.population = population;
         let particle = create_particle_with_fitness(2.0);
-        // TODO: Properly select
-        let leader = &swarm.leaders[0];
+        let leader = create_particle_with_fitness(0.01);
         b.iter(|| {
             swarm.particle_move(&particle, &leader);
         });
     }
 
     #[bench]
-    fn bench_pso(b: &mut Bencher) {
-        b.iter(|| {
-            let config = create_config();
-            run(config, &multi_dummy);
-        });
+    fn bench_run(b: &mut Bencher) {
+        b.iter(|| run(create_config(), &multi_dummy));
     }
 }
