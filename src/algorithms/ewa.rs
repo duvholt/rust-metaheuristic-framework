@@ -1,8 +1,8 @@
-use solution::Solution;
-use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
-use selection::{roulette_wheel, Fitness};
+use selection::roulette_wheel;
+use position::random_position;
+use solution::{solutions_to_json, Solution, SolutionJSON};
 use distribution::cauchy;
 
 #[derive(Debug)]
@@ -27,9 +27,13 @@ impl PartialEq for Worm {
     }
 }
 
-impl Fitness for Worm {
+impl Solution for Worm {
     fn fitness(&self) -> f64 {
         self.fitness
+    }
+
+    fn position(&self) -> Vec<f64> {
+        self.position.to_vec()
     }
 }
 
@@ -53,11 +57,7 @@ impl<'a> Worms<'a> {
     }
 
     fn random_position(&self) -> Vec<f64> {
-        let between = Range::new(-self.config.space, self.config.space);
-        let mut rng = thread_rng();
-        (0..self.config.dimension)
-            .map(|_| between.ind_sample(&mut rng))
-            .collect()
+        random_position(-self.config.space, self.config.space, self.config.dimension)
     }
 
     fn create_worm(&self, position: Vec<f64>) -> Worm {
@@ -69,19 +69,6 @@ impl<'a> Worms<'a> {
         (0..size)
             .map(|_| self.create_worm(self.random_position()))
             .collect()
-    }
-
-    pub fn solutions(&self) -> Vec<Solution> {
-        let mut solutions: Vec<Solution> = self.population
-            .iter()
-            .map(|worm| Solution {
-                x: worm.position.to_vec(),
-                fitness: worm.fitness,
-            })
-            .collect();
-        solutions
-            .sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
-        solutions
     }
 
     fn sort_population(&mut self) {
@@ -178,7 +165,7 @@ impl<'a> Worms<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let mut worms = Worms::new(&config, &test_function);
     worms.population = worms.generate_population(config.population);
     let elites = 2;
@@ -214,7 +201,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
             .population
             .append(&mut new_worms[..config.population - elites].to_vec());
     }
-    worms.solutions()
+    solutions_to_json(worms.population)
 }
 
 #[cfg(test)]
