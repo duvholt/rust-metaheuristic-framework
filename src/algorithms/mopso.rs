@@ -50,8 +50,11 @@ where
     divisions: usize,
 }
 
-impl<'a> Archive<'a, Particle> {
-    fn new(population_size: usize, divisions: usize) -> Archive<'a, Particle> {
+impl<'a, M> Archive<'a, M>
+where
+    M: MultiSolution + Clone,
+{
+    fn new(population_size: usize, divisions: usize) -> Archive<'a, M> {
         Archive {
             population: vec![],
             hypercube_map: HashMap::new(),
@@ -60,7 +63,7 @@ impl<'a> Archive<'a, Particle> {
         }
     }
 
-    fn update(&mut self, population: &Vec<Particle>) {
+    fn update(&mut self, population: &Vec<M>) {
         let non_dominated = find_non_dominated(&population);
         let nd_population = non_dominated
             .iter()
@@ -69,7 +72,7 @@ impl<'a> Archive<'a, Particle> {
         self.population = nd_population;
     }
 
-    fn select_leader(&self) -> &Particle {
+    fn select_leader(&self) -> &M {
         self.population.first().unwrap()
     }
 }
