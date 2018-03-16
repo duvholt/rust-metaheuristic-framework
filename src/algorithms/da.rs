@@ -14,9 +14,10 @@ fn gamma(x: f64) -> f64 {
 }
 
 use solution::Solution;
-use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{IndependentSample, Range, Sample};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
+use std::f64;
 
 pub struct Config {
     pub iterations: i64,
@@ -114,6 +115,19 @@ fn find_vector_max_value(vec: &Vec<f64>) -> f64 {
         .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal))
         .cloned()
         .unwrap()
+}
+
+fn levy_flight(beta: f64) {
+    let numerator = gamma(1.0 + beta) * (f64::consts::PI / 2.0).sin();
+    let denominator = gamma((1.0 + beta) / 2.0) * beta * 2.0_f64.powf((beta - 1.0) / 2.0);
+    let sigma = (numerator / denominator).powf(1.0 / beta);
+
+    let mut between = Range::new(0.0, sigma.powi(2));
+    let mut rng = thread_rng();
+    let u = between.sample(&mut rng);
+    let v = rng.next_f64();
+
+    (u / v.abs().powf(1.0 / beta));
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
