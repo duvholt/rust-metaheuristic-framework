@@ -1,4 +1,4 @@
-use solution::Solution;
+use solution::SolutionJSON;
 
 pub struct Config {
     example: f64,
@@ -10,9 +10,9 @@ impl Config {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     println!("Running dummy solver. Example: {}", config.example);
     vec![
-        Solution::new(vec![0.0, 0.0], (test_function)(&vec![0.0, 0.0])),
+        SolutionJSON::new(vec![0.0, 0.0], (test_function)(&vec![0.0, 0.0])),
     ]
 }

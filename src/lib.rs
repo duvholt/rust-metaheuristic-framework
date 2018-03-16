@@ -14,3 +14,4 @@ pub mod solution;
 pub mod domination;
 pub mod selection;
 pub mod distribution;
+pub mod position;

@@ -1,12 +1,9 @@
 use rand::{thread_rng, Rng};
+use solution::Solution;
 
-pub trait Fitness {
-    fn fitness(&self) -> f64;
-}
-
-pub fn roulette_wheel<F>(population: &[F]) -> (usize, &F)
+pub fn roulette_wheel<S>(population: &[S]) -> (usize, &S)
 where
-    F: Fitness,
+    S: Solution,
 {
     let mut rng = thread_rng();
     let weight_sum: f64 = population.iter().map(|p| p.fitness()).sum();
@@ -36,9 +33,13 @@ mod tests {
         }
     }
 
-    impl Fitness for TestFitness {
+    impl Solution for TestFitness {
         fn fitness(&self) -> f64 {
             self.fitness
+        }
+
+        fn position(&self) -> Vec<f64> {
+            vec![self.fitness, self.fitness]
         }
     }
 
