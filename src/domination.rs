@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use solution::MultiSolution;
 
 pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
     let mut equal = true;
@@ -12,15 +13,18 @@ pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
     return !equal;
 }
 
-pub fn find_non_dominated(solutions: &Vec<Vec<f64>>) -> HashSet<usize> {
+pub fn find_non_dominated<M>(solutions: &Vec<M>) -> HashSet<usize>
+where
+    M: MultiSolution,
+{
     let mut non_dominated = HashSet::new();
     for (p_i, p) in solutions.iter().enumerate() {
         let mut dominated = false;
         non_dominated.retain(|&q_i| {
-            let q = &solutions[q_i];
-            if dominates(&p, &q) {
+            let q: &M = &solutions[q_i];
+            if dominates(&p.fitness(), &q.fitness()) {
                 return false;
-            } else if !dominated && dominates(&q, &p) {
+            } else if !dominated && dominates(&q.fitness(), &p.fitness()) {
                 dominated = true;
             }
             return true;
@@ -77,9 +81,32 @@ mod tests {
         assert!(!a_dominates_b);
     }
 
+    struct TestMultiSolution {
+        fitness: Vec<f64>,
+    }
+
+    impl MultiSolution for TestMultiSolution {
+        fn fitness(&self) -> &Vec<f64> {
+            &self.fitness
+        }
+
+        fn position(&self) -> &Vec<f64> {
+            &self.fitness
+        }
+    }
+
+    fn vec_to_multi_solution(solutions: Vec<Vec<f64>>) -> Vec<TestMultiSolution> {
+        solutions
+            .iter()
+            .map(|solution| TestMultiSolution {
+                fitness: solution.to_vec(),
+            })
+            .collect()
+    }
+
     #[test]
     fn finds_non_dominated() {
-        let solutions = vec![
+        let solutions = vec_to_multi_solution(vec![
             vec![3.0, 4.0], // 0, dominated
             vec![1.0, 5.0], // 1, non-dominated
             vec![2.0, 2.0], // 2, non-dominated
@@ -87,7 +114,7 @@ mod tests {
             vec![3.0, 3.0], // 4, dominated
             vec![4.0, 1.5], // 5, non-dominated
             vec![4.0, 5.0], // 6, dominated
-        ];
+        ]);
 
         let non_dominated_indexes = find_non_dominated(&solutions);
 
@@ -97,7 +124,7 @@ mod tests {
 
     #[bench]
     fn bench_non_dominated(b: &mut Bencher) {
-        let solutions = vec![
+        let solutions = vec_to_multi_solution(vec![
             vec![3.0, 4.0],
             vec![1.0, 5.0],
             vec![2.0, 2.0],
@@ -105,7 +132,7 @@ mod tests {
             vec![3.0, 3.0],
             vec![4.0, 1.5],
             vec![4.0, 5.0],
-        ];
+        ]);
 
         b.iter(|| find_non_dominated(&solutions))
     }

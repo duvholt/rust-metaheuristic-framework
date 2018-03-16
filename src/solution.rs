@@ -23,6 +23,11 @@ pub trait Solution {
     fn fitness(&self) -> f64;
 }
 
+pub trait MultiSolution {
+    fn position(&self) -> &Vec<f64>;
+    fn fitness(&self) -> &Vec<f64>;
+}
+
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
 where
     S: Solution,
