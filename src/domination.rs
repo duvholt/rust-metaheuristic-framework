@@ -13,7 +13,7 @@ pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
     return !equal;
 }
 
-pub fn find_non_dominated<M>(solutions: &Vec<M>) -> HashSet<usize>
+pub fn find_non_dominated<M>(solutions: &[M]) -> HashSet<usize>
 where
     M: MultiSolution,
 {

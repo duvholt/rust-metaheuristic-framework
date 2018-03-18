@@ -65,13 +65,19 @@ where
         }
     }
 
-    pub fn update(&mut self, population: &Vec<M>) {
-        let non_dominated = find_non_dominated(&population);
-        let nd_population = non_dominated
+    pub fn update(&mut self, population: &[M]) {
+        let mut super_population = population.to_vec();
+        super_population.append(&mut self.population);
+        // TODO: Implement proper population limit
+        let population_slice = if super_population.len() > self.population_size {
+            &super_population[..self.population_size]
+        } else {
+            &super_population[..]
+        };
+        self.population = find_non_dominated(&population_slice)
             .iter()
-            .map(|p_i| population[*p_i].clone())
+            .map(|p_i| super_population[*p_i].clone())
             .collect();
-        self.population = nd_population;
         self.update_hypercube();
     }
 
@@ -139,6 +145,49 @@ mod tests {
         ];
 
         archive.update(&population);
+
+        let mut map = HashMap::new();
+        let indices: Vec<_> = population
+            .iter()
+            .map(|ref solution| find_archive_index(&archive, &solution))
+            .collect();
+        map.insert(vec![0, 4], hashmap_value(vec![0], &indices));
+        map.insert(vec![1, 3], hashmap_value(vec![1, 2], &indices));
+        map.insert(vec![2, 2], hashmap_value(vec![3, 4], &indices));
+        map.insert(vec![3, 1], hashmap_value(vec![5], &indices));
+        map.insert(vec![4, 0], hashmap_value(vec![6], &indices));
+        assert_eq!(archive.hypercube_map, map);
+    }
+
+    #[test]
+    fn updates_correctly() {
+        let mut archive: Archive<TestSolution> = Archive::new(7, 5);
+        let population = vec![
+            TestSolution {
+                fitness: vec![0.0, 5.0],
+            },
+            TestSolution {
+                fitness: vec![1.5, 3.9],
+            },
+            TestSolution {
+                fitness: vec![1.8, 3.5],
+            },
+            TestSolution {
+                fitness: vec![2.2, 2.8],
+            },
+            TestSolution {
+                fitness: vec![2.8, 2.2],
+            },
+            TestSolution {
+                fitness: vec![3.5, 1.5],
+            },
+            TestSolution {
+                fitness: vec![5.0, 0.0],
+            },
+        ];
+
+        archive.update(&population[..3]);
+        archive.update(&population[3..]);
 
         let mut map = HashMap::new();
         let indices: Vec<_> = population
