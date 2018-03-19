@@ -13,6 +13,6 @@ impl Config {
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     println!("Running dummy solver. Example: {}", config.example);
     vec![
-        SolutionJSON::new(vec![0.0, 0.0], (test_function)(&vec![0.0, 0.0])),
+        SolutionJSON::new(vec![0.0, 0.0], vec![(test_function)(&vec![0.0, 0.0])]),
     ]
 }

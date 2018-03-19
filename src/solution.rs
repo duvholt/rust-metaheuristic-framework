@@ -9,11 +9,11 @@ pub struct Solutions {
 #[derive(Serialize, Clone)]
 pub struct SolutionJSON {
     pub x: Vec<f64>,
-    pub fitness: f64,
+    pub fitness: Vec<f64>,
 }
 
 impl SolutionJSON {
-    pub fn new(x: Vec<f64>, fitness: f64) -> SolutionJSON {
+    pub fn new(x: Vec<f64>, fitness: Vec<f64>) -> SolutionJSON {
         SolutionJSON { x, fitness }
     }
 }
@@ -36,9 +36,13 @@ where
         .iter()
         .map(|solution| SolutionJSON {
             x: solution.position(),
-            fitness: solution.fitness(),
+            fitness: vec![solution.fitness()],
         })
         .collect();
-    solutions.sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
+    solutions.sort_unstable_by(|a, b| {
+        b.fitness[0]
+            .partial_cmp(&a.fitness[0])
+            .unwrap_or(Ordering::Equal)
+    });
     solutions
 }
