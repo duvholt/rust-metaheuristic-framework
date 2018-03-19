@@ -144,9 +144,11 @@ impl<'a> Swarm<'a> {
 
 pub fn run(config: Config, test_function: &'static MultiTestFunction) -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, &test_function);
+    println!("{:?}", config);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
+        println!("Iteration {} Archive size {}", i, swarm.archive.population.len());
         swarm.archive.update(&swarm.population);
         swarm.update_positions();
         i += 1;

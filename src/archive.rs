@@ -4,6 +4,7 @@ use std::f64::INFINITY;
 use domination::find_non_dominated;
 use selection::roulette_wheel;
 use rand::{thread_rng, Rng};
+use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone)]
 struct Hypercube {
@@ -15,6 +16,12 @@ impl Hypercube {
         Hypercube {
             set: HashSet::new(),
         }
+    }
+
+    fn random(&self) -> usize {
+        let mut rng = thread_rng();
+        let hypercube_vec: Vec<usize> = self.set.iter().cloned().collect();
+        *rng.choose(&hypercube_vec).unwrap()
     }
 }
 
@@ -40,7 +47,7 @@ where
 
 impl<M> Archive<M>
 where
-    M: MultiSolution + Clone,
+    M: MultiSolution + Clone + Debug,
 {
     pub fn new(population_size: usize, divisions: usize) -> Archive<M> {
         Archive {
@@ -90,29 +97,31 @@ where
         }
     }
 
+    fn prune_population(&mut self) {
+        while self.population.len() > self.population_size {
+            let hypercube: &mut Hypercube = self.hypercube_map.values_mut().max_by(|ref h1, ref h2| h1.set.len().cmp(&h2.set.len())).unwrap();
+            let solution_index = hypercube.random();
+            self.population.remove(solution_index);
+            hypercube.set.remove(&solution_index);
+        }
+    }
+
     pub fn update(&mut self, population: &[M]) {
         let mut super_population = population.to_vec();
         super_population.append(&mut self.population);
-        // TODO: Implement proper population limit
-        let population_slice = if super_population.len() > self.population_size {
-            thread_rng().shuffle(&mut super_population);
-            &super_population[..self.population_size]
-        } else {
-            &super_population[..]
-        };
-        self.population = find_non_dominated(&population_slice)
+        thread_rng().shuffle(&mut super_population);
+        self.population = find_non_dominated(&super_population)
             .iter()
             .map(|p_i| super_population[*p_i].clone())
             .collect();
+        self.prune_population();
         self.update_hypercube();
     }
 
     pub fn select_leader(&self) -> &M {
         let hypercubes: Vec<Hypercube> = self.hypercube_map.values().cloned().collect();
         let (_, hypercube) = roulette_wheel(&hypercubes[..]);
-        let mut rng = thread_rng();
-        let hypercube_vec: Vec<usize> = hypercube.set.iter().cloned().collect();
-        let leader_index = *rng.choose(&hypercube_vec).unwrap();
+        let leader_index = hypercube.random();
         &self.population[leader_index]
     }
 }
@@ -121,7 +130,7 @@ where
 mod tests {
     use super::*;
 
-    #[derive(Clone, PartialEq)]
+    #[derive(Clone, PartialEq, Debug)]
     struct TestSolution {
         fitness: Vec<f64>,
     }
