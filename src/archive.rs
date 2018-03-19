@@ -99,7 +99,10 @@ where
 
     fn prune_population(&mut self) {
         while self.population.len() > self.population_size {
-            let hypercube: &mut Hypercube = self.hypercube_map.values_mut().max_by(|ref h1, ref h2| h1.set.len().cmp(&h2.set.len())).unwrap();
+            let hypercube: &mut Hypercube = self.hypercube_map
+                .values_mut()
+                .max_by(|ref h1, ref h2| h1.set.len().cmp(&h2.set.len()))
+                .unwrap();
             let solution_index = hypercube.random();
             self.population.remove(solution_index);
             hypercube.set.remove(&solution_index);

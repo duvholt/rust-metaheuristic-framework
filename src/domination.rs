@@ -136,11 +136,7 @@ mod tests {
 
     #[test]
     fn finds_non_dominated_equal() {
-        let solutions = vec_to_multi_solution(vec![
-            vec![0.0, 1.0],
-            vec![0.0, 1.0],
-            vec![0.0, 1.0],
-        ]);
+        let solutions = vec_to_multi_solution(vec![vec![0.0, 1.0], vec![0.0, 1.0], vec![0.0, 1.0]]);
 
         let non_dominated_indexes = find_non_dominated(&solutions);
 

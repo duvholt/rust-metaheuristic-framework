@@ -60,7 +60,11 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        random_position(self.config.lower_space, self.config.upper_space, self.config.dimension)
+        random_position(
+            self.config.lower_space,
+            self.config.upper_space,
+            self.config.dimension,
+        )
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> Vec<f64> {
@@ -158,7 +162,11 @@ pub fn run(config: Config, test_function: &'static MultiTestFunction) -> Vec<Sol
     let mut i = 0;
     while i < config.iterations {
         if config.verbose {
-            println!("Iteration {} Archive size {}", i, swarm.archive.population.len());
+            println!(
+                "Iteration {} Archive size {}",
+                i,
+                swarm.archive.population.len()
+            );
         }
         swarm.archive.update(&swarm.population);
         swarm.update_positions();
