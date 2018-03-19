@@ -8,8 +8,10 @@ type Position = Vec<f64>;
 type Velocity = Position;
 type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
 
+#[derive(Debug)]
 pub struct Config {
-    pub space: f64,
+    pub upper_space: f64,
+    pub lower_space: f64,
     pub dimension: usize,
     pub iterations: i64,
     pub population: usize,
@@ -21,7 +23,7 @@ pub struct Config {
     pub mutation_rate: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Particle {
     position: Position,
     pbest: Position,
@@ -57,7 +59,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        random_position(-self.config.space, self.config.space, self.config.dimension)
+        random_position(self.config.lower_space, self.config.upper_space, self.config.dimension)
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> Vec<f64> {
@@ -100,14 +102,19 @@ impl<'a> Swarm<'a> {
             let mut new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
                 + self.config.c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
-            if new_v + x > self.config.space {
+            if new_v + x > self.config.upper_space {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = self.config.space;
-            } else if (new_v + x) < -self.config.space {
+                new_x = self.config.upper_space;
+            } else if (new_v + x) < self.config.lower_space {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = -self.config.space;
+                new_x = self.config.lower_space;
+            }
+            if new_v > 100.0 {
+                new_v = 100.0;
+            } else if new_v < -100.0 {
+                new_v = -100.0;
             }
             velocity.push(new_v);
             position.push(new_x);
@@ -155,7 +162,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            space: 4.0,
+            upper_space: 4.0,
+            lower_space: -4.0,
             dimension: 2,
             iterations: 20,
             population: 50,
