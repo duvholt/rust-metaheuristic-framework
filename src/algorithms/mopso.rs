@@ -92,7 +92,26 @@ impl<'a> Swarm<'a> {
         multi_solutions_to_json(solutions)
     }
 
-    fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
+    fn mutate(&self, position: &Vec<f64>, pm: f64) -> Vec<f64> {
+        let diff_position = pm * (self.config.upper_space - self.config.lower_space);
+        let mut rng = thread_rng();
+        let j: usize = rng.gen_range(0, self.config.dimension);
+
+        let mut lb = position[j] - diff_position;
+        if lb < self.config.lower_space {
+            lb = self.config.lower_space;
+        }
+
+        let mut ub = position[j] + diff_position;
+        if ub > self.config.upper_space {
+            ub = self.config.upper_space;
+        }
+        let mut mutated_position = position.to_vec();
+        mutated_position[j] = rng.gen_range(lb, ub);
+        mutated_position
+    }
+
+    fn particle_move(&self, particle: &Particle, leader: &Particle, iteration: i64) -> Particle {
         let mut rng = thread_rng();
         let mut velocity = vec![];
         let mut position = vec![];
@@ -124,7 +143,33 @@ impl<'a> Swarm<'a> {
             velocity.push(new_v);
             position.push(new_x);
         }
-        let fitness = self.calculate_fitness(&position);
+        let mut fitness = self.calculate_fitness(&position);
+        // Mutate particle
+        let pm = (1.0 - (iteration as f64 / self.config.iterations as f64))
+            .powf(1.0 / self.config.mutation_rate);
+        if rng.next_f64() < pm {
+            let mutated_position = self.mutate(&position, pm);
+            let mutated_fitness = self.calculate_fitness(&mutated_position);
+            if dominates(&mutated_fitness, &fitness) {
+                if self.config.verbose {
+                    println!(
+                        "Improved solution with mutation. old: {:?} new: {:?}",
+                        fitness, mutated_fitness
+                    );
+                }
+                position = mutated_position;
+                fitness = mutated_fitness;
+            } else if rng.next_f64() > 0.5 && !dominates(&fitness, &mutated_fitness) {
+                if self.config.verbose {
+                    println!(
+                        "Randomly selected mutation. old: {:?} new: {:?}",
+                        fitness, mutated_fitness
+                    );
+                }
+                position = mutated_position;
+                fitness = mutated_fitness;
+            }
+        }
         // Select the dominating particle as pbest
         let pbest = if dominates(&fitness, &particle.fitness) {
             position.clone()
@@ -132,7 +177,7 @@ impl<'a> Swarm<'a> {
             particle.pbest.clone()
         } else {
             // If neither dominates the other select randomly
-            let r = thread_rng().next_f64();
+            let r = rng.next_f64();
             if r > 0.5 {
                 position.clone()
             } else {
@@ -147,11 +192,11 @@ impl<'a> Swarm<'a> {
         }
     }
 
-    fn update_positions(&mut self) {
+    fn update_positions(&mut self, iteration: i64) {
         let leader = self.archive.select_leader();
         self.population = self.population
             .iter()
-            .map(|particle| self.particle_move(particle, &leader))
+            .map(|particle| self.particle_move(particle, &leader, iteration))
             .collect();
     }
 }
@@ -169,7 +214,7 @@ pub fn run(config: Config, test_function: &'static MultiTestFunction) -> Vec<Sol
             );
         }
         swarm.archive.update(&swarm.population);
-        swarm.update_positions();
+        swarm.update_positions(i);
         i += 1;
     }
     swarm.solutions()
@@ -229,7 +274,7 @@ mod tests {
         let particle = create_particle_with_fitness(2.0);
         let leader = create_particle_with_fitness(0.01);
         b.iter(|| {
-            swarm.particle_move(&particle, &leader);
+            swarm.particle_move(&particle, &leader, 0);
         });
     }
 
