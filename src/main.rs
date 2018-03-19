@@ -222,7 +222,7 @@ fn main() {
     };
 
     if let Some(solution) = solutions.last() {
-        println!("Final solution: ({:?}) {}", solution.x, solution.fitness);
+        println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
     }
 
     write_solutions("solutions.json", solutions, test_function_name);
