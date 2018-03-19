@@ -94,11 +94,11 @@ impl<'a> Swarm<'a> {
 
     fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
         let mut rng = thread_rng();
-        let r1 = rng.next_f64();
-        let r2 = rng.next_f64();
         let mut velocity = vec![];
         let mut position = vec![];
         for i in 0..self.config.dimension {
+            let r1 = rng.next_f64();
+            let r2 = rng.next_f64();
             let v = particle.velocity[i];
             let x = particle.position[i];
             let x_p = particle.pbest[i];
