@@ -244,9 +244,9 @@ fn main() {
             pso::run(config, &test_function)
         }
         ("mopso", Some(sub_m)) => {
-            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
+            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
             let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
-            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(1.1);
+            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
             let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(population);
             let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
             let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.5);
