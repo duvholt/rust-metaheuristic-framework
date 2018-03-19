@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
 use domination::find_non_dominated;
 use selection::roulette_wheel;
+use rand::{thread_rng, Rng};
 
 #[derive(Debug, PartialEq, Clone)]
 struct Hypercube {
@@ -14,10 +15,6 @@ impl Hypercube {
         Hypercube {
             set: HashSet::new(),
         }
-    }
-
-    fn from_set(set: HashSet<usize>) -> Hypercube {
-        Hypercube { set }
     }
 }
 
@@ -112,8 +109,10 @@ where
     pub fn select_leader(&self) -> &M {
         let hypercubes: Vec<Hypercube> = self.hypercube_map.values().cloned().collect();
         let (_, hypercube) = roulette_wheel(&hypercubes[..]);
-        println!("{:?}", hypercube);
-        &self.population[10]
+        let mut rng = thread_rng();
+        let hypercube_vec: Vec<usize> = hypercube.set.iter().cloned().collect();
+        let leader_index = *rng.choose(&hypercube_vec).unwrap();
+        &self.population[leader_index]
     }
 }
 
@@ -145,7 +144,9 @@ mod tests {
     }
 
     fn hashmap_value(value: Vec<usize>, indices: &Vec<usize>) -> Hypercube {
-        Hypercube::from_set(value.iter().map(|&v| indices[v]).collect())
+        Hypercube {
+            set: value.iter().map(|&v| indices[v]).collect(),
+        }
     }
 
     #[test]
