@@ -22,7 +22,9 @@ where
         let mut dominated = false;
         non_dominated.retain(|&q_i| {
             let q: &M = &solutions[q_i];
-            if dominates(&p.fitness(), &q.fitness()) {
+            if &p.fitness() == &q.fitness() {
+                return false;
+            } else if dominates(&p.fitness(), &q.fitness()) {
                 return false;
             } else if !dominated && dominates(&q.fitness(), &p.fitness()) {
                 dominated = true;
@@ -65,6 +67,16 @@ mod tests {
     fn dominates_equal() {
         let a = vec![0.1, 0.2, 0.3];
         let b = vec![0.1, 0.2, 0.3];
+
+        let a_dominates_b = dominates(&a, &b);
+
+        assert!(!a_dominates_b);
+    }
+
+    #[test]
+    fn dominates_equal2() {
+        let a = vec![1.0, 0.0];
+        let b = vec![1.0, 0.0];
 
         let a_dominates_b = dominates(&a, &b);
 
@@ -120,6 +132,19 @@ mod tests {
 
         let expected: HashSet<_> = [1, 2, 3, 5].iter().cloned().collect();
         assert_eq!(non_dominated_indexes, expected);
+    }
+
+    #[test]
+    fn finds_non_dominated_equal() {
+        let solutions = vec_to_multi_solution(vec![
+            vec![0.0, 1.0],
+            vec![0.0, 1.0],
+            vec![0.0, 1.0],
+        ]);
+
+        let non_dominated_indexes = find_non_dominated(&solutions);
+
+        assert_eq!(non_dominated_indexes.len(), 1);
     }
 
     #[bench]
