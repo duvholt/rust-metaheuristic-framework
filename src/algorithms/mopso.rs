@@ -124,8 +124,9 @@ impl<'a> Swarm<'a> {
             let x_l = leader.position[i];
 
             let inertia = self.config.inertia.powf(iteration as f64);
-            let mut new_v = inertia * v + self.config.c1 * r1 * (x_p - x)
-                + self.config.c2 * r2 * (x_l - x);
+            let c1 = self.config.c1;
+            let c2 = self.config.c2;
+            let mut new_v = inertia * v + c1 * r1 * (x_p - x) + c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
             if new_v + x > self.config.upper_space {
                 // Bound hit, move in opposite direction
