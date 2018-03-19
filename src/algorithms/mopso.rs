@@ -120,10 +120,19 @@ impl<'a> Swarm<'a> {
             position.push(new_x);
         }
         let fitness = self.calculate_fitness(&position);
+        // Select the dominating particle as pbest
         let pbest = if dominates(&fitness, &particle.fitness) {
             position.clone()
-        } else {
+        } else if dominates(&particle.fitness, &fitness) {
             particle.pbest.clone()
+        } else {
+            // If neither dominates the other select randomly
+            let r = thread_rng().next_f64();
+            if r > 0.5 {
+                position.clone()
+            } else {
+                particle.pbest.clone()
+            }
         };
         Particle {
             position,
