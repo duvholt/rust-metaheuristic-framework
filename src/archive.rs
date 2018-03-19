@@ -95,6 +95,7 @@ where
         super_population.append(&mut self.population);
         // TODO: Implement proper population limit
         let population_slice = if super_population.len() > self.population_size {
+            thread_rng().shuffle(&mut super_population);
             &super_population[..self.population_size]
         } else {
             &super_population[..]
