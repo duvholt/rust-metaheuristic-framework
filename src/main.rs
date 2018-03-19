@@ -162,10 +162,10 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("divisons")
-                        .long("divisons")
-                        .value_name("divisons")
-                        .help("number of archive divisons")
+                    Arg::with_name("divisions")
+                        .long("divisions")
+                        .value_name("divisions")
+                        .help("number of archive divisions")
                         .takes_value(true),
                 )
                 .arg(
