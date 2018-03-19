@@ -123,7 +123,8 @@ impl<'a> Swarm<'a> {
             let x_p = particle.pbest[i];
             let x_l = leader.position[i];
 
-            let mut new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
+            let inertia = self.config.inertia.powf(iteration as f64);
+            let mut new_v = inertia * v + self.config.c1 * r1 * (x_p - x)
                 + self.config.c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
             if new_v + x > self.config.upper_space {
