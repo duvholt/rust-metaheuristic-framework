@@ -69,6 +69,12 @@ fn main() {
                 .help("Population size")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .help("Verbose output"),
+        )
         .subcommand(
             SubCommand::with_name("sa")
                 .about("simulated annealing")
@@ -191,6 +197,7 @@ fn main() {
         )
         .get_matches();
 
+    let verbose = matches.is_present("verbose");
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
     let space = value_t!(matches, "space", f64).unwrap_or(4.0);
     let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
@@ -267,6 +274,7 @@ fn main() {
                 archive_size,
                 divisions,
                 mutation_rate,
+                verbose,
             };
             mopso::run(config, &test_functions::zdt1)
         }
