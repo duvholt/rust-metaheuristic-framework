@@ -46,3 +46,16 @@ where
     });
     solutions
 }
+
+pub fn multi_solutions_to_json<M>(population: Vec<M>) -> Vec<SolutionJSON>
+where
+    M: MultiSolution,
+{
+    population
+        .iter()
+        .map(|solution| SolutionJSON {
+            x: solution.position().to_vec(),
+            fitness: solution.fitness().to_vec(),
+        })
+        .collect()
+}
