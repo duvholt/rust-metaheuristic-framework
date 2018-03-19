@@ -256,7 +256,8 @@ fn main() {
             );
 
             let config = mopso::Config {
-                space,
+                lower_space: 0.0,
+                upper_space: 1.0,
                 dimension,
                 iterations,
                 population,
@@ -267,7 +268,7 @@ fn main() {
                 divisions,
                 mutation_rate,
             };
-            mopso::run(config, &test_functions::schaffer)
+            mopso::run(config, &test_functions::zdt1)
         }
         ("ewa", Some(sub_m)) => {
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);

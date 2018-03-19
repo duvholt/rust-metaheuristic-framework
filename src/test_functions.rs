@@ -53,6 +53,15 @@ pub fn schaffer(x: &Vec<f64>) -> Vec<f64> {
     vec![x[0].powf(2.0), (x[0] - 2.0).powf(2.0)]
 }
 
+pub fn zdt1(x: &Vec<f64>) -> Vec<f64> {
+    let f1 = x[0];
+    let sum: f64 = x.iter().skip(1).sum();
+    let g = 1.0 + (9.0 / (x.len() as f64 - 1.0)) * sum;
+    let h = 1.0 - (f1 / g).sqrt();
+    let f2 = g * h;
+    vec![f1, f2]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
