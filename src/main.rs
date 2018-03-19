@@ -267,7 +267,7 @@ fn main() {
                 divisions,
                 mutation_rate,
             };
-            mopso::run(config, &test_functions::multi_dummy)
+            mopso::run(config, &test_functions::schaffer)
         }
         ("ewa", Some(sub_m)) => {
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
