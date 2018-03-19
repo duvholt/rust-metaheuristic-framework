@@ -256,7 +256,7 @@ fn main() {
             let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
             let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(population);
             let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
-            let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.5);
+            let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
             println!(
                 "Running MOPSO with C1: {}, C2: {} inertia: {}",
                 c1, c2, inertia
