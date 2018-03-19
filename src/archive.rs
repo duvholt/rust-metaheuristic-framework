@@ -32,7 +32,7 @@ pub struct Archive<M>
 where
     M: MultiSolution,
 {
-    population: Vec<M>,
+    pub population: Vec<M>,
     hypercube_map: HashMap<Vec<usize>, Hypercube>,
     population_size: usize,
     divisions: usize,

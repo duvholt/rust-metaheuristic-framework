@@ -1,4 +1,4 @@
-use solution::{solutions_to_json, MultiSolution, SolutionJSON};
+use solution::{multi_solutions_to_json, MultiSolution, SolutionJSON};
 use position::random_position;
 use rand::{thread_rng, Rng};
 use domination::dominates;
@@ -80,10 +80,10 @@ impl<'a> Swarm<'a> {
             .collect()
     }
 
-    // pub fn solutions(&self) -> Vec<SolutionJSON> {
-    //     let solutions = self.leaders.to_vec();
-    //     solutions_to_json(solutions)
-    // }
+    pub fn solutions(&self) -> Vec<SolutionJSON> {
+        let solutions = self.archive.population.to_vec();
+        multi_solutions_to_json(solutions)
+    }
 
     fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
         let mut rng = thread_rng();
@@ -135,8 +135,7 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &'static MultiTestFunction) {
-    // -> Vec<SolutionJSON> {
+pub fn run(config: Config, test_function: &'static MultiTestFunction) -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, &test_function);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
@@ -145,7 +144,7 @@ pub fn run(config: Config, test_function: &'static MultiTestFunction) {
         swarm.update_positions();
         i += 1;
     }
-    //swarm.solutions()
+    swarm.solutions()
 }
 
 #[cfg(test)]
