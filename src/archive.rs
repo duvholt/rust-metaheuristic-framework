@@ -1,14 +1,42 @@
-use solution::MultiSolution;
+use solution::{MultiSolution, Solution};
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
 use domination::find_non_dominated;
+use selection::roulette_wheel;
+
+#[derive(Debug, PartialEq, Clone)]
+struct Hypercube {
+    set: HashSet<usize>,
+}
+
+impl Hypercube {
+    fn new() -> Hypercube {
+        Hypercube {
+            set: HashSet::new(),
+        }
+    }
+
+    fn from_set(set: HashSet<usize>) -> Hypercube {
+        Hypercube { set }
+    }
+}
+
+impl Solution for Hypercube {
+    fn fitness(&self) -> f64 {
+        10.0 / self.set.len() as f64
+    }
+
+    fn position(&self) -> Vec<f64> {
+        vec![]
+    }
+}
 
 pub struct Archive<M>
 where
     M: MultiSolution,
 {
     population: Vec<M>,
-    hypercube_map: HashMap<Vec<usize>, HashSet<usize>>,
+    hypercube_map: HashMap<Vec<usize>, Hypercube>,
     population_size: usize,
     divisions: usize,
 }
@@ -60,8 +88,8 @@ where
                 .collect();
             let hypercube = self.hypercube_map
                 .entry(hyper_indices)
-                .or_insert(HashSet::new());
-            hypercube.insert(s_i);
+                .or_insert(Hypercube::new());
+            hypercube.set.insert(s_i);
         }
     }
 
@@ -82,7 +110,10 @@ where
     }
 
     pub fn select_leader(&self) -> &M {
-        self.population.first().unwrap()
+        let hypercubes: Vec<Hypercube> = self.hypercube_map.values().cloned().collect();
+        let (_, hypercube) = roulette_wheel(&hypercubes[..]);
+        println!("{:?}", hypercube);
+        &self.population[10]
     }
 }
 
@@ -113,8 +144,8 @@ mod tests {
             .unwrap()
     }
 
-    fn hashmap_value(value: Vec<usize>, indices: &Vec<usize>) -> HashSet<usize> {
-        value.iter().map(|&v| indices[v]).collect()
+    fn hashmap_value(value: Vec<usize>, indices: &Vec<usize>) -> Hypercube {
+        Hypercube::from_set(value.iter().map(|&v| indices[v]).collect())
     }
 
     #[test]
