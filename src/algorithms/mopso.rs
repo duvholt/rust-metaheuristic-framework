@@ -137,11 +137,6 @@ impl<'a> Swarm<'a> {
                 new_v *= -1.0;
                 new_x = self.config.lower_space;
             }
-            if new_v > 100.0 {
-                new_v = 100.0;
-            } else if new_v < -100.0 {
-                new_v = -100.0;
-            }
             velocity.push(new_v);
             position.push(new_x);
         }
