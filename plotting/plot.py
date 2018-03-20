@@ -19,7 +19,7 @@ if len(json_solutions['solutions'][0]['x']) > 2:
 
 solutions = np.array(list(
     map(lambda s: [*s['x'][:2],
-                   float(s['fitness'])], json_solutions['solutions'])
+                   float(s['fitness'][0])], json_solutions['solutions'])
 ))
 
 max_x, max_y, _ = solutions.max(axis=0)
