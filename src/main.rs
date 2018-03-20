@@ -35,7 +35,14 @@ fn main() {
                 .value_name("test_function")
                 .help("Name of test function")
                 .required(true)
-                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov", "zdt1", "schaffer1"])
+                .possible_values(&[
+                    "ackley",
+                    "himmelblau",
+                    "rosenbrock",
+                    "zakharov",
+                    "zdt1",
+                    "schaffer1",
+                ])
                 .takes_value(true),
         )
         .arg(
