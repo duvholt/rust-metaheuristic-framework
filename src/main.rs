@@ -35,7 +35,7 @@ fn main() {
                 .value_name("test_function")
                 .help("Name of test function")
                 .required(true)
-                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov", "zdt1"])
+                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov", "zdt1", "schaffer1"])
                 .takes_value(true),
         )
         .arg(
@@ -211,6 +211,7 @@ fn main() {
         "ackley" => TestFunctionVar::Single(test_functions::ackley),
         "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
         "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
+        "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
         _ => panic!("Test function does not exist"),
     };
 
