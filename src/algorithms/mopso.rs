@@ -10,8 +10,8 @@ type Velocity = Position;
 
 #[derive(Debug)]
 pub struct Config {
-    pub upper_space: f64,
-    pub lower_space: f64,
+    pub upper_bound: f64,
+    pub lower_bound: f64,
     pub dimension: usize,
     pub iterations: i64,
     pub population: usize,
@@ -61,8 +61,8 @@ impl<'a> Swarm<'a> {
 
     fn random_position(&self) -> Position {
         random_position(
-            self.config.lower_space,
-            self.config.upper_space,
+            self.config.lower_bound,
+            self.config.upper_bound,
             self.config.dimension,
         )
     }
@@ -93,18 +93,18 @@ impl<'a> Swarm<'a> {
     }
 
     fn mutate(&self, position: &Vec<f64>, pm: f64) -> Vec<f64> {
-        let diff_position = pm * (self.config.upper_space - self.config.lower_space);
+        let diff_position = pm * (self.config.upper_bound - self.config.lower_bound);
         let mut rng = thread_rng();
         let j: usize = rng.gen_range(0, self.config.dimension);
 
         let mut lb = position[j] - diff_position;
-        if lb < self.config.lower_space {
-            lb = self.config.lower_space;
+        if lb < self.config.lower_bound {
+            lb = self.config.lower_bound;
         }
 
         let mut ub = position[j] + diff_position;
-        if ub > self.config.upper_space {
-            ub = self.config.upper_space;
+        if ub > self.config.upper_bound {
+            ub = self.config.upper_bound;
         }
         let mut mutated_position = position.to_vec();
         mutated_position[j] = rng.gen_range(lb, ub);
@@ -128,14 +128,14 @@ impl<'a> Swarm<'a> {
             let c2 = self.config.c2;
             let mut new_v = inertia * v + c1 * r1 * (x_p - x) + c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
-            if new_v + x > self.config.upper_space {
+            if new_v + x > self.config.upper_bound {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = self.config.upper_space;
-            } else if (new_v + x) < self.config.lower_space {
+                new_x = self.config.upper_bound;
+            } else if (new_v + x) < self.config.lower_bound {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = self.config.lower_space;
+                new_x = self.config.lower_bound;
             }
             velocity.push(new_v);
             position.push(new_x);
@@ -225,8 +225,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            upper_space: 4.0,
-            lower_space: -4.0,
+            upper_bound: 4.0,
+            lower_bound: -4.0,
             dimension: 2,
             iterations: 20,
             population: 50,
