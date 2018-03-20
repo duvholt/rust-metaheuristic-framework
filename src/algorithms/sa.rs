@@ -29,7 +29,13 @@ impl Config {
     }
 }
 
-pub struct Neighbourhood<'a> {
+#[derive(Clone)]
+struct SASolution {
+    x: Vec<f64>,
+    fitness: f64,
+}
+
+struct Neighbourhood<'a> {
     dimonension: usize,
     space: f64,
     rng: rand::ThreadRng,
@@ -37,7 +43,7 @@ pub struct Neighbourhood<'a> {
 }
 
 impl<'a> Neighbourhood<'a> {
-    pub fn new(
+    fn new(
         dimonension: usize,
         space: f64,
         test_function: &'a Fn(&Vec<f64>) -> f64,
@@ -50,14 +56,14 @@ impl<'a> Neighbourhood<'a> {
         };
     }
 
-    pub fn random_solution(&self) -> SolutionJSON {
+    fn random_solution(&self) -> SASolution {
         let between = Range::new(-self.space, self.space);
         let mut rng = rand::thread_rng();
         let x = (0..self.dimonension)
             .map(|_| between.ind_sample(&mut rng))
             .collect();
         let fitness = self.calculate_fitness(&x);
-        SolutionJSON::new(x, fitness)
+        SASolution { x, fitness }
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
@@ -73,14 +79,14 @@ impl<'a> Neighbourhood<'a> {
         between.ind_sample(&mut self.rng)
     }
 
-    pub fn find(&mut self, solution: &SolutionJSON) -> SolutionJSON {
+    fn find(&mut self, solution: &SASolution) -> SASolution {
         let x = solution
             .x
             .iter()
             .map(|x| self.single_dimension_neighbour(x))
             .collect();
         let fitness = self.calculate_fitness(&x);
-        SolutionJSON::new(x, fitness)
+        SASolution { x, fitness }
     }
 }
 
@@ -130,6 +136,12 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
     );
     solutions.push(best);
     solutions
+        .iter()
+        .map(|ref s| SolutionJSON {
+            x: s.x.to_vec(),
+            fitness: vec![s.fitness],
+        })
+        .collect()
 }
 
 #[cfg(test)]

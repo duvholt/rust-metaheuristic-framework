@@ -1,5 +1,29 @@
 use std::f64::consts;
 
+pub type SingleTestFunction = Fn(&Vec<f64>) -> f64;
+pub type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
+
+type SingleTestFunctionVar = fn(&Vec<f64>) -> f64;
+type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
+pub enum TestFunctionVar {
+    Single(SingleTestFunctionVar),
+    Multi(MultiTestFunctionVar),
+}
+
+pub fn get_single(test_function_var: TestFunctionVar) -> SingleTestFunctionVar {
+    match test_function_var {
+        TestFunctionVar::Single(f) => f,
+        _ => panic!("Algorithm only supports single objective functions"),
+    }
+}
+
+pub fn get_multi(test_function_var: TestFunctionVar) -> MultiTestFunctionVar {
+    match test_function_var {
+        TestFunctionVar::Multi(f) => f,
+        _ => panic!("Algorithm only supports single objective functions"),
+    }
+}
+
 pub fn ackley(x: &Vec<f64>) -> f64 {
     let a = 20.0;
     let b = 0.2;
@@ -43,6 +67,23 @@ pub fn himmelblau(x: &Vec<f64>) -> f64 {
     let x_1 = x[0];
     let x_2 = x[1];
     return (x_1.powf(2.0) + x_2 - 11.0).powf(2.0) + (x_1 + x_2.powf(2.0) - 7.0).powf(2.0);
+}
+
+pub fn multi_dummy(x: &Vec<f64>) -> Vec<f64> {
+    x.to_vec()
+}
+
+pub fn schaffer1(x: &Vec<f64>) -> Vec<f64> {
+    vec![x[0].powf(2.0), (x[0] - 2.0).powf(2.0)]
+}
+
+pub fn zdt1(x: &Vec<f64>) -> Vec<f64> {
+    let f1 = x[0];
+    let sum: f64 = x.iter().skip(1).sum();
+    let g = 1.0 + (9.0 / (x.len() as f64 - 1.0)) * sum;
+    let h = 1.0 - (f1 / g).sqrt();
+    let f2 = g * h;
+    vec![f1, f2]
 }
 
 #[cfg(test)]
