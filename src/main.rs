@@ -47,11 +47,19 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("space")
-                .short("s")
-                .long("space")
-                .value_name("space")
-                .help("Solution space size")
+            Arg::with_name("upper_bound")
+                .short("u")
+                .long("ub")
+                .value_name("upper_bound")
+                .help("Upper bound solution space")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("lower_bound")
+                .short("l")
+                .long("lb")
+                .value_name("lower_bound")
+                .help("Lower bound solution space")
                 .takes_value(true),
         )
         .arg(
@@ -200,7 +208,8 @@ fn main() {
 
     let verbose = matches.is_present("verbose");
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
-    let space = value_t!(matches, "space", f64).unwrap_or(4.0);
+    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
+    let lower_bound = value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound);
     let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
     let population = value_t!(matches, "population", usize).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
@@ -216,8 +225,8 @@ fn main() {
     };
 
     println!(
-        "Max iterations: {}, Space: {}, Function: {}, Population: {}",
-        iterations, space, test_function_name, population
+        "Max iterations: {}, Upper bound: {}, Lower bound: {}, Function: {}, Population: {}",
+        iterations, upper_bound, lower_bound, test_function_name, population
     );
 
     let solutions = match matches.subcommand() {
@@ -229,7 +238,7 @@ fn main() {
                 "Running SA with start T: {}, cooldown: {}",
                 start_t, cooldown
             );
-            let config = sa::Config::new(start_t, cooldown, iterations, space, dimension);
+            let config = sa::Config::new(start_t, cooldown, iterations, upper_bound, dimension);
 
             sa::run(config, &test_functions::get_single(test_function))
         }
@@ -243,7 +252,7 @@ fn main() {
             );
 
             let config = pso::Config {
-                space,
+                space: upper_bound,
                 dimension,
                 iterations,
                 population,
@@ -266,8 +275,8 @@ fn main() {
             );
 
             let config = mopso::Config {
-                lower_space: 0.0,
-                upper_space: 1.0,
+                upper_bound,
+                lower_bound,
                 dimension,
                 iterations,
                 population,
@@ -287,7 +296,7 @@ fn main() {
             println!("Running EWA with beta: {} similarity: {}", beta, similarity);
 
             let config = ewa::Config {
-                space,
+                space: upper_bound,
                 dimension,
                 iterations,
                 population,
