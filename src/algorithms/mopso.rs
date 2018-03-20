@@ -3,10 +3,10 @@ use position::random_position;
 use rand::{thread_rng, Rng};
 use domination::dominates;
 use archive::Archive;
+use test_functions::MultiTestFunction;
 
 type Position = Vec<f64>;
 type Velocity = Position;
-type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
 
 #[derive(Debug)]
 pub struct Config {
@@ -198,8 +198,8 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &'static MultiTestFunction) -> Vec<SolutionJSON> {
-    let mut swarm = Swarm::new(&config, &test_function);
+pub fn run(config: Config, test_function: &MultiTestFunction) -> Vec<SolutionJSON> {
+    let mut swarm = Swarm::new(&config, test_function);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {

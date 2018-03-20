@@ -4,6 +4,7 @@ extern crate rustoa;
 extern crate serde_json;
 
 use rustoa::test_functions;
+use test_functions::TestFunctionVar;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
@@ -34,7 +35,7 @@ fn main() {
                 .value_name("test_function")
                 .help("Name of test function")
                 .required(true)
-                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov"])
+                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov", "zdt1"])
                 .takes_value(true),
         )
         .arg(
@@ -205,10 +206,11 @@ fn main() {
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
     let test_function = match test_function_name.as_ref() {
-        "rosenbrock" => test_functions::rosenbrock,
-        "zakharov" => test_functions::zakharov,
-        "ackley" => test_functions::ackley,
-        "himmelblau" => test_functions::himmelblau,
+        "rosenbrock" => TestFunctionVar::Single(test_functions::rosenbrock),
+        "zakharov" => TestFunctionVar::Single(test_functions::zakharov),
+        "ackley" => TestFunctionVar::Single(test_functions::ackley),
+        "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
+        "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
         _ => panic!("Test function does not exist"),
     };
 
@@ -228,7 +230,7 @@ fn main() {
             );
             let config = sa::Config::new(start_t, cooldown, iterations, space, dimension);
 
-            sa::run(config, &test_function)
+            sa::run(config, &test_functions::get_single(test_function))
         }
         ("pso", Some(sub_m)) => {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
@@ -248,7 +250,7 @@ fn main() {
                 c2,
                 inertia,
             };
-            pso::run(config, &test_function)
+            pso::run(config, &test_functions::get_single(test_function))
         }
         ("mopso", Some(sub_m)) => {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -276,7 +278,7 @@ fn main() {
                 mutation_rate,
                 verbose,
             };
-            mopso::run(config, &test_functions::zdt1)
+            mopso::run(config, &test_functions::get_multi(test_function))
         }
         ("ewa", Some(sub_m)) => {
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
@@ -291,14 +293,14 @@ fn main() {
                 beta,
                 similarity,
             };
-            ewa::run(config, &test_function)
+            ewa::run(config, &test_functions::get_single(test_function))
         }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
             println!("Running dummy solver with example: {}", example);
             let config = dummy::Config::new(example);
 
-            dummy::run(config, &test_function)
+            dummy::run(config, &test_functions::get_single(test_function))
         }
         _ => {
             panic!("Algorithm was not specified!");
