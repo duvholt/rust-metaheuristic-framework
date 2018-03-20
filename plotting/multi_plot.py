@@ -14,8 +14,9 @@ x = solutions[:, 0]
 y = solutions[:, 1]
 plt.scatter(x, y, marker='o', s=5)
 
-zdt1 = json.load(open('zdt1.json'))
-pf_true = np.array(zdt1)
+function_name = json_solutions['test_function']
+plot_data = json.load(open(function_name + '.json'))
+pf_true = np.array(plot_data)
 
 
 x = pf_true[:, 0]
