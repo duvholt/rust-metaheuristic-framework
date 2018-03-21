@@ -1,6 +1,6 @@
 # Multi Objective Algorithm
 
-[![CircleCI](https://circleci.com/gh/duvholt/multi-objective-random-animal.svg?style=svg)](https://circleci.com/gh/duvholt/multi-objective-random-animal)
+[![CircleCI](https://circleci.com/gh/duvholt/multi-objective-random-animal.png)](https://circleci.com/gh/duvholt/multi-objective-random-animal)
 
 Programming languages:
 
