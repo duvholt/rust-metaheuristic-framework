@@ -21,7 +21,8 @@ use std::f64;
 
 pub struct Config {
     pub iterations: i64,
-    pub space: f64,
+    pub upper_bound: f64,
+    pub lower_bound: f64,
     pub dimensions: i32,
     pub r: f64,
     pub e: f64,
@@ -59,7 +60,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn generate_random_dandelion(&self) -> Dandelion {
-        let between = Range::new(-self.config.space, self.config.space);
+        let between = Range::new(self.config.lower_bound, self.config.upper_bound);
         let mut rng = thread_rng();
         let position = (0..self.config.dimensions)
             .map(|_| between.ind_sample(&mut rng))
@@ -83,15 +84,25 @@ impl<'a> Swarm<'a> {
         let mut rng = thread_rng();
         let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
         for i in 0..self.population.len() {
-            for _ in 0..self.config.seeds {
-                let mut position = self.population[i].position.clone();
-                position[index] = rng.next_f64() * radius;
-                let seed = Seed {
-                    fitness: self.calculate_fitness(&position),
-                    position,
-                };
-                self.population[i].seeds.push(seed);
-            }
+            self.population[i].seeds = (0..self.config.seeds)
+                .map(|_| {
+                    let mut position = self.population[i].position.clone();
+                    let distance = rng.gen_range(-radius, radius);
+
+                    if (position[index] + radius) > self.config.upper_bound
+                        || (position[index] + radius) < self.config.lower_bound
+                    {
+                        position[index] =
+                            rng.gen_range(self.config.lower_bound, self.config.upper_bound)
+                    } else {
+                        position[index] += distance;
+                    }
+                    Seed {
+                        fitness: self.calculate_fitness(&position),
+                        position,
+                    }
+                })
+                .collect();
         }
     }
 
@@ -119,7 +130,7 @@ impl<'a> Swarm<'a> {
         core_dandelion: &Dandelion,
     ) -> f64 {
         if current_iteration == 1 {
-            return self.config.space * 2.0;
+            return self.config.upper_bound - self.config.lower_bound;
         } else {
             let w = current_iteration as f64 / self.config.iterations as f64;
             let core_best = find_vector_max_value(&core_dandelion.position);
@@ -136,7 +147,7 @@ impl<'a> Swarm<'a> {
         current_fitness: f64,
     ) -> f64 {
         if current_iteration == 1 {
-            return self.config.space * 2.0;
+            return self.config.upper_bound - self.config.lower_bound;
         } else {
             if current_fitness == prev_fitness {
                 return prev_radius * self.config.r;
@@ -187,8 +198,8 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
     let mut i = 1;
     let mut rng = thread_rng();
     let mut swarm = Swarm::new(&config, &test_function);
-    let mut prev_radius = 0.0;
-    let mut prev_fitness = 0.0;
+    let mut prev_radius = 1.0;
+    let mut prev_fitness = 1.0;
     let best_index = 0;
 
     swarm.population = swarm.generate_random_population(popuation_size);
@@ -213,7 +224,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            space: 4.0,
+            upper_bound: 4.0,
+            lower_bound: -4.0,
             dimensions: 2,
             iterations: 100,
             r: 0.95,
