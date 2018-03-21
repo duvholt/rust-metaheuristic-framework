@@ -13,7 +13,7 @@ fn gamma(x: f64) -> f64 {
     unsafe { tgamma(x) }
 }
 
-use solution::Solution;
+use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range, Sample};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
@@ -179,7 +179,7 @@ fn levy_flight(beta: f64) {
     (u / v.abs().powf(1.0 / beta));
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let popuation_size = 1;
     let mutation_popuation_size = 1;
     let mut solutions = vec![];
