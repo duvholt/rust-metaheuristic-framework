@@ -18,8 +18,7 @@ pub struct Config {
 
 #[derive(Clone)]
 struct Dandelion {
-    fitness: f64,
-    position: Vec<f64>,
+    core_dandelion: Seed,
     seeds: Vec<Seed>,
 }
 
@@ -51,8 +50,10 @@ impl<'a> Swarm<'a> {
             .map(|_| between.ind_sample(&mut rng))
             .collect();
         Dandelion {
-            fitness: self.calculate_fitness(&position),
-            position,
+            core_dandelion: Seed {
+                fitness: self.calculate_fitness(&position),
+                position,
+            },
             seeds: vec![],
         }
     }
@@ -71,7 +72,7 @@ impl<'a> Swarm<'a> {
         for i in 0..self.population.len() {
             self.population[i].seeds = (0..self.config.seeds)
                 .map(|_| {
-                    let mut position = self.population[i].position.clone();
+                    let mut position = self.population[i].core_dandelion.position.clone();
                     let distance = rng.gen_range(-radius, radius);
 
                     if (position[index] + radius) > self.config.upper_bound
@@ -117,7 +118,7 @@ impl<'a> Swarm<'a> {
 fn find_average_fitness(population: &Vec<Dandelion>) -> f64 {
     let mut sum = 0.0;
     for dandelion in population {
-        sum += dandelion.fitness;
+        sum += dandelion.core_dandelion.fitness;
     }
     sum / population.len() as f64
 }
@@ -147,7 +148,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
             i,
             prev_radius,
             prev_fitness,
-            swarm.population[best_index].fitness,
+            swarm.population[best_index].core_dandelion.fitness,
         );
         swarm.dandelion_sowing(radius);
         i += 1;
@@ -177,8 +178,10 @@ mod tests {
 
     fn create_dandelion_with_fitness(fitness: f64) -> Dandelion {
         Dandelion {
-            position: vec![2.0, 1.0],
-            fitness,
+            core_dandelion: Seed {
+                position: vec![2.0, 1.0],
+                fitness,
+            },
             seeds: vec![],
         }
     }
