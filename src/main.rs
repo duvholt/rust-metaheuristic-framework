@@ -4,15 +4,18 @@ extern crate rustoa;
 extern crate serde_json;
 
 use rustoa::test_functions;
+use test_functions::TestFunctionVar;
 use rustoa::algorithms::sa;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
-use rustoa::solution::{Solution, Solutions};
+use rustoa::algorithms::ewa;
+use rustoa::algorithms::mopso;
+use rustoa::solution::{SolutionJSON, Solutions};
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
 use std::io::prelude::*;
 
-fn write_solutions(filename: &str, solutions: Vec<Solution>, test_function: String) {
+fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);
     let mut file = File::create(filename).unwrap();
     let solutions_struct = Solutions {
@@ -32,7 +35,14 @@ fn main() {
                 .value_name("test_function")
                 .help("Name of test function")
                 .required(true)
-                .possible_values(&["ackley", "himmelblau", "rosenbrock", "zakharov"])
+                .possible_values(&[
+                    "ackley",
+                    "himmelblau",
+                    "rosenbrock",
+                    "zakharov",
+                    "zdt1",
+                    "schaffer1",
+                ])
                 .takes_value(true),
         )
         .arg(
@@ -44,11 +54,19 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("space")
-                .short("s")
-                .long("space")
-                .value_name("space")
-                .help("Solution space size")
+            Arg::with_name("upper_bound")
+                .short("u")
+                .long("ub")
+                .value_name("upper_bound")
+                .help("Upper bound solution space")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("lower_bound")
+                .short("l")
+                .long("lb")
+                .value_name("lower_bound")
+                .help("Lower bound solution space")
                 .takes_value(true),
         )
         .arg(
@@ -58,6 +76,20 @@ fn main() {
                 .value_name("dimension")
                 .help("Solution dimension size")
                 .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("population")
+                .short("p")
+                .long("population")
+                .value_name("population")
+                .help("Population size")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .long("verbose")
+                .help("Verbose output"),
         )
         .subcommand(
             SubCommand::with_name("sa")
@@ -113,24 +145,95 @@ fn main() {
                         .takes_value(true),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("mopso")
+                .about("particle swarm optimization")
+                .arg(
+                    Arg::with_name("c1")
+                        .long("c1")
+                        .value_name("c1")
+                        .help("C1 constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("c2")
+                        .long("c2")
+                        .value_name("c2")
+                        .help("C2 constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("inertia")
+                        .long("inertia")
+                        .value_name("inertia")
+                        .help("inertia constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("archive_size")
+                        .short("-a")
+                        .long("archive_size")
+                        .value_name("archive_size")
+                        .help("archive size")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("divisions")
+                        .long("divisions")
+                        .value_name("divisions")
+                        .help("number of archive divisions")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("mutation_rate")
+                        .short("-m")
+                        .long("mutation_rate")
+                        .value_name("mutation_rate")
+                        .help("mutation rate")
+                        .takes_value(true),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("ewa")
+                .about("earth worm optimization algorithm")
+                .arg(
+                    Arg::with_name("beta")
+                        .long("beta")
+                        .value_name("beta")
+                        .help("beta constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("similarity")
+                        .long("similarity")
+                        .value_name("similarity")
+                        .help("similarity constant")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
 
+    let verbose = matches.is_present("verbose");
     let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
-    let space = value_t!(matches, "space", f64).unwrap_or(4.0);
-    let dimension = value_t!(matches, "dimension", i32).unwrap_or(2);
+    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
+    let lower_bound = value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound);
+    let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
+    let population = value_t!(matches, "population", usize).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
 
     let test_function = match test_function_name.as_ref() {
-        "rosenbrock" => test_functions::rosenbrock,
-        "zakharov" => test_functions::zakharov,
-        "ackley" => test_functions::ackley,
-        "himmelblau" => test_functions::himmelblau,
+        "rosenbrock" => TestFunctionVar::Single(test_functions::rosenbrock),
+        "zakharov" => TestFunctionVar::Single(test_functions::zakharov),
+        "ackley" => TestFunctionVar::Single(test_functions::ackley),
+        "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
+        "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
+        "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
         _ => panic!("Test function does not exist"),
     };
 
     println!(
-        "Max iterations: {}, Space: {}, Function: {}",
-        iterations, space, test_function_name
+        "Max iterations: {}, Upper bound: {}, Lower bound: {}, Function: {}, Population: {}",
+        iterations, upper_bound, lower_bound, test_function_name, population
     );
 
     let solutions = match matches.subcommand() {
@@ -142,9 +245,9 @@ fn main() {
                 "Running SA with start T: {}, cooldown: {}",
                 start_t, cooldown
             );
-            let config = sa::Config::new(start_t, cooldown, iterations, space, dimension);
+            let config = sa::Config::new(start_t, cooldown, iterations, upper_bound, dimension);
 
-            sa::run(config, &test_function)
+            sa::run(config, &test_functions::get_single(test_function))
         }
         ("pso", Some(sub_m)) => {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
@@ -156,21 +259,65 @@ fn main() {
             );
 
             let config = pso::Config {
-                space,
+                space: upper_bound,
                 dimension,
                 iterations,
-                c1: 0.3,
-                c2: 0.5,
-                inertia: 0.5,
+                population,
+                c1,
+                c2,
+                inertia,
             };
-            pso::run(config, &test_function)
+            pso::run(config, &test_functions::get_single(test_function))
+        }
+        ("mopso", Some(sub_m)) => {
+            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
+            let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
+            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
+            let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(population);
+            let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
+            let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
+            println!(
+                "Running MOPSO with C1: {}, C2: {} inertia: {}",
+                c1, c2, inertia
+            );
+
+            let config = mopso::Config {
+                upper_bound,
+                lower_bound,
+                dimension,
+                iterations,
+                population,
+                c1,
+                c2,
+                inertia,
+                archive_size,
+                divisions,
+                mutation_rate,
+                verbose,
+            };
+            mopso::run(config, &test_functions::get_multi(test_function))
+        }
+        ("ewa", Some(sub_m)) => {
+            let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
+            let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
+            println!("Running EWA with beta: {} similarity: {}", beta, similarity);
+
+            let config = ewa::Config {
+                space: upper_bound,
+                dimension,
+                iterations,
+                population,
+                beta,
+                similarity,
+            };
+            ewa::run(config, &test_functions::get_single(test_function))
         }
         ("dummy", Some(sub_m)) => {
             let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
             println!("Running dummy solver with example: {}", example);
             let config = dummy::Config::new(example);
 
-            dummy::run(config, &test_function)
+            dummy::run(config, &test_functions::get_single(test_function))
         }
         _ => {
             panic!("Algorithm was not specified!");
@@ -178,7 +325,7 @@ fn main() {
     };
 
     if let Some(solution) = solutions.last() {
-        println!("Final solution: ({:?}) {}", solution.x, solution.fitness);
+        println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
     }
 
     write_solutions("solutions.json", solutions, test_function_name);

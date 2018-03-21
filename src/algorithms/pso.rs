@@ -1,5 +1,5 @@
-use solution::Solution;
-use rand::distributions::{IndependentSample, Range};
+use solution::{solutions_to_json, Solution, SolutionJSON};
+use position::random_position;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
@@ -9,8 +9,9 @@ type TestFunction = Fn(&Vec<f64>) -> f64;
 
 pub struct Config {
     pub space: f64,
-    pub dimension: i32,
+    pub dimension: usize,
     pub iterations: i64,
+    pub population: usize,
     pub c1: f64,
     pub c2: f64,
     pub inertia: f64,
@@ -22,6 +23,16 @@ struct Particle {
     pbest: Position,
     fitness: f64,
     velocity: Velocity,
+}
+
+impl Solution for Particle {
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn position(&self) -> Vec<f64> {
+        self.position.to_vec()
+    }
 }
 
 struct Swarm<'a> {
@@ -42,18 +53,14 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        let between = Range::new(-self.config.space, self.config.space);
-        let mut rng = thread_rng();
-        (0..self.config.dimension)
-            .map(|_| between.ind_sample(&mut rng))
-            .collect()
+        random_position(-self.config.space, self.config.space, self.config.dimension)
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
         (self.test_function)(x)
     }
 
-    fn generate_population(&self, size: i32) -> Vec<Particle> {
+    fn generate_population(&self, size: usize) -> Vec<Particle> {
         (0..size)
             .map(|_| {
                 let position = self.random_position();
@@ -76,22 +83,10 @@ impl<'a> Swarm<'a> {
             .cloned()
     }
 
-    pub fn solutions(&self) -> Vec<Solution> {
-        let mut solutions: Vec<Solution> = self.population
-            .iter()
-            .map(|particle| Solution {
-                x: particle.position.to_vec(),
-                fitness: particle.fitness,
-            })
-            .collect();
-        let leader = self.get_leader();
-        solutions.push(Solution {
-            x: leader.position,
-            fitness: leader.fitness,
-        });
-        solutions
-            .sort_unstable_by(|a, b| b.fitness.partial_cmp(&a.fitness).unwrap_or(Ordering::Equal));
-        solutions
+    pub fn solutions(&self) -> Vec<SolutionJSON> {
+        let mut solutions = self.population.to_vec();
+        solutions.push(self.get_leader());
+        solutions_to_json(solutions)
     }
 
     fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
@@ -100,7 +95,7 @@ impl<'a> Swarm<'a> {
         let r2 = rng.next_f64();
         let mut velocity = vec![];
         let mut position = vec![];
-        for i in 0..self.config.dimension as usize {
+        for i in 0..self.config.dimension {
             let v = particle.velocity[i];
             let x = particle.position[i];
             let x_p = particle.pbest[i];
@@ -162,9 +157,9 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &TestFunction) -> Vec<Solution> {
+pub fn run(config: Config, test_function: &TestFunction) -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, &test_function);
-    swarm.population = swarm.generate_population(100);
+    swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
         swarm.update_leader();
@@ -189,6 +184,7 @@ mod tests {
             space: 4.0,
             dimension: 2,
             iterations: 20,
+            population: 100,
             c1: 2.0,
             c2: 2.0,
             inertia: 1.1,
@@ -201,31 +197,6 @@ mod tests {
             velocity: vec![0.0, 1.0],
             pbest: vec![0.0, 1.0],
             fitness,
-        }
-    }
-
-    #[test]
-    fn creates_random_solution() {
-        let config = create_config();
-        let swarm = Swarm::new(&config, &rosenbrock);
-
-        let position = swarm.random_position();
-
-        assert_eq!(position.len(), config.dimension as usize);
-        for coordinate in position {
-            println!("{}", coordinate);
-            assert!(
-                coordinate >= -config.space,
-                "Coordinate({}) is outside the allowed solution space({}!",
-                coordinate,
-                -config.space
-            );
-            assert!(
-                coordinate <= config.space,
-                "Coordinate({}) is outside the allowed solution space({}!",
-                coordinate,
-                config.space
-            );
         }
     }
 
