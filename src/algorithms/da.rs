@@ -27,7 +27,7 @@ pub struct Config {
     pub e: f64,
     pub min_seeds: i64,
     pub max_seeds: i64,
-    pub seeds: i64
+    pub seeds: i64,
 }
 
 #[derive(Clone)]
@@ -68,10 +68,9 @@ impl<'a> Swarm<'a> {
             fitness: self.calculate_fitness(&position),
             position,
             seeds: vec![],
-
         }
     }
-    
+
     fn generate_random_population(&self, size: i64) -> Vec<Dandelion> {
         let mut population = vec![];
         for _ in 0..size {
@@ -89,9 +88,9 @@ impl<'a> Swarm<'a> {
                 position[index] = rng.next_f64() * radius;
                 let seed = Seed {
                     fitness: self.calculate_fitness(&position),
-                    position,  
+                    position,
                 };
-               self.population[i].seeds.push(seed);
+                self.population[i].seeds.push(seed);
             }
         }
     }
@@ -152,7 +151,7 @@ impl<'a> Swarm<'a> {
     }
 }
 
-fn find_average_fitness(population: &Vec<Dandelion>, ) -> f64 {
+fn find_average_fitness(population: &Vec<Dandelion>) -> f64 {
     let mut sum = 0.0;
     for dandelion in population {
         sum += dandelion.fitness;
@@ -194,8 +193,13 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
 
     swarm.population = swarm.generate_random_population(popuation_size);
     while i <= config.iterations {
-        let radius = swarm.calculate_core_radius(i, prev_radius, prev_fitness, swarm.population[best_index].fitness);
-        swarm.dandelion_sowing(radius);  
+        let radius = swarm.calculate_core_radius(
+            i,
+            prev_radius,
+            prev_fitness,
+            swarm.population[best_index].fitness,
+        );
+        swarm.dandelion_sowing(radius);
         i += 1;
     }
     solutions
@@ -226,7 +230,7 @@ mod tests {
             fitness,
             seeds: vec![],
         }
-}
+    }
 
     #[test]
     fn find_vector_max_value_test() {
