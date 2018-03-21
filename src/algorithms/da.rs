@@ -27,17 +27,25 @@ pub struct Config {
     pub e: f64,
     pub min_seeds: i64,
     pub max_seeds: i64,
+    pub seeds: i64
 }
 
 #[derive(Clone)]
 struct Dandelion {
     fitness: f64,
     position: Vec<f64>,
+    seeds: Vec<Seed>,
+}
+
+#[derive(Clone)]
+struct Seed {
+    fitness: f64,
+    position: Vec<f64>,
 }
 
 struct Swarm<'a> {
     config: &'a Config,
-    population: Vec<f64>,
+    population: Vec<Dandelion>,
     test_function: &'a Fn(&Vec<f64>) -> f64,
 }
 
@@ -50,12 +58,42 @@ impl<'a> Swarm<'a> {
         }
     }
 
-    fn random_position(&self) -> Vec<f64> {
+    fn generate_random_dandelion(&self) -> Dandelion {
         let between = Range::new(-self.config.space, self.config.space);
         let mut rng = thread_rng();
-        (0..self.config.dimensions)
+        let position = (0..self.config.dimensions)
             .map(|_| between.ind_sample(&mut rng))
-            .collect()
+            .collect();
+        Dandelion {
+            fitness: self.calculate_fitness(&position),
+            position,
+            seeds: vec![],
+
+        }
+    }
+    
+    fn generate_random_population(&self, size: i64) -> Vec<Dandelion> {
+        let mut population = vec![];
+        for _ in 0..size {
+            population.push(self.generate_random_dandelion());
+        }
+        population
+    }
+
+    fn dandelion_sowing(&mut self, radius: f64) {
+        let mut rng = thread_rng();
+        let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
+        for i in 0..self.population.len() {
+            for _ in 0..self.config.seeds {
+                let mut position = self.population[i].position.clone();
+                position[index] = rng.next_f64() * radius;
+                let seed = Seed {
+                    fitness: self.calculate_fitness(&position),
+                    position,  
+                };
+               self.population[i].seeds.push(seed);
+            }
+        }
     }
 
     fn calculate_number_of_seeds(
@@ -108,6 +146,18 @@ impl<'a> Swarm<'a> {
             }
         }
     }
+
+    fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
+        (self.test_function)(x)
+    }
+}
+
+fn find_average_fitness(population: &Vec<Dandelion>, ) -> f64 {
+    let mut sum = 0.0;
+    for dandelion in population {
+        sum += dandelion.fitness;
+    }
+    sum / population.len() as f64
 }
 
 fn find_vector_max_value(vec: &Vec<f64>) -> f64 {
@@ -131,14 +181,23 @@ fn levy_flight(beta: f64) {
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution> {
-    let popuation = 2;
-    let mutation_popuation = 2;
+    let popuation_size = 1;
+    let mutation_popuation_size = 1;
     let mut solutions = vec![];
-    let mut i = 0;
-    while i < config.iterations {
+
+    let mut i = 1;
+    let mut rng = thread_rng();
+    let mut swarm = Swarm::new(&config, &test_function);
+    let mut prev_radius = 0.0;
+    let mut prev_fitness = 0.0;
+    let best_index = 0;
+
+    swarm.population = swarm.generate_random_population(popuation_size);
+    while i <= config.iterations {
+        let radius = swarm.calculate_core_radius(i, prev_radius, prev_fitness, swarm.population[best_index].fitness);
+        swarm.dandelion_sowing(radius);  
         i += 1;
     }
-
     solutions
 }
 
@@ -157,8 +216,17 @@ mod tests {
             e: 1.05,
             min_seeds: 10,
             max_seeds: 100,
+            seeds: 50,
         }
     }
+
+    fn create_dandelion_with_fitness(fitness: f64) -> Dandelion {
+        Dandelion {
+            position: vec![2.0, 1.0],
+            fitness,
+            seeds: vec![],
+        }
+}
 
     #[test]
     fn find_vector_max_value_test() {
@@ -178,10 +246,12 @@ mod tests {
         let mut core = Dandelion {
             fitness: 2.0,
             position: vec![1.0],
+            seeds: vec![],
         };
         let mut current = Dandelion {
             fitness: 1.0,
             position: vec![2.0],
+            seeds: vec![],
         };
 
         assert_eq!(
@@ -234,6 +304,18 @@ mod tests {
     #[test]
     fn gamma_function_test() {
         assert_eq!(4.0 * 3.0 * 2.0 * 1.0, gamma(5.0));
+    }
+
+    #[test]
+    fn find_average_fitness_test() {
+        let population = vec![
+            create_dandelion_with_fitness(5.0),
+            create_dandelion_with_fitness(10.0),
+            create_dandelion_with_fitness(15.0),
+        ];
+        let average = find_average_fitness(&population);
+
+        assert_eq!(average, 10.0);
     }
 
     #[bench]
