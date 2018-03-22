@@ -6,6 +6,7 @@ extern crate serde_json;
 use rustoa::test_functions;
 use test_functions::TestFunctionVar;
 use rustoa::algorithms::sa;
+use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
@@ -211,6 +212,7 @@ fn main() {
                         .takes_value(true),
                 ),
         )
+        .subcommand(SubCommand::with_name("da").about("Dandelion algorithm"))
         .get_matches();
 
     let verbose = matches.is_present("verbose");
@@ -318,6 +320,22 @@ fn main() {
             let config = dummy::Config::new(example);
 
             dummy::run(config, &test_functions::get_single(test_function))
+        }
+        ("da", Some(sub_m)) => {
+            let config = da::Config {
+                upper_bound: 30.0,
+                lower_bound: -30.0,
+                dimensions: 2,
+                iterations: 2000,
+                r: 0.95,
+                e: 1.05,
+                min_seeds: 10,
+                max_seeds: 100,
+                normal_seeds: 200,
+                self_learning_seeds: 10,
+            };
+
+            da::run(config, &test_functions::get_single(test_function))
         }
         _ => {
             panic!("Algorithm was not specified!");
