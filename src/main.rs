@@ -325,12 +325,11 @@ fn main() {
             let config = da::Config {
                 upper_bound: 30.0,
                 lower_bound: -30.0,
-                dimensions: 2,
+                dimensions: 30,
                 iterations: 2000,
+                population: 1,
                 r: 0.95,
                 e: 1.05,
-                min_seeds: 10,
-                max_seeds: 100,
                 normal_seeds: 200,
                 self_learning_seeds: 10,
             };
