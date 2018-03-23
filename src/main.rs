@@ -6,6 +6,7 @@ extern crate serde_json;
 use rustoa::test_functions;
 use test_functions::TestFunctionVar;
 use rustoa::algorithms::sa;
+use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
@@ -211,6 +212,42 @@ fn main() {
                         .takes_value(true),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("da")
+                .about("Dandelion algorithm")
+                .arg(
+                    Arg::with_name("r")
+                        .short("-r")
+                        .long("r")
+                        .value_name("r")
+                        .help("r constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("e")
+                        .short("-e")
+                        .long("e")
+                        .value_name("e")
+                        .help("e constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("normal_seeds")
+                        .short("-n")
+                        .long("normal_seeds")
+                        .value_name("normal_seeds")
+                        .help("normal_seeds constant")
+                        .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("self_learning_seeds")
+                        .short("-s")
+                        .long("self_learning_seeds")
+                        .value_name("self_learning_seeds")
+                        .help("self_learning_seeds constant")
+                        .takes_value(true),
+                ),
+        )
         .get_matches();
 
     let verbose = matches.is_present("verbose");
@@ -318,6 +355,29 @@ fn main() {
             let config = dummy::Config::new(example);
 
             dummy::run(config, &test_functions::get_single(test_function))
+        }
+        ("da", Some(sub_m)) => {
+            let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
+            let e = value_t!(sub_m, "e", f64).unwrap_or(1.05);
+            let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(200);
+            let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(10);
+            println!(
+                "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
+                r, e, normal_seeds, self_learning_seeds
+            );
+            let config = da::Config {
+                upper_bound,
+                lower_bound,
+                dimension,
+                iterations,
+                population,
+                r,
+                e,
+                normal_seeds,
+                self_learning_seeds,
+            };
+
+            da::run(config, &test_functions::get_single(test_function))
         }
         _ => {
             panic!("Algorithm was not specified!");
