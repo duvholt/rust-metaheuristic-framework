@@ -7,13 +7,12 @@ use solution::Solution;
 
 pub struct Config {
     pub iterations: i64,
+    pub population: usize,
     pub upper_bound: f64,
     pub lower_bound: f64,
     pub dimensions: usize,
     pub r: f64,
     pub e: f64,
-    pub min_seeds: i64,
-    pub max_seeds: i64,
     pub normal_seeds: i64,
     pub self_learning_seeds: i64,
 }
@@ -70,7 +69,7 @@ impl<'a> Swarm<'a> {
         }
     }
 
-    fn generate_random_population(&self, size: i64) -> Vec<Dandelion> {
+    fn generate_random_population(&self, size: usize) -> Vec<Dandelion> {
         let mut population = vec![];
         for _ in 0..size {
             population.push(self.generate_random_dandelion());
@@ -103,12 +102,12 @@ impl<'a> Swarm<'a> {
 
     fn self_learning_sowing(&mut self) {
         let mut rng = thread_rng();
-        let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
         for i in 0..self.population.len() {
             let average_position = self.find_average_seed_position(&self.population[i]);
             let mut seeds: Vec<Seed> = (0..self.config.self_learning_seeds)
                 .map(|_| {
                     let mut position = self.population[i].core_dandelion.position.clone();
+                    let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
                     let distance = position[index] - average_position[index];
                     if position[index] + distance > self.config.upper_bound
                         || position[index] + distance < self.config.lower_bound
@@ -141,7 +140,7 @@ impl<'a> Swarm<'a> {
             .collect()
     }
 
-    fn calculate_core_radius(
+    fn calculate_sowing_radius(
         &self,
         current_iteration: i64,
         prev_radius: f64,
@@ -156,6 +155,25 @@ impl<'a> Swarm<'a> {
             } else {
                 return prev_radius * self.config.e;
             }
+        }
+    }
+
+    fn select_best_seed(&mut self) {
+        for i in 0..self.population.len() {
+            let mut best: Seed = self.population[i].core_dandelion.clone();
+            for j in 0..self.population[i].seeds.len() {
+                if self.population[i].seeds[j].fitness < best.fitness {
+                    best = self.population[i].seeds[j].clone();
+                }
+            }
+            self.population[i].core_dandelion = best;
+            self.population[i].seeds.clear();
+            println!(
+                "best fitness: {}, Dandelion number: {}, pos: {:?}",
+                self.population[i].core_dandelion.fitness,
+                i,
+                self.population[i].core_dandelion.position
+            );
         }
     }
 
@@ -180,20 +198,17 @@ fn find_vector_max_value(vec: &Vec<f64>) -> f64 {
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
-    let popuation_size = 1;
-    let mutation_popuation_size = 1;
     let mut solutions = vec![];
 
     let mut i = 1;
-    let mut rng = thread_rng();
     let mut swarm = Swarm::new(&config, &test_function);
-    let mut prev_radius = 1.0;
-    let mut prev_fitness = 1.0;
+    let prev_radius = 1.0;
+    let prev_fitness = 1.0;
     let best_index = 0;
 
-    swarm.population = swarm.generate_random_population(popuation_size);
+    swarm.population = swarm.generate_random_population(config.population);
     while i <= config.iterations {
-        let radius = swarm.calculate_core_radius(
+        let radius = swarm.calculate_sowing_radius(
             i,
             prev_radius,
             prev_fitness,
@@ -201,20 +216,7 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
         );
         swarm.dandelion_sowing(radius);
         swarm.self_learning_sowing();
-        let mut best: Seed = swarm.population[0].core_dandelion.clone();
-        for i in 0..swarm.population.len() {
-            for j in 0..swarm.population[i].seeds.len() {
-                if swarm.population[i].seeds[j].fitness < best.fitness {
-                    best = swarm.population[i].seeds[j].clone();
-                }
-            }
-        }
-        println!(
-            "best fitness: {}, itteration{}, pos: {:?}",
-            best.fitness, i, best.position
-        );
-        swarm.population[0].core_dandelion = best;
-        swarm.population[0].seeds.clear();
+        swarm.select_best_seed();
 
         i += 1;
     }
@@ -233,10 +235,9 @@ mod tests {
             lower_bound: -4.0,
             dimensions: 2,
             iterations: 100,
+            population: 1,
             r: 0.95,
             e: 1.05,
-            min_seeds: 10,
-            max_seeds: 100,
             normal_seeds: 50,
             self_learning_seeds: 2,
         }
@@ -255,7 +256,7 @@ mod tests {
     #[test]
     fn find_average_seed_position_test() {
         let config = create_config();
-        let mut swarm = Swarm {
+        let swarm = Swarm {
             test_function: &rosenbrock,
             config: &config,
             population: vec![],
@@ -295,15 +296,15 @@ mod tests {
     #[test]
     fn calculate_core_radius_test() {
         let config = create_config();
-        let mut swarm = Swarm {
+        let swarm = Swarm {
             test_function: &rosenbrock,
             config: &config,
             population: vec![],
         };
 
-        assert_eq!(swarm.calculate_core_radius(1, 100.0, 10.0, 1000.0), 8.0);
-        assert_eq!(swarm.calculate_core_radius(2, 2.1, 43.5, 51.1), 2.205);
-        assert_approx_eq!(swarm.calculate_core_radius(2, 2.1, 43.5, 43.5), 1.995);
+        assert_eq!(swarm.calculate_sowing_radius(1, 100.0, 10.0, 1000.0), 8.0);
+        assert_eq!(swarm.calculate_sowing_radius(2, 2.1, 43.5, 51.1), 2.205);
+        assert_approx_eq!(swarm.calculate_sowing_radius(2, 2.1, 43.5, 43.5), 1.995);
     }
 
     #[test]
