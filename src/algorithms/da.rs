@@ -150,9 +150,9 @@ impl<'a> Swarm<'a> {
                 dandelion.radius = self.config.upper_bound - self.config.lower_bound;
             } else {
                 if dandelion.core_dandelion.fitness == dandelion.old_fitness {
-                    return dandelion.radius *= self.config.r;
+                    dandelion.radius *= self.config.r;
                 } else {
-                    return dandelion.radius *= self.config.e;
+                    dandelion.radius *= self.config.e;
                 }
             }
         }
