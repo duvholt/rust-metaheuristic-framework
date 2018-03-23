@@ -1,4 +1,4 @@
-use solution::SolutionJSON;
+use solution::{solutions_to_json, SolutionJSON};
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::f64;
@@ -24,20 +24,20 @@ struct Dandelion {
     old_fitness: f64,
 }
 
-impl Solution for Dandelion {
-    fn fitness(&self) -> f64 {
-        self.core_dandelion.fitness
-    }
-
-    fn position(&self) -> Vec<f64> {
-        self.core_dandelion.position.to_vec()
-    }
-}
-
 #[derive(Clone)]
 struct Seed {
     fitness: f64,
     position: Vec<f64>,
+}
+
+impl Solution for Seed {
+    fn fitness(&self) -> f64 {
+        self.fitness
+    }
+
+    fn position(&self) -> Vec<f64> {
+        self.position.to_vec()
+    }
 }
 
 struct Swarm<'a> {
@@ -182,10 +182,17 @@ impl<'a> Swarm<'a> {
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
         (self.test_function)(x)
     }
+
+    fn get_solutions(&self) -> Vec<SolutionJSON> {
+        let mut solutions = vec![];
+        for dandelion in &self.population {
+            solutions.push(dandelion.core_dandelion.clone());
+        }
+        solutions_to_json(solutions)
+    }
 }
 
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
-    let mut solutions = vec![];
     let mut i = 1;
     let mut swarm = Swarm::new(&config, &test_function);
 
@@ -198,7 +205,8 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
 
         i += 1;
     }
-    solutions
+
+    swarm.get_solutions()
 }
 
 #[cfg(test)]
