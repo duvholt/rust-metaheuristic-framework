@@ -1,7 +1,6 @@
 use solution::SolutionJSON;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
-use std::cmp::Ordering;
 use std::f64;
 use solution::Solution;
 
@@ -182,21 +181,6 @@ impl<'a> Swarm<'a> {
     }
 }
 
-fn find_average_fitness(population: &Vec<Dandelion>) -> f64 {
-    let mut sum = 0.0;
-    for dandelion in population {
-        sum += dandelion.core_dandelion.fitness;
-    }
-    sum / population.len() as f64
-}
-
-fn find_vector_max_value(vec: &Vec<f64>) -> f64 {
-    vec.iter()
-        .max_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal))
-        .cloned()
-        .unwrap()
-}
-
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let mut solutions = vec![];
 
@@ -287,13 +271,6 @@ mod tests {
     }
 
     #[test]
-    fn find_vector_max_value_test() {
-        let vector = vec![2.0, 3.9, 4.4];
-        let max_value = find_vector_max_value(&vector);
-        assert_eq!(max_value, 4.4);
-    }
-
-    #[test]
     fn calculate_core_radius_test() {
         let config = create_config();
         let swarm = Swarm {
@@ -305,18 +282,6 @@ mod tests {
         assert_eq!(swarm.calculate_sowing_radius(1, 100.0, 10.0, 1000.0), 8.0);
         assert_eq!(swarm.calculate_sowing_radius(2, 2.1, 43.5, 51.1), 2.205);
         assert_approx_eq!(swarm.calculate_sowing_radius(2, 2.1, 43.5, 43.5), 1.995);
-    }
-
-    #[test]
-    fn find_average_fitness_test() {
-        let population = vec![
-            create_dandelion_with_fitness(5.0),
-            create_dandelion_with_fitness(10.0),
-            create_dandelion_with_fitness(15.0),
-        ];
-        let average = find_average_fitness(&population);
-
-        assert_eq!(average, 10.0);
     }
 
     #[bench]
