@@ -259,6 +259,7 @@ mod tests {
         assert_eq!(population.len(), 10);
     }
 
+    #[ignore]
     #[bench]
     fn bench_move(b: &mut Bencher) {
         let config = create_config();
@@ -275,6 +276,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_run(b: &mut Bencher) {
         b.iter(|| run(create_config(), &multi_dummy));

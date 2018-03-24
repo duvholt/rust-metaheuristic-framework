@@ -304,6 +304,7 @@ mod tests {
         assert_approx_eq!(swarm.population[0].radius, 1.995);
     }
 
+    #[ignore]
     #[bench]
     fn bench_da(b: &mut Bencher) {
         b.iter(|| {
