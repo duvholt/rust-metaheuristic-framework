@@ -15,7 +15,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: project-cache
+          key: v2-project-cache
       - run:
           name: Check formatting
           command: |
@@ -31,7 +31,6 @@ jobs:
           name: Test
           command: rustup run nightly cargo test
       - save_cache:
-          key: project-cache
+          key: v2-project-cache
           paths:
-            - "~/.cargo"
             - "./target"
