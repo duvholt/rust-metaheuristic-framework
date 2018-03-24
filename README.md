@@ -1,6 +1,7 @@
 # Multi Objective Algorithm
 
 [![CircleCI](https://circleci.com/gh/duvholt/multi-objective-random-animal.png?circle-token=84a65873909c24aa9488f284ec3ec9a0ad23ee19)](https://circleci.com/gh/duvholt/multi-objective-random-animal)
+[![codecov](https://codecov.io/gh/duvholt/multi-objective-random-animal/branch/master/graph/badge.svg?token=OeoHWrHHqY)](https://codecov.io/gh/duvholt/multi-objective-random-animal)
 
 Programming languages:
 
@@ -34,7 +35,8 @@ The code is formatted using [rustfmt](https://github.com/rust-lang-nursery/rustf
 
 Run tests using `cargo test`
 
-Run benchmarks using `cargo bench` (requires nightly at the time of writing).
+Run benchmarks using `cargo bench -- --ignored` (requires nightly at the time of writing).
+All benchmarks should be ignored to avoid contributing to coverage
 
 ## Plotting
 

@@ -141,6 +141,7 @@ mod tests {
         assert_ne!(0.0, himmelblau(&vec![4.0, 6.0]));
     }
 
+    #[ignore]
     #[bench]
     fn bench_ackley(b: &mut Bencher) {
         let x = vec![1.0, 3.0];
@@ -149,6 +150,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_rosenbrock(b: &mut Bencher) {
         let x = vec![1.0, 3.0];
@@ -157,6 +159,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_zakharov(b: &mut Bencher) {
         let x = vec![1.0, 3.0];
@@ -165,6 +168,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_himmelblau(b: &mut Bencher) {
         let x = vec![1.0, 3.0];
