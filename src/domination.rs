@@ -143,6 +143,7 @@ mod tests {
         assert_eq!(non_dominated_indexes.len(), 1);
     }
 
+    #[ignore]
     #[bench]
     fn bench_non_dominated(b: &mut Bencher) {
         let solutions = vec_to_multi_solution(vec![

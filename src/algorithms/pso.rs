@@ -259,6 +259,7 @@ mod tests {
         assert_eq!(swarm.leader.unwrap().fitness, 0.02);
     }
 
+    #[ignore]
     #[bench]
     fn bench_move(b: &mut Bencher) {
         let config = create_config();
@@ -278,6 +279,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_pso(b: &mut Bencher) {
         b.iter(|| {

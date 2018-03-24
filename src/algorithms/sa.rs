@@ -165,6 +165,7 @@ mod tests {
         assert!(neighbour_y < (solution_y + 1.0) && neighbour_y > (solution_y - 1.0));
     }
 
+    #[ignore]
     #[bench]
     fn test_run(b: &mut Bencher) {
         b.iter(|| {

@@ -34,7 +34,8 @@ The code is formatted using [rustfmt](https://github.com/rust-lang-nursery/rustf
 
 Run tests using `cargo test`
 
-Run benchmarks using `cargo bench` (requires nightly at the time of writing).
+Run benchmarks using `cargo bench -- --ignored` (requires nightly at the time of writing).
+All benchmarks should be ignored to avoid contributing to coverage
 
 ## Plotting
 
