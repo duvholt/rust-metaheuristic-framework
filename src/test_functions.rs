@@ -86,10 +86,53 @@ pub fn zdt1(x: &Vec<f64>) -> Vec<f64> {
     vec![f1, f2]
 }
 
+pub fn axis_parallel_hyper_ellipsoid_function(x: &Vec<f64>) -> f64 {
+    (0..x.len()).map(|i| (i as f64 + 1.0) * x[i].powi(2)).sum()
+}
+
+pub fn moved_axis_parallel_hyper_ellipsoid_function(x: &Vec<f64>) -> f64 {
+    (0..x.len())
+        .map(|i| {
+            let a = i as f64 + 1.0;
+            (a * (x[i] - 5.0 * a)).powi(2)
+        })
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use test::Bencher;
+
+    #[test]
+    fn axis_parallel_hyper_ellipsoid_function_test() {
+        assert_eq!(
+            axis_parallel_hyper_ellipsoid_function(&vec![0.0, 0.0, 0.0, 0.0]),
+            0.0
+        );
+        assert_ne!(
+            axis_parallel_hyper_ellipsoid_function(&vec![1.0, 0.0, 0.0]),
+            0.0
+        );
+        assert_eq!(axis_parallel_hyper_ellipsoid_function(&vec![0.0, 0.0]), 0.0);
+        assert_eq!(axis_parallel_hyper_ellipsoid_function(&vec![0.0]), 0.0);
+    }
+
+    #[test]
+    fn moved_axis_parallel_hyper_ellipsoid_function_test() {
+        assert_eq!(
+            moved_axis_parallel_hyper_ellipsoid_function(&vec![5.0]),
+            0.0
+        );
+        assert_eq!(
+            moved_axis_parallel_hyper_ellipsoid_function(&vec![5.0, 10.0]),
+            0.0
+        );
+        assert_ne!(
+            moved_axis_parallel_hyper_ellipsoid_function(&vec![5.0, 10.0, 5.0]),
+            0.0
+        );
+    }
 
     #[test]
     fn rosenbrock_optimum() {
