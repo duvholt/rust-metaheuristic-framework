@@ -51,6 +51,10 @@ elif test_function_name == 'zakharov':
     test_function = tf.zakharov
 elif test_function_name == 'himmelblau':
     test_function = tf.himmelblau
+elif test_function_name == 'hyper-ellipsoid':
+    test_function = tf.axis_parallel_hyper_ellipsoid_function
+elif test_function_name == 'moved-hyper-ellipsoid':
+    test_function = tf.moved_axis_parallel_hyper_ellipsoid_function
 
 Z = test_function(X, Y)
 ax.plot_surface(
