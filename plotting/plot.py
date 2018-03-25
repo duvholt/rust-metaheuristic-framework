@@ -26,8 +26,9 @@ solutions = np.array(list(
 max_x, max_y, _ = solutions.max(axis=0)
 min_x, min_y, _ = solutions.min(axis=0)
 padding = (max_y - min_y) * 0.1
-X = np.linspace(min_x - padding, max_x + padding, 40)
-Y = np.linspace(min_y - padding, max_y + padding, 40)
+linspace_size = 50
+X = np.linspace(min_x - padding, max_x + padding, linspace_size)
+Y = np.linspace(min_y - padding, max_y + padding, linspace_size)
 X, Y = np.meshgrid(X, Y)
 
 
