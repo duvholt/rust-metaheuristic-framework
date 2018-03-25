@@ -3,8 +3,9 @@ from matplotlib import cm
 import matplotlib.pyplot as plot
 import numpy as np
 import json
+import sys
 import matplotlib.patheffects as PathEffects
-from matplotlib.colors import LogNorm
+from matplotlib import colors
 import test_functions as tf
 
 # Rosenbrock variables
@@ -62,9 +63,9 @@ elif test_function_name == 'rastrigin':
 
 Z = test_function(X, Y)
 ax.plot_surface(
-    X, Y, Z, rstride=1, cstride=1,
+    X, Y, Z,
     linewidth=1, edgecolors='#333333',
-    cmap=cm.hot,  norm=LogNorm(vmin=Z.min(), vmax=Z.max())
+    cmap=cm.jet,  norm=colors.LogNorm(vmin=Z.min(), vmax=Z.max())
 )
 
 for iteration, solution in enumerate(solutions):
