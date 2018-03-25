@@ -39,8 +39,8 @@ def plot_solution(x, y, z, iteration):
         path_effects=[PathEffects.withStroke(
             linewidth=2, foreground='black')]
     )
-    txt = ax.text(x, y, z, iteration, color='#eeeeee')
-    black_border = PathEffects.withStroke(linewidth=1, foreground='black')
+    txt = ax.text(x, y, z, iteration, color='#eeeeee', weight='bold')
+    black_border = PathEffects.withStroke(linewidth=2, foreground='black')
     txt.set_path_effects([black_border])
 
 
