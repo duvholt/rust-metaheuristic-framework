@@ -31,3 +31,11 @@ def rosenbrock(X, Y):
 
 def himmelblau(X, Y):
     return (X**2 + Y - 11)**2 + (X + Y**2 - 7)**2
+
+
+def axis_parallel_hyper_ellipsoid_function(X, Y):
+    return X**2 + 2 * Y**2
+
+
+def moved_axis_parallel_hyper_ellipsoid_function(X, Y):
+    return (X - 5)**2 + (2 * (Y - 5*2))**2
