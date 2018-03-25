@@ -195,6 +195,7 @@ impl<'a> Swarm<'a> {
 pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
     let mut i = 1;
     let mut swarm = Swarm::new(&config, &test_function);
+    let mut solutions = vec![];
 
     swarm.population = swarm.generate_random_population(config.population);
     while i <= config.iterations {
@@ -203,10 +204,12 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
         swarm.self_learning_sowing();
         swarm.select_best_seed();
 
+        if i % (config.iterations / 20) == 0 {
+            solutions.append(&mut swarm.get_solutions());
+        }
         i += 1;
     }
-
-    swarm.get_solutions()
+    solutions
 }
 
 #[cfg(test)]
