@@ -43,6 +43,8 @@ fn main() {
                     "zakharov",
                     "zdt1",
                     "schaffer1",
+                    "hyper-ellipsoid",
+                    "moved-hyper-ellipsoid",
                 ])
                 .takes_value(true),
         )
@@ -265,6 +267,12 @@ fn main() {
         "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
         "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
         "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
+        "hyper-ellipsoid" => {
+            TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid_function)
+        }
+        "moved-hyper-ellipsoid" => {
+            TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid_function)
+        }
         _ => panic!("Test function does not exist"),
     };
 
