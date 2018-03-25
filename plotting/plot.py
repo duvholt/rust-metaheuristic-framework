@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plot
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import numpy as np
@@ -15,7 +16,6 @@ solutions_file = '../solutions.json'
 
 
 def plot_json_solutions(json_solutions):
-    import matplotlib.pyplot as plot
     fig = plot.figure()
     ax = Axes3D(fig)
     solutions = np.array(list(
@@ -73,12 +73,42 @@ def plot_json_solutions(json_solutions):
     plot.show()
 
 
+def multi_plot(json_solutions):
+    solutions = np.array(list(
+        map(lambda s: s['fitness'], json_solutions['solutions'])
+    ))
+
+    print(solutions)
+
+    x = solutions[:, 0]
+    y = solutions[:, 1]
+    plot.scatter(x, y, marker='o', s=5)
+
+    function_name = json_solutions['test_function']
+    plot_data = json.load(open(function_name + '.json'))
+    pf_true = np.array(plot_data)
+
+    x = pf_true[:, 0]
+    y = pf_true[:, 1]
+    plot.scatter(x, y, marker='x', s=0.5)
+
+    # Show the boundary between the regions:
+    # theta = np.arange(0, np.pi / 2, 0.01)
+    # r0 = 0.6
+    # plot.plot(r0 * np.cos(theta), r0 * np.sin(theta))
+
+    plot.show()
+
+
 def read_and_plot():
     json_solutions = json.load(open(solutions_file))
     if len(json_solutions['solutions'][0]['x']) > 2:
         print('WARNING! Solutions with more than two dimensions is not supported!')
 
-    plot_json_solutions(json_solutions)
+    if len(json_solutions['solutions'][0]['fitness']) > 1:
+        multi_plot(json_solutions)
+    else:
+        plot_json_solutions(json_solutions)
 
 
 def plot_process():
