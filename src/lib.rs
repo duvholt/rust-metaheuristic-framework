@@ -2,6 +2,8 @@
 #[cfg(test)]
 #[macro_use]
 extern crate assert_approx_eq;
+#[macro_use]
+extern crate clap;
 extern crate rand;
 extern crate serde;
 #[macro_use]
@@ -16,3 +18,4 @@ pub mod selection;
 pub mod distribution;
 pub mod position;
 pub mod archive;
+pub mod config;
