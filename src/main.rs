@@ -100,54 +100,7 @@ fn main() {
         .subcommand(sa::subcommand("sa"))
         .subcommand(dummy::subcommand("dummy"))
         .subcommand(pso::subcommand("pso"))
-        .subcommand(
-            SubCommand::with_name("mopso")
-                .about("particle swarm optimization")
-                .arg(
-                    Arg::with_name("c1")
-                        .long("c1")
-                        .value_name("c1")
-                        .help("C1 constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("c2")
-                        .long("c2")
-                        .value_name("c2")
-                        .help("C2 constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("inertia")
-                        .long("inertia")
-                        .value_name("inertia")
-                        .help("inertia constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("archive_size")
-                        .short("-a")
-                        .long("archive_size")
-                        .value_name("archive_size")
-                        .help("archive size")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("divisions")
-                        .long("divisions")
-                        .value_name("divisions")
-                        .help("number of archive divisions")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("mutation_rate")
-                        .short("-m")
-                        .long("mutation_rate")
-                        .value_name("mutation_rate")
-                        .help("mutation rate")
-                        .takes_value(true),
-                ),
-        )
+        .subcommand(mopso::subcommand("mopso"))
         .subcommand(
             SubCommand::with_name("ewa")
                 .about("earth worm optimization algorithm")
@@ -248,32 +201,7 @@ fn main() {
             pso::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("mopso", Some(sub_m)) => {
-            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
-            let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
-            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
-            let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
-            let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
-            let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
-            println!(
-                "Running MOPSO with C1: {}, C2: {} inertia: {}",
-                c1, c2, inertia
-            );
-
-            let config = mopso::Config {
-                upper_bound: common.upper_bound,
-                lower_bound: common.lower_bound,
-                dimension: common.dimension,
-                iterations: common.iterations,
-                population: common.population,
-                verbose: common.verbose,
-                c1,
-                c2,
-                inertia,
-                archive_size,
-                divisions,
-                mutation_rate,
-            };
-            mopso::run(config, &test_functions::get_multi(test_function))
+            mopso::run_subcommand(&common, test_functions::get_multi(test_function), sub_m)
         }
         ("ewa", Some(sub_m)) => {
             let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
