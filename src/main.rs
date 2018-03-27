@@ -102,42 +102,7 @@ fn main() {
         .subcommand(pso::subcommand("pso"))
         .subcommand(mopso::subcommand("mopso"))
         .subcommand(ewa::subcommand("ewa"))
-        .subcommand(
-            SubCommand::with_name("da")
-                .about("Dandelion algorithm")
-                .arg(
-                    Arg::with_name("r")
-                        .short("-r")
-                        .long("r")
-                        .value_name("r")
-                        .help("r constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("e")
-                        .short("-e")
-                        .long("e")
-                        .value_name("e")
-                        .help("e constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("normal_seeds")
-                        .short("-n")
-                        .long("normal_seeds")
-                        .value_name("normal_seeds")
-                        .help("normal_seeds constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("self_learning_seeds")
-                        .short("-s")
-                        .long("self_learning_seeds")
-                        .value_name("self_learning_seeds")
-                        .help("self_learning_seeds constant")
-                        .takes_value(true),
-                ),
-        )
+        .subcommand(da::subcommand("da"))
         .get_matches();
 
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
@@ -193,27 +158,7 @@ fn main() {
             dummy::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("da", Some(sub_m)) => {
-            let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
-            let e = value_t!(sub_m, "e", f64).unwrap_or(1.05);
-            let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(200);
-            let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(10);
-            println!(
-                "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
-                r, e, normal_seeds, self_learning_seeds
-            );
-            let config = da::Config {
-                upper_bound: common.upper_bound,
-                lower_bound: common.lower_bound,
-                dimension: common.dimension,
-                iterations: common.iterations,
-                population: common.population,
-                r,
-                e,
-                normal_seeds,
-                self_learning_seeds,
-            };
-
-            da::run(config, &test_functions::get_single(test_function))
+            da::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         _ => {
             panic!("Algorithm was not specified!");

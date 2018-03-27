@@ -3,6 +3,74 @@ use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use std::f64;
 use solution::Solution;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use test_functions::SingleTestFunctionVar;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("Dandelion algorithm")
+        .arg(
+            Arg::with_name("r")
+                .short("-r")
+                .long("r")
+                .value_name("r")
+                .help("r constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("e")
+                .short("-e")
+                .long("e")
+                .value_name("e")
+                .help("e constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("normal_seeds")
+                .short("-n")
+                .long("normal_seeds")
+                .value_name("normal_seeds")
+                .help("normal_seeds constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("self_learning_seeds")
+                .short("-s")
+                .long("self_learning_seeds")
+                .value_name("self_learning_seeds")
+                .help("self_learning_seeds constant")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    test_function: SingleTestFunctionVar,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
+    let e = value_t!(sub_m, "e", f64).unwrap_or(1.05);
+    let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(200);
+    let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(10);
+    println!(
+        "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
+        r, e, normal_seeds, self_learning_seeds
+    );
+    let config = Config {
+        upper_bound: common.upper_bound,
+        lower_bound: common.lower_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        r,
+        e,
+        normal_seeds,
+        self_learning_seeds,
+    };
+
+    run(config, &test_function)
+}
 
 pub struct Config {
     pub iterations: i64,
