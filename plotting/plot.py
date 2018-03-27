@@ -57,6 +57,8 @@ elif test_function_name == 'moved-hyper-ellipsoid':
     test_function = tf.moved_axis_parallel_hyper_ellipsoid_function
 elif test_function_name == 'sphere':
     test_function = tf.sphere
+elif test_function_name == 'rastrigin':
+    test_function = tf.rastrigin
 
 Z = test_function(X, Y)
 ax.plot_surface(
