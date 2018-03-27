@@ -101,24 +101,7 @@ fn main() {
         .subcommand(dummy::subcommand("dummy"))
         .subcommand(pso::subcommand("pso"))
         .subcommand(mopso::subcommand("mopso"))
-        .subcommand(
-            SubCommand::with_name("ewa")
-                .about("earth worm optimization algorithm")
-                .arg(
-                    Arg::with_name("beta")
-                        .long("beta")
-                        .value_name("beta")
-                        .help("beta constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("similarity")
-                        .long("similarity")
-                        .value_name("similarity")
-                        .help("similarity constant")
-                        .takes_value(true),
-                ),
-        )
+        .subcommand(ewa::subcommand("ewa"))
         .subcommand(
             SubCommand::with_name("da")
                 .about("Dandelion algorithm")
@@ -204,19 +187,7 @@ fn main() {
             mopso::run_subcommand(&common, test_functions::get_multi(test_function), sub_m)
         }
         ("ewa", Some(sub_m)) => {
-            let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
-            let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
-            println!("Running EWA with beta: {} similarity: {}", beta, similarity);
-
-            let config = ewa::Config {
-                space: common.upper_bound,
-                dimension: common.dimension,
-                iterations: common.iterations,
-                population: common.population,
-                beta,
-                similarity,
-            };
-            ewa::run(config, &test_functions::get_single(test_function))
+            ewa::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("dummy", Some(sub_m)) => {
             dummy::run_subcommand(&common, test_functions::get_single(test_function), sub_m)

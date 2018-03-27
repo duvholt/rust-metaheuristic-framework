@@ -4,6 +4,48 @@ use selection::roulette_wheel;
 use position::random_position;
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use distribution::cauchy;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use test_functions::SingleTestFunctionVar;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("earth worm optimization algorithm")
+        .arg(
+            Arg::with_name("beta")
+                .long("beta")
+                .value_name("beta")
+                .help("beta constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("similarity")
+                .long("similarity")
+                .value_name("similarity")
+                .help("similarity constant")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    test_function: SingleTestFunctionVar,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
+    let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
+    println!("Running EWA with beta: {} similarity: {}", beta, similarity);
+
+    let config = Config {
+        space: common.upper_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        beta,
+        similarity,
+    };
+    run(config, &test_function)
+}
 
 #[derive(Debug)]
 pub struct Config {
