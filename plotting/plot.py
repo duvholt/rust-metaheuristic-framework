@@ -55,6 +55,8 @@ elif test_function_name == 'hyper-ellipsoid':
     test_function = tf.axis_parallel_hyper_ellipsoid_function
 elif test_function_name == 'moved-hyper-ellipsoid':
     test_function = tf.moved_axis_parallel_hyper_ellipsoid_function
+elif test_function_name == 'sphere':
+    test_function = tf.sphere
 
 Z = test_function(X, Y)
 ax.plot_surface(

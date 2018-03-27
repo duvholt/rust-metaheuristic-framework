@@ -45,6 +45,7 @@ fn main() {
                     "schaffer1",
                     "hyper-ellipsoid",
                     "moved-hyper-ellipsoid",
+                    "sphere",
                 ])
                 .takes_value(true),
         )
@@ -265,6 +266,7 @@ fn main() {
         "zakharov" => TestFunctionVar::Single(test_functions::zakharov),
         "ackley" => TestFunctionVar::Single(test_functions::ackley),
         "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
+        "sphere" => TestFunctionVar::Single(test_functions::sphere),
         "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
         "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
         "hyper-ellipsoid" => {
