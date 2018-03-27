@@ -269,11 +269,9 @@ fn main() {
         "sphere" => TestFunctionVar::Single(test_functions::sphere),
         "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
         "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
-        "hyper-ellipsoid" => {
-            TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid_function)
-        }
+        "hyper-ellipsoid" => TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
         "moved-hyper-ellipsoid" => {
-            TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid_function)
+            TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid)
         }
         _ => panic!("Test function does not exist"),
     };
