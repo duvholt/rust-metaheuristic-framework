@@ -40,10 +40,47 @@ fn main() {
     algorithms.insert("pso", (pso::subcommand, pso::run_subcommand));
     algorithms.insert("sa", (sa::subcommand, sa::run_subcommand));
     algorithms.insert("mopso", (mopso::subcommand, mopso::run_subcommand));
+
+    let mut test_functions_map = HashMap::new();
+    // Single-objective
+    test_functions_map.insert(
+        "rosenbrock",
+        TestFunctionVar::Single(test_functions::rosenbrock),
+    );
+    test_functions_map.insert(
+        "zakharov",
+        TestFunctionVar::Single(test_functions::zakharov),
+    );
+    test_functions_map.insert("ackley", TestFunctionVar::Single(test_functions::ackley));
+    test_functions_map.insert(
+        "himmelblau",
+        TestFunctionVar::Single(test_functions::himmelblau),
+    );
+    test_functions_map.insert("sphere", TestFunctionVar::Single(test_functions::sphere));
+    test_functions_map.insert(
+        "rastrigin",
+        TestFunctionVar::Single(test_functions::rastrigin),
+    );
+    test_functions_map.insert(
+        "hyper-ellipsoid",
+        TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
+    );
+    test_functions_map.insert(
+        "moved-hyper-ellipsoid",
+        TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid),
+    );
+    // Multi-objective
+    test_functions_map.insert(
+        "schaffer1",
+        TestFunctionVar::Multi(test_functions::schaffer1),
+    );
+    test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
+
     let subcommands: Vec<_> = algorithms
         .iter()
         .map(|(name, &(subcommand, _))| subcommand(name))
         .collect();
+    let test_function_names: Vec<_> = test_functions_map.keys().map(|&k| k).collect();
     let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
         .arg(
             Arg::with_name("test_function")
@@ -52,18 +89,7 @@ fn main() {
                 .value_name("test_function")
                 .help("Name of test function")
                 .required(true)
-                .possible_values(&[
-                    "ackley",
-                    "himmelblau",
-                    "rosenbrock",
-                    "zakharov",
-                    "zdt1",
-                    "schaffer1",
-                    "hyper-ellipsoid",
-                    "moved-hyper-ellipsoid",
-                    "sphere",
-                    "rastrigin",
-                ])
+                .possible_values(&test_function_names)
                 .takes_value(true),
         )
         .arg(
@@ -116,21 +142,10 @@ fn main() {
         .get_matches();
 
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
-    let test_function = match test_function_name.as_ref() {
-        "rosenbrock" => TestFunctionVar::Single(test_functions::rosenbrock),
-        "zakharov" => TestFunctionVar::Single(test_functions::zakharov),
-        "ackley" => TestFunctionVar::Single(test_functions::ackley),
-        "himmelblau" => TestFunctionVar::Single(test_functions::himmelblau),
-        "sphere" => TestFunctionVar::Single(test_functions::sphere),
-        "rastrigin" => TestFunctionVar::Single(test_functions::rastrigin),
-        "zdt1" => TestFunctionVar::Multi(test_functions::zdt1),
-        "schaffer1" => TestFunctionVar::Multi(test_functions::schaffer1),
-        "hyper-ellipsoid" => TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
-        "moved-hyper-ellipsoid" => {
-            TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid)
-        }
-        _ => panic!("Test function does not exist"),
-    };
+    let test_function = test_functions_map
+        .get(test_function_name.as_str())
+        .unwrap()
+        .clone();
 
     let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
     let common = CommonConfig {
