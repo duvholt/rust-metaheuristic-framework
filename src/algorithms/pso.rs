@@ -2,6 +2,60 @@ use solution::{solutions_to_json, Solution, SolutionJSON};
 use position::random_position;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use test_functions::SingleTestFunctionVar;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("particle swarm optimization")
+        .arg(
+            Arg::with_name("c1")
+                .long("c1")
+                .value_name("c1")
+                .help("C1 constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("c2")
+                .long("c2")
+                .value_name("c2")
+                .help("C2 constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("inertia")
+                .long("inertia")
+                .value_name("inertia")
+                .help("inertia constant")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    test_function: SingleTestFunctionVar,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
+    let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
+    let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(1.1);
+    println!(
+        "Running PSO with C1: {}, C2: {} inertia: {}",
+        c1, c2, inertia
+    );
+
+    let config = Config {
+        space: common.upper_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        c1,
+        c2,
+        inertia,
+    };
+    run(config, &test_function)
+}
 
 type Position = Vec<f64>;
 type Velocity = Position;
