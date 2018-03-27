@@ -13,9 +13,10 @@ use rustoa::algorithms::ewa;
 use rustoa::algorithms::mopso;
 use rustoa::solution::{SolutionJSON, Solutions};
 use rustoa::config::CommonConfig;
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg, ArgMatches};
 use std::fs::File;
 use std::io::prelude::*;
+use std::collections::HashMap;
 
 fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);
@@ -28,7 +29,21 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
     file.write_all(json_solutions.as_bytes()).unwrap();
 }
 
+type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
+type AlgorithmRun = fn(&CommonConfig, TestFunctionVar, &ArgMatches) -> Vec<SolutionJSON>;
+
 fn main() {
+    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmRun)> = HashMap::new();
+    algorithms.insert("da", (da::subcommand, da::run_subcommand));
+    algorithms.insert("dummy", (dummy::subcommand, dummy::run_subcommand));
+    algorithms.insert("ewa", (ewa::subcommand, ewa::run_subcommand));
+    algorithms.insert("pso", (pso::subcommand, pso::run_subcommand));
+    algorithms.insert("sa", (sa::subcommand, sa::run_subcommand));
+    algorithms.insert("mopso", (mopso::subcommand, mopso::run_subcommand));
+    let subcommands: Vec<_> = algorithms
+        .iter()
+        .map(|(name, &(subcommand, _))| subcommand(name))
+        .collect();
     let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
         .arg(
             Arg::with_name("test_function")
@@ -97,12 +112,7 @@ fn main() {
                 .long("verbose")
                 .help("Verbose output"),
         )
-        .subcommand(sa::subcommand("sa"))
-        .subcommand(dummy::subcommand("dummy"))
-        .subcommand(pso::subcommand("pso"))
-        .subcommand(mopso::subcommand("mopso"))
-        .subcommand(ewa::subcommand("ewa"))
-        .subcommand(da::subcommand("da"))
+        .subcommands(subcommands)
         .get_matches();
 
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
@@ -141,29 +151,13 @@ fn main() {
         common.population
     );
 
-    let solutions = match matches.subcommand() {
-        ("sa", Some(sub_m)) => {
-            sa::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
-        }
-        ("pso", Some(sub_m)) => {
-            pso::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
-        }
-        ("mopso", Some(sub_m)) => {
-            mopso::run_subcommand(&common, test_functions::get_multi(test_function), sub_m)
-        }
-        ("ewa", Some(sub_m)) => {
-            ewa::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
-        }
-        ("dummy", Some(sub_m)) => {
-            dummy::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
-        }
-        ("da", Some(sub_m)) => {
-            da::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
-        }
-        _ => {
-            panic!("Algorithm was not specified!");
-        }
-    };
+    let (algorithm_name, sub_m) = matches.subcommand();
+    // Lookup algorithm in hashmap or panic with a message
+    let &(_, run_subcommand) = algorithms
+        .get(algorithm_name)
+        .unwrap_or_else(|| panic!("Algorithm was not specified!"));
+    // Run algorithm
+    let solutions = run_subcommand(&common, test_function, sub_m.unwrap());
 
     if let Some(solution) = solutions.last() {
         println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);

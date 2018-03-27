@@ -6,7 +6,7 @@ use solution::{solutions_to_json, Solution, SolutionJSON};
 use distribution::cauchy;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::SingleTestFunctionVar;
+use test_functions::{get_single, TestFunctionVar};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -29,7 +29,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: SingleTestFunctionVar,
+    test_function: TestFunctionVar,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
@@ -44,7 +44,7 @@ pub fn run_subcommand(
         beta,
         similarity,
     };
-    run(config, &test_function)
+    run(config, &get_single(test_function))
 }
 
 #[derive(Debug)]

@@ -3,7 +3,7 @@ use position::random_position;
 use rand::{thread_rng, Rng};
 use domination::dominates;
 use archive::Archive;
-use test_functions::{MultiTestFunction, MultiTestFunctionVar};
+use test_functions::{get_multi, MultiTestFunction, TestFunctionVar};
 use config::CommonConfig;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
@@ -58,7 +58,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: MultiTestFunctionVar,
+    test_function: TestFunctionVar,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -86,7 +86,7 @@ pub fn run_subcommand(
         divisions,
         mutation_rate,
     };
-    run(config, &test_function)
+    run(config, &get_multi(test_function))
 }
 
 type Position = Vec<f64>;
