@@ -99,10 +99,26 @@ pub fn moved_axis_parallel_hyper_ellipsoid_function(x: &Vec<f64>) -> f64 {
         .sum()
 }
 
+pub fn sphere(x: &Vec<f64>) -> f64 {
+    (0..x.len()).map(|i| x[i].powi(2)).sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use test::Bencher;
+
+    #[test]
+    fn sphere_optimum() {
+        assert_eq!(sphere(&vec![0.0]), 0.0);
+        assert_eq!(sphere(&vec![0.0, 0.0, 0.0]), 0.0);
+    }
+
+    #[test]
+    fn sphere_not_optimum() {
+        assert_ne!(sphere(&vec![2.0]), 0.0);
+        assert_ne!(sphere(&vec![0.1, 0.0, 0.0]), 0.0);
+    }
 
     #[test]
     fn axis_parallel_hyper_ellipsoid_function_test() {

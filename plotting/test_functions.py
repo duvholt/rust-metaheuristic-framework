@@ -39,3 +39,6 @@ def axis_parallel_hyper_ellipsoid_function(X, Y):
 
 def moved_axis_parallel_hyper_ellipsoid_function(X, Y):
     return (X - 5)**2 + (2 * (Y - 5*2))**2
+
+def sphere(X, Y):
+    return X**2 + Y**2
