@@ -12,6 +12,7 @@ use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
 use rustoa::algorithms::mopso;
 use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::config::CommonConfig;
 use clap::{App, Arg, SubCommand};
 use std::fs::File;
 use std::io::prelude::*;
@@ -96,26 +97,7 @@ fn main() {
                 .long("verbose")
                 .help("Verbose output"),
         )
-        .subcommand(
-            SubCommand::with_name("sa")
-                .about("simulated annealing")
-                .arg(
-                    Arg::with_name("start_t")
-                        .short("t")
-                        .long("temperature")
-                        .value_name("start_t")
-                        .help("Start temperature")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("cooldown")
-                        .short("-c")
-                        .long("cooldown")
-                        .value_name("cooldown")
-                        .help("Cooldown rate")
-                        .takes_value(true),
-                ),
-        )
+        .subcommand(sa::subcommand("sa"))
         .subcommand(
             SubCommand::with_name("dummy").about("dummy solver").arg(
                 Arg::with_name("example")
@@ -254,14 +236,7 @@ fn main() {
         )
         .get_matches();
 
-    let verbose = matches.is_present("verbose");
-    let iterations = value_t!(matches, "iterations", i64).unwrap_or(1000);
-    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
-    let lower_bound = value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound);
-    let dimension = value_t!(matches, "dimension", usize).unwrap_or(2);
-    let population = value_t!(matches, "population", usize).unwrap_or(50);
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
-
     let test_function = match test_function_name.as_ref() {
         "rosenbrock" => TestFunctionVar::Single(test_functions::rosenbrock),
         "zakharov" => TestFunctionVar::Single(test_functions::zakharov),
@@ -278,23 +253,28 @@ fn main() {
         _ => panic!("Test function does not exist"),
     };
 
+    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
+    let common = CommonConfig {
+        verbose: matches.is_present("verbose"),
+        iterations: value_t!(matches, "iterations", i64).unwrap_or(1000),
+        upper_bound,
+        lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
+        dimension: value_t!(matches, "dimension", usize).unwrap_or(2),
+        population: value_t!(matches, "population", usize).unwrap_or(50),
+    };
+
     println!(
         "Max iterations: {}, Upper bound: {}, Lower bound: {}, Function: {}, Population: {}",
-        iterations, upper_bound, lower_bound, test_function_name, population
+        common.iterations,
+        common.upper_bound,
+        common.lower_bound,
+        test_function_name,
+        common.population
     );
 
     let solutions = match matches.subcommand() {
         ("sa", Some(sub_m)) => {
-            let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
-            let cooldown = value_t!(sub_m, "cooldown", f64).unwrap_or(0.9);
-
-            println!(
-                "Running SA with start T: {}, cooldown: {}",
-                start_t, cooldown
-            );
-            let config = sa::Config::new(start_t, cooldown, iterations, upper_bound, dimension);
-
-            sa::run(config, &test_functions::get_single(test_function))
+            sa::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("pso", Some(sub_m)) => {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
@@ -306,10 +286,10 @@ fn main() {
             );
 
             let config = pso::Config {
-                space: upper_bound,
-                dimension,
-                iterations,
-                population,
+                space: common.upper_bound,
+                dimension: common.dimension,
+                iterations: common.iterations,
+                population: common.population,
                 c1,
                 c2,
                 inertia,
@@ -320,7 +300,7 @@ fn main() {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
             let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
             let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
-            let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(population);
+            let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
             let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
             let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
             println!(
@@ -329,18 +309,18 @@ fn main() {
             );
 
             let config = mopso::Config {
-                upper_bound,
-                lower_bound,
-                dimension,
-                iterations,
-                population,
+                upper_bound: common.upper_bound,
+                lower_bound: common.lower_bound,
+                dimension: common.dimension,
+                iterations: common.iterations,
+                population: common.population,
+                verbose: common.verbose,
                 c1,
                 c2,
                 inertia,
                 archive_size,
                 divisions,
                 mutation_rate,
-                verbose,
             };
             mopso::run(config, &test_functions::get_multi(test_function))
         }
@@ -350,10 +330,10 @@ fn main() {
             println!("Running EWA with beta: {} similarity: {}", beta, similarity);
 
             let config = ewa::Config {
-                space: upper_bound,
-                dimension,
-                iterations,
-                population,
+                space: common.upper_bound,
+                dimension: common.dimension,
+                iterations: common.iterations,
+                population: common.population,
                 beta,
                 similarity,
             };
@@ -376,11 +356,11 @@ fn main() {
                 r, e, normal_seeds, self_learning_seeds
             );
             let config = da::Config {
-                upper_bound,
-                lower_bound,
-                dimension,
-                iterations,
-                population,
+                upper_bound: common.upper_bound,
+                lower_bound: common.lower_bound,
+                dimension: common.dimension,
+                iterations: common.iterations,
+                population: common.population,
                 r,
                 e,
                 normal_seeds,

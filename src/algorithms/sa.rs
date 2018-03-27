@@ -2,6 +2,53 @@ use solution::SolutionJSON;
 use rand;
 use rand::{thread_rng, Rng};
 use rand::distributions::{IndependentSample, Range};
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use test_functions::SingleTestFunctionVar;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("simulated annealing")
+        .arg(
+            Arg::with_name("start_t")
+                .short("t")
+                .long("temperature")
+                .value_name("start_t")
+                .help("Start temperature")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("cooldown")
+                .short("-c")
+                .long("cooldown")
+                .value_name("cooldown")
+                .help("Cooldown rate")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    test_function: SingleTestFunctionVar,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
+    let cooldown = value_t!(sub_m, "cooldown", f64).unwrap_or(0.9);
+
+    println!(
+        "Running SA with start T: {}, cooldown: {}",
+        start_t, cooldown
+    );
+    let config = Config::new(
+        start_t,
+        cooldown,
+        common.iterations,
+        common.upper_bound,
+        common.dimension,
+    );
+
+    run(config, &test_function)
+}
 
 pub struct Config {
     pub start_t: f64,

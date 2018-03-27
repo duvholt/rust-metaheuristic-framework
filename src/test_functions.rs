@@ -3,8 +3,8 @@ use std::f64::consts;
 pub type SingleTestFunction = Fn(&Vec<f64>) -> f64;
 pub type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
 
-type SingleTestFunctionVar = fn(&Vec<f64>) -> f64;
-type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
+pub type SingleTestFunctionVar = fn(&Vec<f64>) -> f64;
+pub type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
 pub enum TestFunctionVar {
     Single(SingleTestFunctionVar),
     Multi(MultiTestFunctionVar),
