@@ -4,7 +4,7 @@ use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::SingleTestFunctionVar;
+use test_functions::{get_single, TestFunctionVar};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -34,7 +34,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: SingleTestFunctionVar,
+    test_function: TestFunctionVar,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
@@ -54,7 +54,7 @@ pub fn run_subcommand(
         c2,
         inertia,
     };
-    run(config, &test_function)
+    run(config, &get_single(test_function))
 }
 
 type Position = Vec<f64>;

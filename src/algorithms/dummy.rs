@@ -1,7 +1,7 @@
 use solution::SolutionJSON;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::SingleTestFunctionVar;
+use test_functions::{get_single, TestFunctionVar};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name).about("dummy solver").arg(
@@ -15,14 +15,14 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     _common: &CommonConfig,
-    test_function: SingleTestFunctionVar,
+    test_function: TestFunctionVar,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
     println!("Running dummy solver with example: {}", example);
     let config = Config::new(example);
 
-    run(config, &test_function)
+    run(config, &get_single(test_function))
 }
 
 pub struct Config {
