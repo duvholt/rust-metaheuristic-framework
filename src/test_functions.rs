@@ -103,10 +103,30 @@ pub fn sphere(x: &Vec<f64>) -> f64 {
     (0..x.len()).map(|i| x[i].powi(2)).sum()
 }
 
+pub fn rastrigin(x: &Vec<f64>) -> f64 {
+    let a = 10.0;
+    let sum: f64 = (0..x.len())
+        .map(|i| x[i].powi(2) - a * (2.0 * consts::PI * x[i]).cos())
+        .sum();
+    a * x.len() as f64 + sum
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use test::Bencher;
+
+    #[test]
+    fn rastrigin_optimum() {
+        assert_eq!(rastrigin(&vec![0.0]), 0.0);
+        assert_eq!(rastrigin(&vec![0.0, 0.0]), 0.0);
+    }
+
+    #[test]
+    fn rastrigin_not_optimum() {
+        assert_ne!(rastrigin(&vec![1.0]), 0.0);
+        assert_ne!(rastrigin(&vec![0.0, 0.1]), 0.0);
+    }
 
     #[test]
     fn sphere_optimum() {

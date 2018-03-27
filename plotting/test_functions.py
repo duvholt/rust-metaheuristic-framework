@@ -42,3 +42,7 @@ def moved_axis_parallel_hyper_ellipsoid_function(X, Y):
 
 def sphere(X, Y):
     return X**2 + Y**2
+
+def rastrigin(X, Y):
+    a = 10.0
+    return a * 2 + (X**2 - a * np.cos(2 * np.pi * X)) + (Y**2 - a * np.cos(2 * np.pi * Y))
