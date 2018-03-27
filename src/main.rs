@@ -98,40 +98,8 @@ fn main() {
                 .help("Verbose output"),
         )
         .subcommand(sa::subcommand("sa"))
-        .subcommand(
-            SubCommand::with_name("dummy").about("dummy solver").arg(
-                Arg::with_name("example")
-                    .long("example")
-                    .value_name("example")
-                    .help("example argument")
-                    .takes_value(true),
-            ),
-        )
-        .subcommand(
-            SubCommand::with_name("pso")
-                .about("particle swarm optimization")
-                .arg(
-                    Arg::with_name("c1")
-                        .long("c1")
-                        .value_name("c1")
-                        .help("C1 constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("c2")
-                        .long("c2")
-                        .value_name("c2")
-                        .help("C2 constant")
-                        .takes_value(true),
-                )
-                .arg(
-                    Arg::with_name("inertia")
-                        .long("inertia")
-                        .value_name("inertia")
-                        .help("inertia constant")
-                        .takes_value(true),
-                ),
-        )
+        .subcommand(dummy::subcommand("dummy"))
+        .subcommand(pso::subcommand("pso"))
         .subcommand(
             SubCommand::with_name("mopso")
                 .about("particle swarm optimization")
@@ -277,24 +245,7 @@ fn main() {
             sa::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("pso", Some(sub_m)) => {
-            let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
-            let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
-            let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(1.1);
-            println!(
-                "Running PSO with C1: {}, C2: {} inertia: {}",
-                c1, c2, inertia
-            );
-
-            let config = pso::Config {
-                space: common.upper_bound,
-                dimension: common.dimension,
-                iterations: common.iterations,
-                population: common.population,
-                c1,
-                c2,
-                inertia,
-            };
-            pso::run(config, &test_functions::get_single(test_function))
+            pso::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("mopso", Some(sub_m)) => {
             let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -340,11 +291,7 @@ fn main() {
             ewa::run(config, &test_functions::get_single(test_function))
         }
         ("dummy", Some(sub_m)) => {
-            let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
-            println!("Running dummy solver with example: {}", example);
-            let config = dummy::Config::new(example);
-
-            dummy::run(config, &test_functions::get_single(test_function))
+            dummy::run_subcommand(&common, test_functions::get_single(test_function), sub_m)
         }
         ("da", Some(sub_m)) => {
             let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
