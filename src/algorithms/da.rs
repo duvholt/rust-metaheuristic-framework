@@ -1,6 +1,6 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use fitness_evaluation::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, FitnessEvaluator, TestFunctionVar};
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use solution::Solution;
@@ -69,7 +69,7 @@ pub fn run_subcommand(
         self_learning_seeds,
     };
 
-    run(config, &get_single(test_function))
+    run(config, FitnessEvaluator::new(get_single(test_function)))
 }
 
 pub struct Config {
@@ -111,15 +111,15 @@ impl Solution<f64> for Seed {
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Dandelion>,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: FitnessEvaluator<f64>,
 }
 
 impl<'a> Swarm<'a> {
-    fn new(config: &'a Config, test_function: &'a Fn(&Vec<f64>) -> f64) -> Swarm<'a> {
+    fn new(config: &'a Config, fitness_evaluator: FitnessEvaluator<f64>) -> Swarm<'a> {
         Swarm {
             config,
             population: vec![],
-            test_function,
+            fitness_evaluator,
         }
     }
 
@@ -248,7 +248,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn get_solutions(&self) -> Vec<SolutionJSON> {
@@ -260,9 +260,9 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
+pub fn run(config: Config, fitness_evaluator: FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut i = 1;
-    let mut swarm = Swarm::new(&config, &test_function);
+    let mut swarm = Swarm::new(&config, fitness_evaluator);
     let mut solutions = vec![];
 
     swarm.population = swarm.generate_random_population(config.population);
@@ -316,7 +316,7 @@ mod tests {
     fn find_average_seed_position_test() {
         let config = create_config();
         let swarm = Swarm {
-            test_function: &rosenbrock,
+            fitness_evaluator: FitnessEvaluator::new(rosenbrock),
             config: &config,
             population: vec![],
         };
@@ -349,7 +349,7 @@ mod tests {
     fn calculate_core_radius_test() {
         let config = create_config();
         let mut swarm = Swarm {
-            test_function: &rosenbrock,
+            fitness_evaluator: FitnessEvaluator::new(rosenbrock),
             config: &config,
             population: vec![],
         };
@@ -380,7 +380,7 @@ mod tests {
     fn bench_da(b: &mut Bencher) {
         b.iter(|| {
             let config = create_config();
-            run(config, &rosenbrock);
+            run(config, FitnessEvaluator::new(rosenbrock));
         });
     }
 }
