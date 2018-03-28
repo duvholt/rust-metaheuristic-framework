@@ -2,7 +2,7 @@ use archive::Archive;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use domination::dominates;
-use fitness_evaluation::{get_multi, FitnessEvaluator, TestFunctionVar};
+use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
 use rand::{thread_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
@@ -58,7 +58,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    function_evaluator: FitnessEvaluator<Vec<f64>>,
+    function_evaluator: &FitnessEvaluator<Vec<f64>>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -129,12 +129,12 @@ impl Solution<Vec<f64>> for Particle {
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Particle>,
-    fitness_evaluator: FitnessEvaluator<Vec<f64>>,
+    fitness_evaluator: &'a FitnessEvaluator<Vec<f64>>,
     archive: Archive<Particle>,
 }
 
 impl<'a> Swarm<'a> {
-    fn new(config: &'a Config, fitness_evaluator: FitnessEvaluator<Vec<f64>>) -> Swarm<'a> {
+    fn new(config: &'a Config, fitness_evaluator: &'a FitnessEvaluator<Vec<f64>>) -> Swarm<'a> {
         Swarm {
             config,
             population: vec![],
@@ -282,7 +282,7 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, fitness_evaluator: FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
+pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
     let mut swarm = Swarm::new(&config, fitness_evaluator);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
@@ -336,7 +336,8 @@ mod tests {
     #[test]
     fn generates_population() {
         let config = create_config();
-        let swarm = Swarm::new(&config, FitnessEvaluator::new(multi_dummy));
+        let function_evaluator = FitnessEvaluator::new(multi_dummy, 1000);
+        let swarm = Swarm::new(&config, &function_evaluator);
 
         let population = swarm.generate_population(10);
 
@@ -351,7 +352,8 @@ mod tests {
             create_particle_with_fitness(1.0),
             create_particle_with_fitness(0.1),
         ];
-        let mut swarm = Swarm::new(&config, FitnessEvaluator::new(multi_dummy));
+        let function_evaluator = FitnessEvaluator::new(multi_dummy, 1000);
+        let mut swarm = Swarm::new(&config, &function_evaluator);
         swarm.population = population;
         let particle = create_particle_with_fitness(2.0);
         let leader = create_particle_with_fitness(0.01);
@@ -363,6 +365,6 @@ mod tests {
     #[ignore]
     #[bench]
     fn bench_run(b: &mut Bencher) {
-        b.iter(|| run(create_config(), FitnessEvaluator::new(multi_dummy)));
+        b.iter(|| run(create_config(), &FitnessEvaluator::new(multi_dummy, 1000)));
     }
 }
