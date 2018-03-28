@@ -75,6 +75,7 @@ fn main() {
         TestFunctionVar::Multi(test_functions::schaffer1),
     );
     test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
+    test_functions_map.insert("zdt2", TestFunctionVar::Multi(test_functions::zdt2));
 
     let subcommands: Vec<_> = algorithms
         .iter()
