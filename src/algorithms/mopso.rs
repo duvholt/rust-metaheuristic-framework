@@ -3,7 +3,91 @@ use position::random_position;
 use rand::{thread_rng, Rng};
 use domination::dominates;
 use archive::Archive;
-use test_functions::MultiTestFunction;
+use test_functions::{get_multi, MultiTestFunction, TestFunctionVar};
+use config::CommonConfig;
+use clap::{App, Arg, ArgMatches, SubCommand};
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("particle swarm optimization")
+        .arg(
+            Arg::with_name("c1")
+                .long("c1")
+                .value_name("c1")
+                .help("C1 constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("c2")
+                .long("c2")
+                .value_name("c2")
+                .help("C2 constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("inertia")
+                .long("inertia")
+                .value_name("inertia")
+                .help("inertia constant")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("archive_size")
+                .short("-a")
+                .long("archive_size")
+                .value_name("archive_size")
+                .help("archive size")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("divisions")
+                .long("divisions")
+                .value_name("divisions")
+                .help("number of archive divisions")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("mutation_rate")
+                .short("-m")
+                .long("mutation_rate")
+                .value_name("mutation_rate")
+                .help("mutation rate")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    test_function: TestFunctionVar,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
+    let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
+    let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(0.4);
+    let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
+    let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
+    let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
+    println!(
+        "Running MOPSO with C1: {}, C2: {} inertia: {}",
+        c1, c2, inertia
+    );
+
+    let config = Config {
+        upper_bound: common.upper_bound,
+        lower_bound: common.lower_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        verbose: common.verbose,
+        c1,
+        c2,
+        inertia,
+        archive_size,
+        divisions,
+        mutation_rate,
+    };
+    run(config, &get_multi(test_function))
+}
 
 type Position = Vec<f64>;
 type Velocity = Position;
