@@ -1,10 +1,10 @@
-use solution::{solutions_to_json, Solution, SolutionJSON};
-use position::random_position;
-use rand::{thread_rng, Rng};
-use std::cmp::Ordering;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, TestFunctionVar};
+use position::random_position;
+use rand::{thread_rng, Rng};
+use solution::{solutions_to_json, Solution, SolutionJSON};
+use std::cmp::Ordering;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -230,8 +230,8 @@ pub fn run(config: Config, test_function: &TestFunction) -> Vec<SolutionJSON> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::rosenbrock;
     use test::Bencher;
+    use test_functions::rosenbrock;
 
     fn create_config() -> Config {
         Config {

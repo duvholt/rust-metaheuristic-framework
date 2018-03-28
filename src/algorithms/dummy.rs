@@ -1,7 +1,7 @@
-use solution::SolutionJSON;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, TestFunctionVar};
+use solution::SolutionJSON;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name).about("dummy solver").arg(

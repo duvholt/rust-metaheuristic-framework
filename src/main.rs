@@ -3,20 +3,20 @@ extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
-use rustoa::test_functions;
-use test_functions::TestFunctionVar;
-use rustoa::algorithms::sa;
+use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
-use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
 use rustoa::algorithms::mopso;
-use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::algorithms::pso;
+use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
-use clap::{App, Arg, ArgMatches};
+use rustoa::fitness_evaluation::TestFunctionVar;
+use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::test_functions;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::collections::HashMap;
 
 fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);

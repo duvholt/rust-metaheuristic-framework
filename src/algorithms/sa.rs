@@ -1,10 +1,10 @@
-use solution::SolutionJSON;
-use rand;
-use rand::{thread_rng, Rng};
-use rand::distributions::{IndependentSample, Range};
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, TestFunctionVar};
+use rand;
+use rand::distributions::{IndependentSample, Range};
+use rand::{thread_rng, Rng};
+use solution::SolutionJSON;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)

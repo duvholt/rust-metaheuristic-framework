@@ -1,5 +1,5 @@
-use std::collections::HashSet;
 use solution::Solution;
+use std::collections::HashSet;
 
 pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
     let mut equal = true;
