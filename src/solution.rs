@@ -18,25 +18,20 @@ impl SolutionJSON {
     }
 }
 
-pub trait Solution {
-    fn position(&self) -> Vec<f64>;
-    fn fitness(&self) -> f64;
-}
-
-pub trait MultiSolution {
+pub trait Solution<F> {
     fn position(&self) -> &Vec<f64>;
-    fn fitness(&self) -> &Vec<f64>;
+    fn fitness(&self) -> &F;
 }
 
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
 where
-    S: Solution,
+    S: Solution<f64>,
 {
     let mut solutions: Vec<SolutionJSON> = population
         .iter()
         .map(|solution| SolutionJSON {
-            x: solution.position(),
-            fitness: vec![solution.fitness()],
+            x: solution.position().to_vec(),
+            fitness: vec![solution.fitness().clone()],
         })
         .collect();
     solutions.sort_unstable_by(|a, b| {
@@ -49,7 +44,7 @@ where
 
 pub fn multi_solutions_to_json<M>(population: Vec<M>) -> Vec<SolutionJSON>
 where
-    M: MultiSolution,
+    M: Solution<Vec<f64>>,
 {
     population
         .iter()
