@@ -1,12 +1,12 @@
-use rand::{thread_rng, Rng};
-use std::cmp::Ordering;
-use selection::roulette_wheel;
-use position::random_position;
-use solution::{solutions_to_json, Solution, SolutionJSON};
-use distribution::cauchy;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use distribution::cauchy;
+use fitness_evaluation::{get_single, TestFunctionVar};
+use position::random_position;
+use rand::{thread_rng, Rng};
+use selection::roulette_wheel;
+use solution::{solutions_to_json, Solution, SolutionJSON};
+use std::cmp::Ordering;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)

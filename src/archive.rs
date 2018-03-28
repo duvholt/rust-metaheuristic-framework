@@ -1,9 +1,9 @@
+use domination::find_non_dominated;
+use rand::{thread_rng, Rng};
+use selection::roulette_wheel;
 use solution::Solution;
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
-use domination::find_non_dominated;
-use selection::roulette_wheel;
-use rand::{thread_rng, Rng};
 use std::fmt::Debug;
 
 #[derive(Debug, PartialEq, Clone)]

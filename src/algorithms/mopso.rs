@@ -1,11 +1,11 @@
-use solution::{multi_solutions_to_json, Solution, SolutionJSON};
+use archive::Archive;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use domination::dominates;
+use fitness_evaluation::{get_multi, MultiTestFunction, TestFunctionVar};
 use position::random_position;
 use rand::{thread_rng, Rng};
-use domination::dominates;
-use archive::Archive;
-use test_functions::{get_multi, MultiTestFunction, TestFunctionVar};
-use config::CommonConfig;
-use clap::{App, Arg, ArgMatches, SubCommand};
+use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -304,8 +304,8 @@ pub fn run(config: Config, test_function: &MultiTestFunction) -> Vec<SolutionJSO
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::multi_dummy;
     use test::Bencher;
+    use test_functions::multi_dummy;
 
     fn create_config() -> Config {
         Config {

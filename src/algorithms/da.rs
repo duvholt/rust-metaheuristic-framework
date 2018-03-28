@@ -1,11 +1,11 @@
-use solution::{solutions_to_json, SolutionJSON};
-use rand::distributions::{IndependentSample, Range};
-use rand::{thread_rng, Rng};
-use std::f64;
-use solution::Solution;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, TestFunctionVar};
+use rand::distributions::{IndependentSample, Range};
+use rand::{thread_rng, Rng};
+use solution::Solution;
+use solution::{solutions_to_json, SolutionJSON};
+use std::f64;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -283,8 +283,8 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::rosenbrock;
     use test::Bencher;
+    use test_functions::rosenbrock;
 
     fn create_config() -> Config {
         Config {
