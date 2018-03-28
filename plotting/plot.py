@@ -77,26 +77,23 @@ def multi_plot(json_solutions):
     solutions = np.array(list(
         map(lambda s: s['fitness'], json_solutions['solutions'])
     ))
-
-    print(solutions)
-
-    x = solutions[:, 0]
-    y = solutions[:, 1]
-    plot.scatter(x, y, marker='o', s=5)
+    solutions = np.transpose(solutions)
 
     function_name = json_solutions['test_function']
-    plot_data = json.load(open(function_name + '.json'))
-    pf_true = np.array(plot_data)
+    plot_data = json.load(open(function_name + '-' + str(len(solutions)) + 'd.json'))
+    pf_true = np.transpose(np.array(plot_data))
 
-    x = pf_true[:, 0]
-    y = pf_true[:, 1]
-    plot.scatter(x, y, marker='x', s=0.5)
+    if len(solutions) == 2:
+        ax = plot
+    elif len(solutions) == 3:
+        fig = plot.figure()
+        ax = Axes3D(fig)
+    else:
+        print('WARNING! Too many objectives to plot!')
+        return
 
-    # Show the boundary between the regions:
-    # theta = np.arange(0, np.pi / 2, 0.01)
-    # r0 = 0.6
-    # plot.plot(r0 * np.cos(theta), r0 * np.sin(theta))
-
+    ax.scatter(*solutions, marker='o', s=5)
+    ax.scatter(*pf_true, marker='x', s=0.5)
     plot.show()
 
 
