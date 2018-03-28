@@ -58,7 +58,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: FitnessEvaluator<Vec<f64>>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -86,7 +86,7 @@ pub fn run_subcommand(
         divisions,
         mutation_rate,
     };
-    run(config, FitnessEvaluator::new(get_multi(test_function)))
+    run(config, function_evaluator)
 }
 
 type Position = Vec<f64>;

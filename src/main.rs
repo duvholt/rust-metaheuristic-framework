@@ -11,8 +11,8 @@ use rustoa::algorithms::mopso;
 use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
-use rustoa::fitness_evaluation::TestFunctionVar;
-use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
+use rustoa::solution::{ObjectiveType, SolutionJSON, Solutions};
 use rustoa::test_functions;
 use std::collections::HashMap;
 use std::fs::File;
@@ -30,16 +30,44 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
 }
 
 type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun = fn(&CommonConfig, TestFunctionVar, &ArgMatches) -> Vec<SolutionJSON>;
+type AlgorithmRun<S> = fn(&CommonConfig, FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
+enum AlgorithmType {
+    Single(AlgorithmRun<f64>),
+    Multi(AlgorithmRun<Vec<f64>>),
+}
 
 fn main() {
-    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmRun)> = HashMap::new();
-    algorithms.insert("da", (da::subcommand, da::run_subcommand));
-    algorithms.insert("dummy", (dummy::subcommand, dummy::run_subcommand));
-    algorithms.insert("ewa", (ewa::subcommand, ewa::run_subcommand));
-    algorithms.insert("pso", (pso::subcommand, pso::run_subcommand));
-    algorithms.insert("sa", (sa::subcommand, sa::run_subcommand));
-    algorithms.insert("mopso", (mopso::subcommand, mopso::run_subcommand));
+    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
+    algorithms.insert(
+        "da",
+        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
+    );
+    algorithms.insert(
+        "dummy",
+        (
+            dummy::subcommand,
+            AlgorithmType::Single(dummy::run_subcommand),
+        ),
+    );
+    algorithms.insert(
+        "ewa",
+        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
+    );
+    algorithms.insert(
+        "pso",
+        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
+    );
+    algorithms.insert(
+        "sa",
+        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
+    );
+    algorithms.insert(
+        "mopso",
+        (
+            mopso::subcommand,
+            AlgorithmType::Multi(mopso::run_subcommand),
+        ),
+    );
 
     let mut test_functions_map = HashMap::new();
     // Single-objective
@@ -172,11 +200,20 @@ fn main() {
 
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
-    let &(_, run_subcommand) = algorithms
+    let &(_, ref run_subcommand) = algorithms
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
     // Run algorithm
-    let solutions = run_subcommand(&common, test_function, sub_m.unwrap());
+    let solutions = match run_subcommand {
+        &AlgorithmType::Single(run) => {
+            let fitness_evaluator = FitnessEvaluator::new(get_single(test_function));
+            run(&common, fitness_evaluator, sub_m.unwrap())
+        }
+        &AlgorithmType::Multi(run) => {
+            let fitness_evaluator = FitnessEvaluator::new(get_multi(test_function));
+            run(&common, fitness_evaluator, sub_m.unwrap())
+        }
+    };
 
     if let Some(solution) = solutions.last() {
         println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
