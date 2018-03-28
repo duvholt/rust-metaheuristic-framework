@@ -22,3 +22,42 @@ pub fn get_multi(test_function_var: TestFunctionVar) -> MultiTestFunctionVar {
         _ => panic!("Algorithm only supports multi objective functions"),
     }
 }
+
+pub struct FitnessEvaluator<F> {
+    test_function: fn(&Vec<f64>) -> F,
+}
+
+impl<F> FitnessEvaluator<F> {
+    pub fn new(test_function: fn(&Vec<f64>) -> F) -> FitnessEvaluator<F> {
+        FitnessEvaluator { test_function }
+    }
+
+    pub fn calculate_fitness(&self, position: &Vec<f64>) -> F {
+        (self.test_function)(position)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_functions::multi_dummy;
+    use test_functions::sphere;
+
+    #[test]
+    fn fitness_evalator_calculates_single_fitness() {
+        let fitness_evalator = FitnessEvaluator::new(sphere);
+
+        let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);
+
+        assert_eq!(fitness, 0.0);
+    }
+
+    #[test]
+    fn fitness_evalator_calculates_multi_fitness() {
+        let fitness_evalator = FitnessEvaluator::new(multi_dummy);
+
+        let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);
+
+        assert_eq!(fitness, vec![0.0, 0.0]);
+    }
+}

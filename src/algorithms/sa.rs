@@ -1,6 +1,6 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use fitness_evaluation::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, FitnessEvaluator, TestFunctionVar};
 use rand;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
@@ -47,7 +47,7 @@ pub fn run_subcommand(
         common.dimension,
     );
 
-    run(config, &get_single(test_function))
+    run(config, FitnessEvaluator::new(get_single(test_function)))
 }
 
 pub struct Config {
@@ -82,24 +82,24 @@ struct SASolution {
     fitness: f64,
 }
 
-struct Neighbourhood<'a> {
+struct Neighbourhood {
     dimonension: usize,
     space: f64,
     rng: rand::ThreadRng,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: FitnessEvaluator<f64>,
 }
 
-impl<'a> Neighbourhood<'a> {
+impl Neighbourhood {
     fn new(
         dimonension: usize,
         space: f64,
-        test_function: &'a Fn(&Vec<f64>) -> f64,
+        fitness_evaluator: FitnessEvaluator<f64>,
     ) -> Neighbourhood {
         return Neighbourhood {
             dimonension,
             space,
             rng: rand::thread_rng(),
-            test_function,
+            fitness_evaluator,
         };
     }
 
@@ -114,7 +114,7 @@ impl<'a> Neighbourhood<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn single_dimension_neighbour(&mut self, x: &f64) -> f64 {
@@ -137,9 +137,9 @@ impl<'a> Neighbourhood<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
+pub fn run(config: Config, fitness_evaluator: FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut t = config.start_t;
-    let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, &test_function);
+    let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, fitness_evaluator);
     let mut current = neighbourhood.random_solution();
     let mut i = 0;
     let mut rng = thread_rng();
@@ -200,7 +200,7 @@ mod tests {
     #[test]
     fn generates_neighbour() {
         let test_function = test_functions::rosenbrock;
-        let mut neighbourhood = Neighbourhood::new(2, 1.0, &test_function);
+        let mut neighbourhood = Neighbourhood::new(2, 1.0, FitnessEvaluator::new(test_function));
         let solution = neighbourhood.random_solution();
         let neighbour = neighbourhood.find(&solution);
 
@@ -218,7 +218,7 @@ mod tests {
         b.iter(|| {
             let config = Config::new(1.0, 0.9, 1000, 4.0, 2);
             let test_function = test_functions::rosenbrock;
-            run(config, &test_function);
+            run(config, FitnessEvaluator::new(test_function));
         });
     }
 }

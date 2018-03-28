@@ -1,7 +1,7 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use distribution::cauchy;
-use fitness_evaluation::{get_single, TestFunctionVar};
+use fitness_evaluation::{get_single, FitnessEvaluator, TestFunctionVar};
 use position::random_position;
 use rand::{thread_rng, Rng};
 use selection::roulette_wheel;
@@ -44,7 +44,7 @@ pub fn run_subcommand(
         beta,
         similarity,
     };
-    run(config, &get_single(test_function))
+    run(config, FitnessEvaluator::new(get_single(test_function)))
 }
 
 #[derive(Debug)]
@@ -82,20 +82,20 @@ impl Solution<f64> for Worm {
 struct Worms<'a> {
     config: &'a Config,
     population: Vec<Worm>,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: FitnessEvaluator<f64>,
 }
 
 impl<'a> Worms<'a> {
-    fn new(config: &'a Config, test_function: &'a Fn(&Vec<f64>) -> f64) -> Worms<'a> {
+    fn new(config: &'a Config, fitness_evaluator: FitnessEvaluator<f64>) -> Worms<'a> {
         Worms {
             config,
             population: vec![],
-            test_function,
+            fitness_evaluator,
         }
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn random_position(&self) -> Vec<f64> {
@@ -207,8 +207,8 @@ impl<'a> Worms<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
-    let mut worms = Worms::new(&config, &test_function);
+pub fn run(config: Config, fitness_evaluator: FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
+    let mut worms = Worms::new(&config, fitness_evaluator);
     worms.population = worms.generate_population(config.population);
     let elites = 2;
     for iteration in 0..config.iterations {
@@ -265,7 +265,7 @@ mod tests {
     #[test]
     fn sorts_population_by_ascending_fitness() {
         let config = create_config();
-        let mut worms = Worms::new(&config, &rosenbrock);
+        let mut worms = Worms::new(&config, FitnessEvaluator::new(rosenbrock));
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
         let worm2 = worms.create_worm(vec![0.2; dimension]);
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn reproduction1_generates_offspring() {
         let config = create_config();
-        let worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, FitnessEvaluator::new(rosenbrock));
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
 
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     fn combines_worms_initial() {
         let config = create_config();
-        let worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, FitnessEvaluator::new(rosenbrock));
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
@@ -309,7 +309,7 @@ mod tests {
     #[test]
     fn combines_worms_iteration2() {
         let config = create_config();
-        let worms = Worms::new(&config, &rosenbrock);
+        let worms = Worms::new(&config, FitnessEvaluator::new(rosenbrock));
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
         let worm2 = worms.create_worm(vec![2.0; dimension]);
@@ -323,7 +323,7 @@ mod tests {
     fn selects_random_other_worm() {
         let mut config = create_config();
         config.population = 3;
-        let mut worms = Worms::new(&config, &rosenbrock);
+        let mut worms = Worms::new(&config, FitnessEvaluator::new(rosenbrock));
         worms.population = worms.generate_population(config.population);
         let worm_index = 1;
 
