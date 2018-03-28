@@ -29,7 +29,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
@@ -47,7 +47,7 @@ pub fn run_subcommand(
         common.dimension,
     );
 
-    run(config, FitnessEvaluator::new(get_single(test_function)))
+    run(config, function_evaluator)
 }
 
 pub struct Config {
