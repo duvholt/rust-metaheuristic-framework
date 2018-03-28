@@ -15,14 +15,14 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     _common: &CommonConfig,
-    function_evaluator: FitnessEvaluator<f64>,
+    function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
     println!("Running dummy solver with example: {}", example);
     let config = Config::new(example);
 
-    run(config, function_evaluator)
+    run(config, &function_evaluator)
 }
 
 pub struct Config {
@@ -35,7 +35,7 @@ impl Config {
     }
 }
 
-pub fn run(config: Config, function_evaluator: FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
+pub fn run(config: Config, function_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     println!("Running dummy solver. Example: {}", config.example);
     vec![
         SolutionJSON::new(

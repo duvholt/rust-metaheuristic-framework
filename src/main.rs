@@ -12,7 +12,7 @@ use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
-use rustoa::solution::{ObjectiveType, SolutionJSON, Solutions};
+use rustoa::solution::{SolutionJSON, Solutions};
 use rustoa::test_functions;
 use std::collections::HashMap;
 use std::fs::File;
@@ -30,7 +30,7 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
 }
 
 type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun<S> = fn(&CommonConfig, FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
+type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
 enum AlgorithmType {
     Single(AlgorithmRun<f64>),
     Multi(AlgorithmRun<Vec<f64>>),
@@ -133,6 +133,14 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("evaluations")
+                .short("e")
+                .long("evaluations")
+                .value_name("evaluations")
+                .help("Number of fitness evaluations algorithm will run for")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("upper_bound")
                 .short("u")
                 .long("ub")
@@ -182,6 +190,7 @@ fn main() {
     let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
     let common = CommonConfig {
         verbose: matches.is_present("verbose"),
+        evaluations: value_t!(matches, "evaluations", i64).unwrap_or(300000),
         iterations: value_t!(matches, "iterations", i64).unwrap_or(1000),
         upper_bound,
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
@@ -190,8 +199,9 @@ fn main() {
     };
 
     println!(
-        "Max iterations: {}, Upper bound: {}, Lower bound: {}, Function: {}, Population: {}",
+        "Max iterations: {}, Max fitness evaluations: {}, Bounds: ({}, {}), Function: {}, Population: {}",
         common.iterations,
+        common.evaluations,
         common.upper_bound,
         common.lower_bound,
         test_function_name,
@@ -204,16 +214,26 @@ fn main() {
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
     // Run algorithm
-    let solutions = match run_subcommand {
+    let (solutions, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
-            let fitness_evaluator = FitnessEvaluator::new(get_single(test_function));
-            run(&common, fitness_evaluator, sub_m.unwrap())
+            let fitness_evaluator =
+                FitnessEvaluator::new(get_single(test_function), common.evaluations);
+            (
+                run(&common, &fitness_evaluator, sub_m.unwrap()),
+                fitness_evaluator.evaluations(),
+            )
         }
         &AlgorithmType::Multi(run) => {
-            let fitness_evaluator = FitnessEvaluator::new(get_multi(test_function));
-            run(&common, fitness_evaluator, sub_m.unwrap())
+            let fitness_evaluator =
+                FitnessEvaluator::new(get_multi(test_function), common.evaluations);
+            (
+                run(&common, &fitness_evaluator, sub_m.unwrap()),
+                fitness_evaluator.evaluations(),
+            )
         }
     };
+
+    println!("Number of fitness evaluations: {}", evaluations);
 
     if let Some(solution) = solutions.last() {
         println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
