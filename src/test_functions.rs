@@ -114,6 +114,27 @@ pub fn zdt6(x: &Vec<f64>) -> Vec<f64> {
     vec![f1, f2]
 }
 
+pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let k = x.len() - m + 1;
+    let g: f64 = 100.0
+        * ((x.len() - k) as f64
+            + (k..x.len())
+                .map(|i| (x[i] - 0.5).powi(2) - (20.0 * consts::PI * (x[i] - 0.5)).cos())
+                .sum::<f64>());
+    //f1
+    result.push((1.0 + g) * 0.5 * (0..m - 1).map(|i| x[i]).product::<f64>());
+    //f2 to fm-1
+    for i in 1..m - 1 {
+        let prod: f64 = (0..m - (i + 1)).map(|j| x[j]).product();
+        result.push((1.0 + g) * 0.5 * prod * (1.0 - x[m - (i + 1)]));
+    }
+    //fm
+    result.push((1.0 + g) * 0.5 * (1.0 - x[0]));
+    result
+}
+
 pub fn axis_parallel_hyper_ellipsoid(x: &Vec<f64>) -> f64 {
     (0..x.len()).map(|i| (i as f64 + 1.0) * x[i].powi(2)).sum()
 }
