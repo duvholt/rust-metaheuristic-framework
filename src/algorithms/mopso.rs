@@ -1,4 +1,4 @@
-use solution::{multi_solutions_to_json, MultiSolution, SolutionJSON};
+use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 use position::random_position;
 use rand::{thread_rng, Rng};
 use domination::dominates;
@@ -116,7 +116,7 @@ struct Particle {
     velocity: Velocity,
 }
 
-impl MultiSolution for Particle {
+impl Solution<Vec<f64>> for Particle {
     fn fitness(&self) -> &Vec<f64> {
         &self.fitness
     }

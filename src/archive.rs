@@ -1,4 +1,4 @@
-use solution::{MultiSolution, Solution};
+use solution::Solution;
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
 use domination::find_non_dominated;
@@ -9,13 +9,34 @@ use std::fmt::Debug;
 #[derive(Debug, PartialEq, Clone)]
 struct Hypercube {
     set: HashSet<usize>,
+    // TODO: Consider splitting Solution trait into
+    // Solution and Position to get rid of this useless field
+    position: Vec<f64>,
+    fitness: f64,
 }
 
 impl Hypercube {
-    fn new() -> Hypercube {
+    fn new(set: HashSet<usize>) -> Hypercube {
+        let fitness = Hypercube::calculate_fitness(&set);
         Hypercube {
-            set: HashSet::new(),
+            set,
+            fitness,
+            position: vec![],
         }
+    }
+
+    fn calculate_fitness(set: &HashSet<usize>) -> f64 {
+        10.0 / set.len() as f64
+    }
+
+    fn insert(&mut self, value: usize) {
+        self.set.insert(value);
+        self.fitness = Hypercube::calculate_fitness(&self.set);
+    }
+
+    fn remove(&mut self, value: &usize) {
+        self.set.remove(value);
+        self.fitness = Hypercube::calculate_fitness(&self.set);
     }
 
     fn random(&self) -> usize {
@@ -25,19 +46,19 @@ impl Hypercube {
     }
 }
 
-impl Solution for Hypercube {
-    fn fitness(&self) -> f64 {
-        10.0 / self.set.len() as f64
+impl Solution<f64> for Hypercube {
+    fn fitness(&self) -> &f64 {
+        &self.fitness
     }
 
-    fn position(&self) -> Vec<f64> {
-        vec![]
+    fn position(&self) -> &Vec<f64> {
+        &self.position
     }
 }
 
 pub struct Archive<M>
 where
-    M: MultiSolution,
+    M: Solution<Vec<f64>>,
 {
     pub population: Vec<M>,
     hypercube_map: HashMap<Vec<usize>, Hypercube>,
@@ -47,7 +68,7 @@ where
 
 impl<M> Archive<M>
 where
-    M: MultiSolution + Clone + Debug,
+    M: Solution<Vec<f64>> + Clone + Debug,
 {
     pub fn new(population_size: usize, divisions: usize) -> Archive<M> {
         Archive {
@@ -92,8 +113,8 @@ where
                 .collect();
             let hypercube = self.hypercube_map
                 .entry(hyper_indices)
-                .or_insert(Hypercube::new());
-            hypercube.set.insert(s_i);
+                .or_insert(Hypercube::new(HashSet::new()));
+            hypercube.insert(s_i);
         }
     }
 
@@ -105,7 +126,7 @@ where
                 .unwrap();
             let solution_index = hypercube.random();
             self.population.remove(solution_index);
-            hypercube.set.remove(&solution_index);
+            hypercube.remove(&solution_index);
         }
     }
 
@@ -138,7 +159,7 @@ mod tests {
         fitness: Vec<f64>,
     }
 
-    impl MultiSolution for TestSolution {
+    impl Solution<Vec<f64>> for TestSolution {
         fn position(&self) -> &Vec<f64> {
             &self.fitness
         }
@@ -157,9 +178,7 @@ mod tests {
     }
 
     fn hashmap_value(value: Vec<usize>, indices: &Vec<usize>) -> Hypercube {
-        Hypercube {
-            set: value.iter().map(|&v| indices[v]).collect(),
-        }
+        Hypercube::new(value.iter().map(|&v| indices[v]).collect())
     }
 
     #[test]

@@ -79,13 +79,13 @@ struct Particle {
     velocity: Velocity,
 }
 
-impl Solution for Particle {
-    fn fitness(&self) -> f64 {
-        self.fitness
+impl Solution<f64> for Particle {
+    fn fitness(&self) -> &f64 {
+        &self.fitness
     }
 
-    fn position(&self) -> Vec<f64> {
-        self.position.to_vec()
+    fn position(&self) -> &Vec<f64> {
+        &self.position
     }
 }
 

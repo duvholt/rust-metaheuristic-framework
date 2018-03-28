@@ -98,13 +98,13 @@ struct Seed {
     position: Vec<f64>,
 }
 
-impl Solution for Seed {
-    fn fitness(&self) -> f64 {
-        self.fitness
+impl Solution<f64> for Seed {
+    fn fitness(&self) -> &f64 {
+        &self.fitness
     }
 
-    fn position(&self) -> Vec<f64> {
-        self.position.to_vec()
+    fn position(&self) -> &Vec<f64> {
+        &self.position
     }
 }
 
