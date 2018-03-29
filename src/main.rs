@@ -13,6 +13,7 @@ use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
 use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::statistics::sampler::{Sampler, SamplerMode};
 use rustoa::test_functions;
 use std::collections::HashMap;
 use std::fs::File;
@@ -216,16 +217,18 @@ fn main() {
     // Run algorithm
     let (solutions, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
+            let sampler = Sampler::new(20, common.iterations, SamplerMode::Evolution);
             let fitness_evaluator =
-                FitnessEvaluator::new(get_single(test_function), common.evaluations);
+                FitnessEvaluator::new(get_single(test_function), common.evaluations, &sampler);
             (
                 run(&common, &fitness_evaluator, sub_m.unwrap()),
                 fitness_evaluator.evaluations(),
             )
         }
         &AlgorithmType::Multi(run) => {
+            let sampler = Sampler::new(20, common.iterations, SamplerMode::Evolution);
             let fitness_evaluator =
-                FitnessEvaluator::new(get_multi(test_function), common.evaluations);
+                FitnessEvaluator::new(get_multi(test_function), common.evaluations, &sampler);
             (
                 run(&common, &fitness_evaluator, sub_m.unwrap()),
                 fitness_evaluator.evaluations(),

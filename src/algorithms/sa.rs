@@ -86,7 +86,7 @@ struct Neighbourhood<'a> {
     dimonension: usize,
     space: f64,
     rng: rand::ThreadRng,
-    fitness_evaluator: &'a FitnessEvaluator<f64>,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
 impl<'a> Neighbourhood<'a> {
@@ -94,7 +94,7 @@ impl<'a> Neighbourhood<'a> {
         dimonension: usize,
         space: f64,
         fitness_evaluator: &'a FitnessEvaluator<f64>,
-    ) -> Neighbourhood {
+    ) -> Neighbourhood<'a> {
         return Neighbourhood {
             dimonension,
             space,
@@ -194,13 +194,22 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions;
 
+    fn create_sampler() -> Sampler<f64> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler<f64>) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(test_functions::rosenbrock, 100, &sampler)
+    }
+
     #[test]
     fn generates_neighbour() {
-        let test_function = test_functions::rosenbrock;
-        let fitness_evaluator = &FitnessEvaluator::new(test_function, 100);
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         let mut neighbourhood = Neighbourhood::new(2, 1.0, &fitness_evaluator);
         let solution = neighbourhood.random_solution();
         let neighbour = neighbourhood.find(&solution);
@@ -216,10 +225,11 @@ mod tests {
     #[ignore]
     #[bench]
     fn test_run(b: &mut Bencher) {
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         b.iter(|| {
             let config = Config::new(1.0, 0.9, 1000, 4.0, 2);
-            let test_function = test_functions::rosenbrock;
-            run(config, &FitnessEvaluator::new(test_function, 1000));
+            run(config, &fitness_evaluator);
         });
     }
 }

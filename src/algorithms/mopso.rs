@@ -129,7 +129,7 @@ impl Solution<Vec<f64>> for Particle {
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Particle>,
-    fitness_evaluator: &'a FitnessEvaluator<Vec<f64>>,
+    fitness_evaluator: &'a FitnessEvaluator<'a, Vec<f64>>,
     archive: Archive<Particle>,
 }
 
@@ -304,6 +304,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions::multi_dummy;
 
@@ -324,6 +325,14 @@ mod tests {
         }
     }
 
+    fn create_sampler() -> Sampler<Vec<f64>> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler<Vec<f64>>) -> FitnessEvaluator<Vec<f64>> {
+        FitnessEvaluator::new(multi_dummy, 100, &sampler)
+    }
+
     fn create_particle_with_fitness(fitness: f64) -> Particle {
         Particle {
             position: vec![0.0, 1.0],
@@ -336,7 +345,8 @@ mod tests {
     #[test]
     fn generates_population() {
         let config = create_config();
-        let function_evaluator = FitnessEvaluator::new(multi_dummy, 1000);
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
         let swarm = Swarm::new(&config, &function_evaluator);
 
         let population = swarm.generate_population(10);
@@ -352,7 +362,8 @@ mod tests {
             create_particle_with_fitness(1.0),
             create_particle_with_fitness(0.1),
         ];
-        let function_evaluator = FitnessEvaluator::new(multi_dummy, 1000);
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
         let mut swarm = Swarm::new(&config, &function_evaluator);
         swarm.population = population;
         let particle = create_particle_with_fitness(2.0);
@@ -365,6 +376,8 @@ mod tests {
     #[ignore]
     #[bench]
     fn bench_run(b: &mut Bencher) {
-        b.iter(|| run(create_config(), &FitnessEvaluator::new(multi_dummy, 1000)));
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
+        b.iter(|| run(create_config(), &function_evaluator));
     }
 }

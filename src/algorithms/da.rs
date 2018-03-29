@@ -111,7 +111,7 @@ impl Solution<f64> for Seed {
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Dandelion>,
-    fitness_evaluator: &'a FitnessEvaluator<f64>,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
 impl<'a> Swarm<'a> {
@@ -283,8 +283,17 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions::rosenbrock;
+
+    fn create_sampler() -> Sampler<f64> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler<f64>) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(rosenbrock, 100, &sampler)
+    }
 
     fn create_config() -> Config {
         Config {
@@ -315,8 +324,9 @@ mod tests {
     #[test]
     fn find_average_seed_position_test() {
         let config = create_config();
+        let sampler = create_sampler();
         let swarm = Swarm {
-            fitness_evaluator: &FitnessEvaluator::new(rosenbrock, 100),
+            fitness_evaluator: &create_evaluator(&sampler),
             config: &config,
             population: vec![],
         };
@@ -348,8 +358,9 @@ mod tests {
     #[test]
     fn calculate_core_radius_test() {
         let config = create_config();
+        let sampler = create_sampler();
         let mut swarm = Swarm {
-            fitness_evaluator: &FitnessEvaluator::new(rosenbrock, 100),
+            fitness_evaluator: &create_evaluator(&sampler),
             config: &config,
             population: vec![],
         };
@@ -379,8 +390,10 @@ mod tests {
     #[bench]
     fn bench_da(b: &mut Bencher) {
         b.iter(|| {
+            let sampler = create_sampler();
+            let evaluator = create_evaluator(&sampler);
             let config = create_config();
-            run(config, &FitnessEvaluator::new(rosenbrock, 100));
+            run(config, &evaluator);
         });
     }
 }

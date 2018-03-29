@@ -82,7 +82,7 @@ impl Solution<f64> for Worm {
 struct Worms<'a> {
     config: &'a Config,
     population: Vec<Worm>,
-    fitness_evaluator: &'a FitnessEvaluator<f64>,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
 impl<'a> Worms<'a> {
@@ -249,6 +249,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test_functions::rosenbrock;
 
     fn create_config() -> Config {
@@ -262,10 +263,19 @@ mod tests {
         }
     }
 
+    fn create_sampler() -> Sampler<f64> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler<f64>) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(rosenbrock, 100, &sampler)
+    }
+
     #[test]
     fn sorts_population_by_ascending_fitness() {
         let config = create_config();
-        let evaluator = FitnessEvaluator::new(rosenbrock, 100);
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
         let mut worms = Worms::new(&config, &evaluator);
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
@@ -282,7 +292,8 @@ mod tests {
     #[test]
     fn reproduction1_generates_offspring() {
         let config = create_config();
-        let evaluator = FitnessEvaluator::new(rosenbrock, 100);
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![0.3; dimension]);
@@ -298,7 +309,8 @@ mod tests {
     #[test]
     fn combines_worms_initial() {
         let config = create_config();
-        let evaluator = FitnessEvaluator::new(rosenbrock, 100);
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
@@ -312,7 +324,8 @@ mod tests {
     #[test]
     fn combines_worms_iteration2() {
         let config = create_config();
-        let evaluator = FitnessEvaluator::new(rosenbrock, 100);
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimension = config.dimension;
         let worm1 = worms.create_worm(vec![1.0; dimension]);
@@ -327,7 +340,8 @@ mod tests {
     fn selects_random_other_worm() {
         let mut config = create_config();
         config.population = 3;
-        let evaluator = FitnessEvaluator::new(rosenbrock, 100);
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
         let mut worms = Worms::new(&config, &evaluator);
         worms.population = worms.generate_population(config.population);
         let worm_index = 1;
