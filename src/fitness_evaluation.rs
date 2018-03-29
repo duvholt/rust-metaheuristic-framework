@@ -33,7 +33,7 @@ where
     test_function: fn(&Vec<f64>) -> F,
     evaluations: Cell<i64>,
     max_evaluations: i64,
-    pub sampler: &'a Sampler<F>,
+    pub sampler: &'a Sampler,
 }
 
 impl<'a, F: 'static> FitnessEvaluator<'a, F>
@@ -43,7 +43,7 @@ where
     pub fn new(
         test_function: fn(&Vec<f64>) -> F,
         max_evaluations: i64,
-        sampler: &'a Sampler<F>,
+        sampler: &'a Sampler,
     ) -> FitnessEvaluator<F> {
         FitnessEvaluator {
             test_function,
@@ -74,11 +74,11 @@ mod tests {
     use test_functions::multi_dummy;
     use test_functions::sphere;
 
-    fn create_sampler() -> Sampler<f64> {
+    fn create_sampler() -> Sampler {
         Sampler::new(10, 10, SamplerMode::Evolution)
     }
 
-    fn create_sampler_multi() -> Sampler<Vec<f64>> {
+    fn create_sampler_multi() -> Sampler {
         Sampler::new(10, 10, SamplerMode::Evolution)
     }
 

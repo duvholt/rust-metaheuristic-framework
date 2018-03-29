@@ -215,9 +215,9 @@ fn main() {
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
     // Run algorithm
+    let sampler = Sampler::new(30, common.iterations, SamplerMode::Evolution);
     let (solutions, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
-            let sampler = Sampler::new(20, common.iterations, SamplerMode::Evolution);
             let fitness_evaluator =
                 FitnessEvaluator::new(get_single(test_function), common.evaluations, &sampler);
             (
@@ -226,7 +226,6 @@ fn main() {
             )
         }
         &AlgorithmType::Multi(run) => {
-            let sampler = Sampler::new(20, common.iterations, SamplerMode::Evolution);
             let fitness_evaluator =
                 FitnessEvaluator::new(get_multi(test_function), common.evaluations, &sampler);
             (
