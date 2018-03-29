@@ -16,6 +16,20 @@ impl SolutionJSON {
     pub fn new(x: Vec<f64>, fitness: Vec<f64>) -> SolutionJSON {
         SolutionJSON { x, fitness }
     }
+
+    fn from_single(solution: &Solution<f64>) -> SolutionJSON {
+        SolutionJSON {
+            x: solution.position().to_vec(),
+            fitness: vec![*solution.fitness()],
+        }
+    }
+
+    fn from_multi(solution: &Solution<Vec<f64>>) -> SolutionJSON {
+        SolutionJSON {
+            x: solution.position().to_vec(),
+            fitness: solution.fitness().to_vec(),
+        }
+    }
 }
 
 pub trait Solution<F> {
@@ -29,10 +43,7 @@ where
 {
     let mut solutions: Vec<SolutionJSON> = population
         .iter()
-        .map(|solution| SolutionJSON {
-            x: solution.position().to_vec(),
-            fitness: vec![solution.fitness().clone()],
-        })
+        .map(|s| SolutionJSON::from_single(s))
         .collect();
     solutions.sort_unstable_by(|a, b| {
         b.fitness[0]
@@ -48,10 +59,7 @@ where
 {
     population
         .iter()
-        .map(|solution| SolutionJSON {
-            x: solution.position().to_vec(),
-            fitness: solution.fitness().to_vec(),
-        })
+        .map(|s| SolutionJSON::from_multi(s))
         .collect()
 }
 
