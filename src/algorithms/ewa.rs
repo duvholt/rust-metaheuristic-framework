@@ -263,11 +263,11 @@ mod tests {
         }
     }
 
-    fn create_sampler() -> Sampler<f64> {
+    fn create_sampler() -> Sampler {
         Sampler::new(10, 10, SamplerMode::Evolution)
     }
 
-    fn create_evaluator(sampler: &Sampler<f64>) -> FitnessEvaluator<f64> {
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
         FitnessEvaluator::new(rosenbrock, 100, &sampler)
     }
 

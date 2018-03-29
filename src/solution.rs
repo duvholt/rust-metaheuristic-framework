@@ -17,14 +17,14 @@ impl SolutionJSON {
         SolutionJSON { x, fitness }
     }
 
-    fn from_single(solution: &Solution<f64>) -> SolutionJSON {
+    pub fn from_single(solution: &Solution<f64>) -> SolutionJSON {
         SolutionJSON {
             x: solution.position().to_vec(),
             fitness: vec![*solution.fitness()],
         }
     }
 
-    fn from_multi(solution: &Solution<Vec<f64>>) -> SolutionJSON {
+    pub fn from_multi(solution: &Solution<Vec<f64>>) -> SolutionJSON {
         SolutionJSON {
             x: solution.position().to_vec(),
             fitness: solution.fitness().to_vec(),

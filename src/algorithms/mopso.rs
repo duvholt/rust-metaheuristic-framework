@@ -325,11 +325,11 @@ mod tests {
         }
     }
 
-    fn create_sampler() -> Sampler<Vec<f64>> {
+    fn create_sampler() -> Sampler {
         Sampler::new(10, 10, SamplerMode::Evolution)
     }
 
-    fn create_evaluator(sampler: &Sampler<Vec<f64>>) -> FitnessEvaluator<Vec<f64>> {
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<Vec<f64>> {
         FitnessEvaluator::new(multi_dummy, 100, &sampler)
     }
 

@@ -221,7 +221,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         let leader = swarm.get_leader();
         fitness_evaluator
             .sampler
-            .iteration(i as usize, Box::new(leader));
+            .iteration_single(i as usize, &leader);
     }
     swarm.solutions()
 }
@@ -245,11 +245,11 @@ mod tests {
         }
     }
 
-    fn create_sampler() -> Sampler<f64> {
+    fn create_sampler() -> Sampler {
         Sampler::new(10, 10, SamplerMode::Evolution)
     }
 
-    fn create_evaluator(sampler: &Sampler<f64>) -> FitnessEvaluator<f64> {
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
         FitnessEvaluator::new(rosenbrock, 100, &sampler)
     }
 
