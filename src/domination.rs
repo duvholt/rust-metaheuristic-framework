@@ -93,6 +93,7 @@ mod tests {
         assert!(!a_dominates_b);
     }
 
+    #[derive(Clone)]
     struct TestMultiSolution {
         fitness: Vec<f64>,
     }

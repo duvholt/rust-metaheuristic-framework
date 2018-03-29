@@ -37,6 +37,7 @@ impl Config {
 
 pub fn run(config: Config, function_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     println!("Running dummy solver. Example: {}", config.example);
+
     vec![
         SolutionJSON::new(
             vec![0.0, 0.0],

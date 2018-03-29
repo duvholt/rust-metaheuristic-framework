@@ -54,3 +54,54 @@ where
         })
         .collect()
 }
+
+// Structs used for testing
+#[derive(Clone, Debug)]
+pub struct SingleTestSolution {
+    fitness: f64,
+    position: Vec<f64>,
+}
+
+impl SingleTestSolution {
+    pub fn new(fitness: f64) -> SingleTestSolution {
+        SingleTestSolution {
+            position: vec![fitness, fitness],
+            fitness,
+        }
+    }
+}
+
+impl Solution<f64> for SingleTestSolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.position
+    }
+
+    fn fitness(&self) -> &f64 {
+        &self.fitness
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MultiTestSolution {
+    fitness: Vec<f64>,
+    position: Vec<f64>,
+}
+
+impl MultiTestSolution {
+    pub fn new(fitness: Vec<f64>) -> MultiTestSolution {
+        MultiTestSolution {
+            position: fitness.to_vec(),
+            fitness,
+        }
+    }
+}
+
+impl Solution<Vec<f64>> for MultiTestSolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.position
+    }
+
+    fn fitness(&self) -> &Vec<f64> {
+        &self.fitness
+    }
+}

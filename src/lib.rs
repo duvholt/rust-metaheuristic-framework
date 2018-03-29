@@ -19,4 +19,5 @@ pub mod fitness_evaluation;
 pub mod position;
 pub mod selection;
 pub mod solution;
+pub mod statistics;
 pub mod test_functions;

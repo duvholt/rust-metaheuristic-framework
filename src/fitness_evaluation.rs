@@ -1,3 +1,4 @@
+use statistics::sampler::Sampler;
 use std::cell::Cell;
 
 pub type SingleTestFunction = Fn(&Vec<f64>) -> f64;
@@ -25,18 +26,30 @@ pub fn get_multi(test_function_var: TestFunctionVar) -> MultiTestFunctionVar {
     }
 }
 
-pub struct FitnessEvaluator<F> {
+pub struct FitnessEvaluator<'a, F: 'static>
+where
+    F: Clone,
+{
     test_function: fn(&Vec<f64>) -> F,
     evaluations: Cell<i64>,
     max_evaluations: i64,
+    pub sampler: &'a Sampler<F>,
 }
 
-impl<F> FitnessEvaluator<F> {
-    pub fn new(test_function: fn(&Vec<f64>) -> F, max_evaluations: i64) -> FitnessEvaluator<F> {
+impl<'a, F: 'static> FitnessEvaluator<'a, F>
+where
+    F: Clone,
+{
+    pub fn new(
+        test_function: fn(&Vec<f64>) -> F,
+        max_evaluations: i64,
+        sampler: &'a Sampler<F>,
+    ) -> FitnessEvaluator<F> {
         FitnessEvaluator {
             test_function,
             evaluations: Cell::new(0),
             max_evaluations,
+            sampler,
         }
     }
 
@@ -57,12 +70,22 @@ impl<F> FitnessEvaluator<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test_functions::multi_dummy;
     use test_functions::sphere;
 
+    fn create_sampler() -> Sampler<f64> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_sampler_multi() -> Sampler<Vec<f64>> {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
     #[test]
     fn fitness_evalator_calculates_single_fitness() {
-        let fitness_evalator = FitnessEvaluator::new(sphere, 100);
+        let sampler = create_sampler();
+        let fitness_evalator = FitnessEvaluator::new(sphere, 100, &sampler);
 
         let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);
 
@@ -71,7 +94,8 @@ mod tests {
 
     #[test]
     fn fitness_evalator_calculates_multi_fitness() {
-        let fitness_evalator = FitnessEvaluator::new(multi_dummy, 100);
+        let sampler = create_sampler_multi();
+        let fitness_evalator = FitnessEvaluator::new(multi_dummy, 100, &sampler);
 
         let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);
 
@@ -80,7 +104,8 @@ mod tests {
 
     #[test]
     fn fitness_evalator_end_criteria() {
-        let fitness_evalator = FitnessEvaluator::new(multi_dummy, 5);
+        let sampler = create_sampler_multi();
+        let fitness_evalator = FitnessEvaluator::new(multi_dummy, 5, &sampler);
 
         assert_eq!(fitness_evalator.end_criteria(), false);
         for assert_value in vec![false, false, false, false, true, true, true] {
