@@ -222,6 +222,9 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         fitness_evaluator
             .sampler
             .iteration_single(i as usize, &leader);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
     }
     swarm.solutions()
 }
