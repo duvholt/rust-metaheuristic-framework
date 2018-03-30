@@ -27,10 +27,19 @@ impl Sampler {
     }
 
     pub fn criteria_met(&self, iteration: i64) -> bool {
-        if iteration % (self.max_iterations / self.samples) != 0 {
-            return false;
+        match self.mode {
+            SamplerMode::Evolution => {
+                if iteration == self.max_iterations {
+                    return false;
+                }
+                if iteration % (self.max_iterations / self.samples) != 0 {
+                    return false;
+                }
+                return true;
+            }
+            SamplerMode::LastGeneration => iteration == self.max_iterations,
+            _ => false,
         }
-        return true;
     }
 
     fn find_best_solution<S: Solution<f64>>(&self, samples: &[S]) -> SolutionJSON {
@@ -45,16 +54,30 @@ impl Sampler {
         SolutionJSON::from_single(best)
     }
 
-    pub fn iteration_single<S: Solution<f64>>(&self, iteration: i64, samples: &[S]) {
+    fn add_solution(&self, solution: SolutionJSON) {
+        self.solutions.borrow_mut().push(solution);
+    }
+
+    pub fn population_sample_single<S: Solution<f64>>(&self, iteration: i64, samples: &[S]) {
         if !self.criteria_met(iteration) {
             return;
         }
-        self.solutions
-            .borrow_mut()
-            .push(self.find_best_solution(&samples))
+        match self.mode {
+            SamplerMode::Evolution => {
+                self.add_solution(self.find_best_solution(&samples));
+            }
+            SamplerMode::LastGeneration => {
+                let mut solutions = samples
+                    .iter()
+                    .map(|s| SolutionJSON::from_single(s))
+                    .collect();
+                self.solutions.borrow_mut().append(&mut solutions);
+            }
+            _ => {}
+        }
     }
 
-    pub fn iteration_multi<S: Solution<Vec<f64>>>(&self, iteration: i64, samples: &[S]) {
+    pub fn population_sample_multi<S: Solution<Vec<f64>>>(&self, iteration: i64, samples: &[S]) {
         if !self.criteria_met(iteration) {
             return;
         }
@@ -81,7 +104,8 @@ mod tests {
         let sampler: Sampler = Sampler::new(5, fitness.len() as i64, SamplerMode::Evolution);
 
         for (iteration, fitness) in fitness.iter().enumerate() {
-            sampler.iteration_single(iteration, &[SingleTestSolution::new(*fitness)]);
+            sampler
+                .population_sample_single(iteration as i64, &[SingleTestSolution::new(*fitness)]);
         }
 
         // Convert Solution back to fitness
@@ -90,5 +114,32 @@ mod tests {
             sampler_fitness,
             vec![fitness[0], fitness[2], fitness[4], fitness[6], fitness[8]]
         );
+    }
+
+    #[test]
+    fn samples_only_last_generation() {
+        let generations = vec![
+            vec![0.1, 0.2],
+            vec![0.4, 0.5],
+            vec![0.5, 0.6],
+            vec![0.7, 0.8],
+            vec![0.9, 1.0],
+        ];
+        let sampler: Sampler = Sampler::new(
+            3,
+            (generations.len() - 1) as i64,
+            SamplerMode::LastGeneration,
+        );
+
+        for (iteration, generation) in generations.iter().enumerate() {
+            let solutions: Vec<_> = generation
+                .iter()
+                .map(|fitness| SingleTestSolution::new(*fitness))
+                .collect();
+            sampler.population_sample_single(iteration as i64, &solutions);
+        }
+
+        let sampler_fitness: Vec<_> = sampler.solutions().iter().map(|s| s.fitness[0]).collect();
+        assert_eq!(sampler_fitness, generations[4]);
     }
 }
