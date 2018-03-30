@@ -180,18 +180,15 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         }
         fitness_evaluator
             .sampler
-            .iteration_single(i, &[current.clone()]);
+            .population_sample_single(i, &[current.clone()]);
         if fitness_evaluator.end_criteria() {
             break;
         }
         i += 1;
     }
-    println!(
-        "Diff {} {} {}",
-        current.fitness,
-        best.fitness,
-        current.fitness - best.fitness
-    );
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &[best.clone()]);
     solutions.push(best);
     solutions
         .iter()

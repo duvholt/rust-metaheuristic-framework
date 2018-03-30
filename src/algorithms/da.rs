@@ -262,10 +262,10 @@ impl<'a> Swarm<'a> {
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut i = 1;
     let mut swarm = Swarm::new(&config, &fitness_evaluator);
-    let mut solutions = vec![];
+    let solutions = vec![];
 
     swarm.population = swarm.generate_random_population(config.population);
-    while i <= config.iterations {
+    while i < config.iterations {
         swarm.calculate_sowing_radius(i);
         swarm.dandelion_sowing();
         swarm.self_learning_sowing();
@@ -273,12 +273,15 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 
         fitness_evaluator
             .sampler
-            .iteration_single(i, &swarm.get_population());
+            .population_sample_single(i, &swarm.get_population());
         if fitness_evaluator.end_criteria() {
             break;
         }
         i += 1;
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &swarm.get_population());
     solutions
 }
 

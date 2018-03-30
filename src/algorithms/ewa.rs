@@ -245,11 +245,14 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 
         fitness_evaluator
             .sampler
-            .iteration_single(iteration, &worms.population);
+            .population_sample_single(iteration, &worms.population);
         if fitness_evaluator.end_criteria() {
             break;
         }
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &worms.population);
     solutions_to_json(worms.population)
 }
 
