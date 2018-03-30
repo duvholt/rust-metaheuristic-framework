@@ -88,6 +88,29 @@ impl Sampler {
         self.solutions.borrow_mut().append(&mut solutions);
     }
 
+    fn sample_fitness(&self, solution: SolutionJSON) {
+        match self.mode {
+            SamplerMode::FitnessSearch => {
+                self.add_solution(solution);
+            },
+            _ => {}
+        }
+    }
+
+    pub fn sample_fitness_single(&self, fitness: &f64, position: &Vec<f64>) {
+        self.sample_fitness(SolutionJSON {
+            x: position.to_vec(),
+            fitness: vec![*fitness],
+        });
+    }
+
+    pub fn sample_fitness_multi(&self, fitness: &Vec<f64>, position: &Vec<f64>) {
+        self.sample_fitness(SolutionJSON {
+            x: position.to_vec(),
+            fitness: fitness.to_vec()
+        });
+    }
+
     pub fn solutions(&self) -> Vec<SolutionJSON> {
         self.solutions.borrow().clone()
     }
