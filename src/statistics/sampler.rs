@@ -1,5 +1,6 @@
 use solution::{Solution, SolutionJSON};
 use std::cell::RefCell;
+use std::cmp::Ordering;
 
 pub enum SamplerMode {
     Test,
@@ -31,13 +32,25 @@ impl Sampler {
         return true;
     }
 
-    pub fn iteration_single(&self, iteration: usize, sample: &Solution<f64>) {
+    fn find_best_solution<S: Solution<f64>>(&self, samples: &[S]) -> SolutionJSON {
+        let best = samples
+            .iter()
+            .min_by(|a, b| {
+                a.fitness()
+                    .partial_cmp(&b.fitness())
+                    .unwrap_or(Ordering::Equal)
+            })
+            .unwrap();
+        SolutionJSON::from_single(best)
+    }
+
+    pub fn iteration_single<S: Solution<f64>>(&self, iteration: usize, samples: &[S]) {
         if !self.criteria_met(iteration) {
             return;
         }
         self.solutions
             .borrow_mut()
-            .push(SolutionJSON::from_single(sample));
+            .push(self.find_best_solution(&samples))
     }
 
     pub fn iteration_multi(&self, iteration: usize, sample: &Solution<Vec<f64>>) {
@@ -65,7 +78,7 @@ mod tests {
         let sampler: Sampler = Sampler::new(5, fitness.len() as i64, SamplerMode::Evolution);
 
         for (iteration, fitness) in fitness.iter().enumerate() {
-            sampler.iteration_single(iteration, &SingleTestSolution::new(*fitness));
+            sampler.iteration_single(iteration, &[SingleTestSolution::new(*fitness)]);
         }
 
         // Convert Solution back to fitness

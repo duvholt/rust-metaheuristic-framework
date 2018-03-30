@@ -15,6 +15,7 @@ use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFu
 use rustoa::solution::{SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
 use rustoa::test_functions;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -216,7 +217,7 @@ fn main() {
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
     // Run algorithm
     let sampler = Sampler::new(30, common.iterations, SamplerMode::Evolution);
-    let (solutions, evaluations) = match run_subcommand {
+    let (_, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
             let fitness_evaluator =
                 FitnessEvaluator::new(get_single(test_function), common.evaluations, &sampler);
@@ -235,11 +236,16 @@ fn main() {
         }
     };
 
+    let solutions = sampler.solutions();
+
     println!("Number of fitness evaluations: {}", evaluations);
-
-    if let Some(solution) = solutions.last() {
-        println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
+    {
+        let best_solution = solutions
+            .iter()
+            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+        if let Some(solution) = best_solution {
+            println!("Best solution: ({:?}) {:?}", solution.x, solution.fitness);
+        }
     }
-
     write_solutions("solutions.json", solutions, test_function_name);
 }
