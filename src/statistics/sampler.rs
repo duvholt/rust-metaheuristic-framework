@@ -10,13 +10,13 @@ pub enum SamplerMode {
 
 pub struct Sampler {
     mode: SamplerMode,
-    samples: usize,
+    samples: i64,
     max_iterations: i64,
     solutions: RefCell<Vec<SolutionJSON>>,
 }
 
 impl Sampler {
-    pub fn new(samples: usize, max_iterations: i64, mode: SamplerMode) -> Sampler {
+    pub fn new(samples: i64, max_iterations: i64, mode: SamplerMode) -> Sampler {
         Sampler {
             samples,
             mode,
@@ -25,8 +25,8 @@ impl Sampler {
         }
     }
 
-    pub fn criteria_met(&self, iteration: usize) -> bool {
-        if iteration % (self.max_iterations as usize / self.samples) != 0 {
+    pub fn criteria_met(&self, iteration: i64) -> bool {
+        if iteration % (self.max_iterations / self.samples) != 0 {
             return false;
         }
         return true;
@@ -44,7 +44,7 @@ impl Sampler {
         SolutionJSON::from_single(best)
     }
 
-    pub fn iteration_single<S: Solution<f64>>(&self, iteration: usize, samples: &[S]) {
+    pub fn iteration_single<S: Solution<f64>>(&self, iteration: i64, samples: &[S]) {
         if !self.criteria_met(iteration) {
             return;
         }
@@ -53,7 +53,7 @@ impl Sampler {
             .push(self.find_best_solution(&samples))
     }
 
-    pub fn iteration_multi(&self, iteration: usize, sample: &Solution<Vec<f64>>) {
+    pub fn iteration_multi(&self, iteration: i64, sample: &Solution<Vec<f64>>) {
         if !self.criteria_met(iteration) {
             return;
         }

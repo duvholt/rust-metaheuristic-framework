@@ -4,7 +4,7 @@ use fitness_evaluation::FitnessEvaluator;
 use rand;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
-use solution::SolutionJSON;
+use solution::{Solution, SolutionJSON};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -80,6 +80,15 @@ impl Config {
 struct SASolution {
     x: Vec<f64>,
     fitness: f64,
+}
+
+impl Solution<f64> for SASolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.x
+    }
+    fn fitness(&self) -> &f64 {
+        &self.fitness
+    }
 }
 
 struct Neighbourhood<'a> {
@@ -169,9 +178,11 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
                 }
             }
         }
-        if i % (config.iterations / 20) == 0 {
-            println!("Iterations {} f: {} t: {:0.6}", i, current.fitness, t);
-            solutions.push(current.clone());
+        fitness_evaluator
+            .sampler
+            .iteration_single(i, &[current.clone()]);
+        if fitness_evaluator.end_criteria() {
+            break;
         }
         i += 1;
     }

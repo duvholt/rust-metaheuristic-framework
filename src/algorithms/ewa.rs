@@ -242,6 +242,13 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         worms
             .population
             .append(&mut new_worms[..config.population - elites].to_vec());
+
+        fitness_evaluator
+            .sampler
+            .iteration_single(iteration, &worms.population);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
     }
     solutions_to_json(worms.population)
 }

@@ -219,7 +219,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         swarm.update_positions();
         fitness_evaluator
             .sampler
-            .iteration_single(i as usize, &swarm.population);
+            .iteration_single(i, &swarm.population);
         if fitness_evaluator.end_criteria() {
             break;
         }
