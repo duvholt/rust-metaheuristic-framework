@@ -53,13 +53,15 @@ impl Sampler {
             .push(self.find_best_solution(&samples))
     }
 
-    pub fn iteration_multi(&self, iteration: i64, sample: &Solution<Vec<f64>>) {
+    pub fn iteration_multi<S: Solution<Vec<f64>>>(&self, iteration: i64, samples: &[S]) {
         if !self.criteria_met(iteration) {
             return;
         }
-        self.solutions
-            .borrow_mut()
-            .push(SolutionJSON::from_multi(sample));
+        let mut solutions: Vec<_> = samples
+            .iter()
+            .map(|sample| SolutionJSON::from_multi(sample))
+            .collect();
+        self.solutions.borrow_mut().append(&mut solutions);
     }
 
     pub fn solutions(&self) -> Vec<SolutionJSON> {
