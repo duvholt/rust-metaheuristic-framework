@@ -6,7 +6,6 @@ pub enum SamplerMode {
     LastGeneration,
     Evolution,
     FitnessSearch,
-    FitnessConvergence,
 }
 
 pub struct Sampler {
