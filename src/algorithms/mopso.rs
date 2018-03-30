@@ -296,6 +296,12 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
         }
         swarm.archive.update(&swarm.population);
         swarm.update_positions(i);
+        fitness_evaluator
+            .sampler
+            .iteration_multi(i, &swarm.population);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
         i += 1;
     }
     swarm.solutions()
