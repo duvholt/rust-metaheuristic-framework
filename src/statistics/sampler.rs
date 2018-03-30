@@ -3,9 +3,10 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 
 pub enum SamplerMode {
-    Test,
     LastGeneration,
     Evolution,
+    FitnessSearch,
+    FitnessConvergence,
 }
 
 pub struct Sampler {
