@@ -4,7 +4,7 @@ use fitness_evaluation::FitnessEvaluator;
 use rand::distributions::{IndependentSample, Range};
 use rand::{thread_rng, Rng};
 use solution::Solution;
-use solution::{solutions_to_json, SolutionJSON};
+use solution::SolutionJSON;
 use std::f64;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
@@ -251,12 +251,11 @@ impl<'a> Swarm<'a> {
         self.fitness_evaluator.calculate_fitness(x)
     }
 
-    fn get_solutions(&self) -> Vec<SolutionJSON> {
-        let mut solutions = vec![];
-        for dandelion in &self.population {
-            solutions.push(dandelion.core_dandelion.clone());
-        }
-        solutions_to_json(solutions)
+    fn get_population(&self) -> Vec<Seed> {
+        self.population
+            .iter()
+            .map(|dandelion| dandelion.core_dandelion.clone())
+            .collect()
     }
 }
 
@@ -272,8 +271,11 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         swarm.self_learning_sowing();
         swarm.select_best_seed();
 
-        if i % (config.iterations / 20) == 0 {
-            solutions.append(&mut swarm.get_solutions());
+        fitness_evaluator
+            .sampler
+            .iteration_single(i, &swarm.get_population());
+        if fitness_evaluator.end_criteria() {
+            break;
         }
         i += 1;
     }
