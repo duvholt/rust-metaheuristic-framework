@@ -217,14 +217,13 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
     while i < config.iterations {
         swarm.update_leader();
         swarm.update_positions();
-        i += 1;
-        let leader = swarm.get_leader();
         fitness_evaluator
             .sampler
-            .iteration_single(i as usize, &leader);
+            .iteration_single(i as usize, &swarm.population);
         if fitness_evaluator.end_criteria() {
             break;
         }
+        i += 1;
     }
     swarm.solutions()
 }
