@@ -53,17 +53,30 @@ where
         }
     }
 
-    pub fn calculate_fitness(&self, position: &Vec<f64>) -> F {
-        self.evaluations.set(self.evaluations.get() + 1);
-        (self.test_function)(position)
-    }
-
     pub fn end_criteria(&self) -> bool {
         self.evaluations.get() >= self.max_evaluations
     }
 
     pub fn evaluations(&self) -> i64 {
         self.evaluations.get()
+    }
+}
+
+impl<'a> FitnessEvaluator<'a, f64> {
+    pub fn calculate_fitness(&self, position: &Vec<f64>) -> f64 {
+        self.evaluations.set(self.evaluations.get() + 1);
+        let fitness = (self.test_function)(position);
+        self.sampler.sample_fitness_single(&fitness, &position);
+        fitness
+    }
+}
+
+impl<'a> FitnessEvaluator<'a, Vec<f64>> {
+    pub fn calculate_fitness(&self, position: &Vec<f64>) -> Vec<f64> {
+        self.evaluations.set(self.evaluations.get() + 1);
+        let fitness = (self.test_function)(position);
+        self.sampler.sample_fitness_multi(&fitness, &position);
+        fitness
     }
 }
 
