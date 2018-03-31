@@ -19,6 +19,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
+use std::process;
 
 type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
 type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
@@ -142,7 +143,7 @@ fn arguments(
         .get_matches()
 }
 
-fn main() {
+fn start_algorithm() -> Result<(), &'static str> {
     let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
     algorithms.insert(
         "da",
@@ -217,27 +218,27 @@ fn main() {
     let matches = arguments(&test_functions_map, &algorithms);
 
     // Test function
-    let test_function_name = value_t!(matches, "test_function", String).unwrap();
+    let test_function_name = value_t_or_exit!(matches, "test_function", String);
     let test_function = test_functions_map
         .get(test_function_name.as_str())
         .unwrap()
         .clone();
 
     // Common config for all algorithms
-    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap();
+    let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
     let common = CommonConfig {
         verbose: matches.is_present("verbose"),
-        evaluations: value_t!(matches, "evaluations", i64).unwrap(),
-        iterations: value_t!(matches, "iterations", i64).unwrap(),
+        evaluations: value_t_or_exit!(matches, "evaluations", i64),
+        iterations: value_t_or_exit!(matches, "iterations", i64),
         upper_bound,
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
-        dimension: value_t!(matches, "dimension", usize).unwrap(),
-        population: value_t!(matches, "population", usize).unwrap(),
+        dimension: value_t_or_exit!(matches, "dimension", usize),
+        population: value_t_or_exit!(matches, "population", usize),
     };
 
     // Sampler settings
-    let sampler_mode_name = value_t!(matches, "sampler_mode", String).unwrap();
-    let samples = value_t!(matches, "samples", i64).unwrap();
+    let sampler_mode_name = value_t_or_exit!(matches, "sampler_mode", String);
+    let samples = value_t_or_exit!(matches, "samples", i64);
 
     println!(
         "Max iterations: {}, Max fitness evaluations: {}, Bounds: ({}, {}), Function: {}, Population: {}",
@@ -251,9 +252,10 @@ fn main() {
 
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
-    let &(_, ref run_subcommand) = algorithms
-        .get(algorithm_name)
-        .unwrap_or_else(|| panic!("Algorithm was not specified!"));
+    let &(_, ref run_subcommand) = match algorithms.get(algorithm_name) {
+        Some(algorithm) => algorithm,
+        None => return Err("Algorithm was not specified!"),
+    };
 
     // Select sampler mode
     let sampler_mode = match sampler_mode_name.as_ref() {
@@ -297,4 +299,12 @@ fn main() {
         }
     }
     write_solutions("solutions.json", solutions, test_function_name);
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = start_algorithm() {
+        eprintln!("Error while trying to run algorithm: {}", e);
+        process::exit(1);
+    }
 }
