@@ -278,16 +278,18 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Run algorithm
     let (_, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
+            let single_test_function = get_single(test_function)?;
             let fitness_evaluator =
-                FitnessEvaluator::new(get_single(test_function), common.evaluations, &sampler);
+                FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
             (
                 run(&common, &fitness_evaluator, sub_m.unwrap()),
                 fitness_evaluator.evaluations(),
             )
         }
         &AlgorithmType::Multi(run) => {
+            let multi_test_function = get_multi(test_function)?;
             let fitness_evaluator =
-                FitnessEvaluator::new(get_multi(test_function), common.evaluations, &sampler);
+                FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
             (
                 run(&common, &fitness_evaluator, sub_m.unwrap()),
                 fitness_evaluator.evaluations(),
