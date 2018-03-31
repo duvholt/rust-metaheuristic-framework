@@ -20,6 +20,13 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 
+type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
+type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
+enum AlgorithmType {
+    Single(AlgorithmRun<f64>),
+    Multi(AlgorithmRun<Vec<f64>>),
+}
+
 fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);
     let mut file = File::create(filename).unwrap();
@@ -31,101 +38,29 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
     file.write_all(json_solutions.as_bytes()).unwrap();
 }
 
-type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
-enum AlgorithmType {
-    Single(AlgorithmRun<f64>),
-    Multi(AlgorithmRun<Vec<f64>>),
-}
-
-fn main() {
-    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
-    algorithms.insert(
-        "da",
-        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
-    );
-    algorithms.insert(
-        "dummy",
-        (
-            dummy::subcommand,
-            AlgorithmType::Single(dummy::run_subcommand),
-        ),
-    );
-    algorithms.insert(
-        "ewa",
-        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
-    );
-    algorithms.insert(
-        "pso",
-        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
-    );
-    algorithms.insert(
-        "sa",
-        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
-    );
-    algorithms.insert(
-        "mopso",
-        (
-            mopso::subcommand,
-            AlgorithmType::Multi(mopso::run_subcommand),
-        ),
-    );
-
-    let mut test_functions_map = HashMap::new();
-    // Single-objective
-    test_functions_map.insert(
-        "rosenbrock",
-        TestFunctionVar::Single(test_functions::rosenbrock),
-    );
-    test_functions_map.insert(
-        "zakharov",
-        TestFunctionVar::Single(test_functions::zakharov),
-    );
-    test_functions_map.insert("ackley", TestFunctionVar::Single(test_functions::ackley));
-    test_functions_map.insert(
-        "himmelblau",
-        TestFunctionVar::Single(test_functions::himmelblau),
-    );
-    test_functions_map.insert("sphere", TestFunctionVar::Single(test_functions::sphere));
-    test_functions_map.insert(
-        "rastrigin",
-        TestFunctionVar::Single(test_functions::rastrigin),
-    );
-    test_functions_map.insert(
-        "hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
-    );
-    test_functions_map.insert(
-        "moved-hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid),
-    );
-    // Multi-objective
-    test_functions_map.insert(
-        "schaffer1",
-        TestFunctionVar::Multi(test_functions::schaffer1),
-    );
-    test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
-    test_functions_map.insert("zdt2", TestFunctionVar::Multi(test_functions::zdt2));
-    test_functions_map.insert("zdt3", TestFunctionVar::Multi(test_functions::zdt3));
-    test_functions_map.insert("zdt6", TestFunctionVar::Multi(test_functions::zdt6));
-    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(test_functions::dtlz1));
-
+fn arguments(
+    test_functions_map: &HashMap<&str, TestFunctionVar>,
+    algorithms: &HashMap<&str, (AlgorithmSubCommand, AlgorithmType)>,
+) -> ArgMatches<'static> {
+    // Create a subcommand for each algorithm
     let subcommands: Vec<_> = algorithms
         .iter()
         .map(|(name, &(subcommand, _))| subcommand(name))
         .collect();
+    // Create possible values for test functions based on test function hashmap
     let test_function_names: Vec<_> = test_functions_map.keys().map(|&k| k).collect();
-    let matches = App::new("Various Evolutionary algorithm implementations in Rust evaluated using test functions")
-        .arg(
-            Arg::with_name("test_function")
-                .short("f")
-                .long("test-function")
-                .value_name("test_function")
-                .help("Name of test function")
-                .required(true)
-                .possible_values(&test_function_names)
-                .takes_value(true),
-        )
+    App::new(
+        "Various Evolutionary algorithm implementations in Rust evaluated using test functions",
+    ).arg(
+        Arg::with_name("test_function")
+            .short("f")
+            .long("test-function")
+            .value_name("test_function")
+            .help("Name of test function")
+            .required(true)
+            .possible_values(&test_function_names)
+            .takes_value(true),
+    )
         .arg(
             Arg::with_name("iterations")
                 .short("i")
@@ -204,14 +139,91 @@ fn main() {
                 .help("Verbose output"),
         )
         .subcommands(subcommands)
-        .get_matches();
+        .get_matches()
+}
 
+fn main() {
+    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
+    algorithms.insert(
+        "da",
+        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
+    );
+    algorithms.insert(
+        "dummy",
+        (
+            dummy::subcommand,
+            AlgorithmType::Single(dummy::run_subcommand),
+        ),
+    );
+    algorithms.insert(
+        "ewa",
+        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
+    );
+    algorithms.insert(
+        "pso",
+        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
+    );
+    algorithms.insert(
+        "sa",
+        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
+    );
+    algorithms.insert(
+        "mopso",
+        (
+            mopso::subcommand,
+            AlgorithmType::Multi(mopso::run_subcommand),
+        ),
+    );
+
+    let mut test_functions_map = HashMap::new();
+    // Single-objective
+    test_functions_map.insert(
+        "rosenbrock",
+        TestFunctionVar::Single(test_functions::rosenbrock),
+    );
+    test_functions_map.insert(
+        "zakharov",
+        TestFunctionVar::Single(test_functions::zakharov),
+    );
+    test_functions_map.insert("ackley", TestFunctionVar::Single(test_functions::ackley));
+    test_functions_map.insert(
+        "himmelblau",
+        TestFunctionVar::Single(test_functions::himmelblau),
+    );
+    test_functions_map.insert("sphere", TestFunctionVar::Single(test_functions::sphere));
+    test_functions_map.insert(
+        "rastrigin",
+        TestFunctionVar::Single(test_functions::rastrigin),
+    );
+    test_functions_map.insert(
+        "hyper-ellipsoid",
+        TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
+    );
+    test_functions_map.insert(
+        "moved-hyper-ellipsoid",
+        TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid),
+    );
+    // Multi-objective
+    test_functions_map.insert(
+        "schaffer1",
+        TestFunctionVar::Multi(test_functions::schaffer1),
+    );
+    test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
+    test_functions_map.insert("zdt2", TestFunctionVar::Multi(test_functions::zdt2));
+    test_functions_map.insert("zdt3", TestFunctionVar::Multi(test_functions::zdt3));
+    test_functions_map.insert("zdt6", TestFunctionVar::Multi(test_functions::zdt6));
+    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(test_functions::dtlz1));
+
+    let matches = arguments(&test_functions_map, &algorithms);
+
+    // Test function
     let test_function_name = value_t!(matches, "test_function", String).unwrap();
     let test_function = test_functions_map
         .get(test_function_name.as_str())
         .unwrap()
         .clone();
 
+    // Common config for all algorithms
     let upper_bound = value_t!(matches, "upper_bound", f64).unwrap();
     let common = CommonConfig {
         verbose: matches.is_present("verbose"),
@@ -223,6 +235,7 @@ fn main() {
         population: value_t!(matches, "population", usize).unwrap(),
     };
 
+    // Sampler settings
     let sampler_mode_name = value_t!(matches, "sampler_mode", String).unwrap();
     let samples = value_t!(matches, "samples", i64).unwrap();
 
@@ -241,6 +254,8 @@ fn main() {
     let &(_, ref run_subcommand) = algorithms
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
+
+    // Select sampler mode
     let sampler_mode = match sampler_mode_name.as_ref() {
         "last" => SamplerMode::LastGeneration,
         "evolution" => SamplerMode::Evolution,
@@ -248,8 +263,9 @@ fn main() {
         "fitness" => SamplerMode::FitnessSearch,
         _ => SamplerMode::LastGeneration,
     };
-    // Run algorithm
     let sampler = Sampler::new(samples, common.iterations, sampler_mode);
+
+    // Run algorithm
     let (_, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
             let fitness_evaluator =
