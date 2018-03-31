@@ -67,6 +67,13 @@ def plot_json_solutions(json_solutions):
         cmap=cm.jet,  norm=colors.LogNorm(vmin=Z.min(), vmax=Z.max())
     )
 
+    x, y, z = np.transpose(solutions)
+    ax.plot(
+        x, y, z, 'o',
+        mew=1, markersize=2, color='white',
+        path_effects=[PathEffects.withStroke(
+            linewidth=2, foreground='black')]
+    )
     for iteration, solution in enumerate(solutions):
         plot_solution(*solution, iteration)
 
