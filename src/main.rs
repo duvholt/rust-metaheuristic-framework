@@ -175,6 +175,24 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("sampler_mode")
+                .long("sampler-mode")
+                .value_name("sampler_mode")
+                .help("Sampling mode")
+                .possible_values(&["last", "evolution", "best", "fitness"])
+                .default_value("last")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("samples")
+                .short("s")
+                .long("samples")
+                .value_name("samples")
+                .help("Number of samples")
+                .default_value("30")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .long("verbose")
@@ -200,6 +218,9 @@ fn main() {
         population: value_t!(matches, "population", usize).unwrap_or(50),
     };
 
+    let sampler_mode_name = value_t!(matches, "sampler_mode", String).unwrap();
+    let samples = value_t!(matches, "samples", i64).unwrap();
+
     println!(
         "Max iterations: {}, Max fitness evaluations: {}, Bounds: ({}, {}), Function: {}, Population: {}",
         common.iterations,
@@ -215,8 +236,15 @@ fn main() {
     let &(_, ref run_subcommand) = algorithms
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
+    let sampler_mode = match sampler_mode_name.as_ref() {
+        "last" => SamplerMode::LastGeneration,
+        "evolution" => SamplerMode::Evolution,
+        "best" => SamplerMode::EvolutionBest,
+        "fitness" => SamplerMode::FitnessSearch,
+        _ => SamplerMode::LastGeneration,
+    };
     // Run algorithm
-    let sampler = Sampler::new(30, common.iterations, SamplerMode::Evolution);
+    let sampler = Sampler::new(samples, common.iterations, sampler_mode);
     let (_, evaluations) = match run_subcommand {
         &AlgorithmType::Single(run) => {
             let fitness_evaluator =
