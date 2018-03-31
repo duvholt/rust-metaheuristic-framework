@@ -115,7 +115,7 @@ fn main() {
         .map(|(name, &(subcommand, _))| subcommand(name))
         .collect();
     let test_function_names: Vec<_> = test_functions_map.keys().map(|&k| k).collect();
-    let matches = App::new("Simple Simulated Annealing implementation in Rust using Rosenbrock")
+    let matches = App::new("Various Evolutionary algorithm implementations in Rust evaluated using test functions")
         .arg(
             Arg::with_name("test_function")
                 .short("f")
@@ -132,6 +132,7 @@ fn main() {
                 .long("iterations")
                 .value_name("iterations")
                 .help("Max iterations")
+                .default_value("1000")
                 .takes_value(true),
         )
         .arg(
@@ -140,6 +141,7 @@ fn main() {
                 .long("evaluations")
                 .value_name("evaluations")
                 .help("Number of fitness evaluations algorithm will run for")
+                .default_value("300000")
                 .takes_value(true),
         )
         .arg(
@@ -148,6 +150,7 @@ fn main() {
                 .long("ub")
                 .value_name("upper_bound")
                 .help("Upper bound solution space")
+                .default_value("30.0")
                 .takes_value(true),
         )
         .arg(
@@ -164,6 +167,7 @@ fn main() {
                 .long("dimension")
                 .value_name("dimension")
                 .help("Solution dimension size")
+                .default_value("2")
                 .takes_value(true),
         )
         .arg(
@@ -172,6 +176,7 @@ fn main() {
                 .long("population")
                 .value_name("population")
                 .help("Population size")
+                .default_value("50")
                 .takes_value(true),
         )
         .arg(
@@ -207,15 +212,15 @@ fn main() {
         .unwrap()
         .clone();
 
-    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
+    let upper_bound = value_t!(matches, "upper_bound", f64).unwrap();
     let common = CommonConfig {
         verbose: matches.is_present("verbose"),
-        evaluations: value_t!(matches, "evaluations", i64).unwrap_or(300000),
-        iterations: value_t!(matches, "iterations", i64).unwrap_or(1000),
+        evaluations: value_t!(matches, "evaluations", i64).unwrap(),
+        iterations: value_t!(matches, "iterations", i64).unwrap(),
         upper_bound,
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
-        dimension: value_t!(matches, "dimension", usize).unwrap_or(2),
-        population: value_t!(matches, "population", usize).unwrap_or(50),
+        dimension: value_t!(matches, "dimension", usize).unwrap(),
+        population: value_t!(matches, "population", usize).unwrap(),
     };
 
     let sampler_mode_name = value_t!(matches, "sampler_mode", String).unwrap();
