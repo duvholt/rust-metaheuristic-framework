@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 pub enum SamplerMode {
     LastGeneration,
     Evolution,
+    EvolutionBest,
     FitnessSearch,
 }
 
@@ -13,6 +14,7 @@ pub struct Sampler {
     samples: i64,
     max_iterations: i64,
     solutions: RefCell<Vec<SolutionJSON>>,
+    generations: RefCell<Vec<Vec<SolutionJSON>>>,
 }
 
 impl Sampler {
@@ -22,12 +24,13 @@ impl Sampler {
             mode,
             max_iterations,
             solutions: RefCell::new(vec![]),
+            generations: RefCell::new(vec![]),
         }
     }
 
     fn criteria_met(&self, iteration: i64) -> bool {
         match self.mode {
-            SamplerMode::Evolution => {
+            SamplerMode::Evolution | SamplerMode::EvolutionBest => {
                 if iteration == self.max_iterations {
                     return false;
                 }
@@ -62,8 +65,15 @@ impl Sampler {
             return;
         }
         match self.mode {
-            SamplerMode::Evolution => {
+            SamplerMode::EvolutionBest => {
                 self.add_solution(self.find_best_solution(&samples));
+            }
+            SamplerMode::Evolution => {
+                let mut solutions = samples
+                    .iter()
+                    .map(|s| SolutionJSON::from_single(s))
+                    .collect();
+                self.generations.borrow_mut().push(solutions);
             }
             SamplerMode::LastGeneration => {
                 let mut solutions = samples
@@ -111,7 +121,15 @@ impl Sampler {
     }
 
     pub fn solutions(&self) -> Vec<SolutionJSON> {
-        self.solutions.borrow().clone()
+        match self.mode {
+            SamplerMode::Evolution => self.generations
+                .borrow()
+                .iter()
+                .cloned()
+                .flat_map(|generation| generation)
+                .collect(),
+            _ => self.solutions.borrow().clone(),
+        }
     }
 }
 
@@ -193,5 +211,23 @@ mod tests {
         sampler.sample_fitness_single(&1.0, &vec![0.0, 0.1]);
 
         assert_eq!(sampler.solutions().len(), 0);
+    }
+
+    #[test]
+    fn only_saves_best() {
+        let samples = [0.3, 0.2, 0.1, 0.4];
+        let solutions: Vec<_> = samples
+            .iter()
+            .map(|fitness| SingleTestSolution::new(*fitness))
+            .collect();
+        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest);
+
+        for i in 0..10 {
+            sampler.population_sample_single(i as i64, &solutions);
+
+            let sampler_solutions = sampler.solutions();
+            assert_eq!(sampler_solutions.len(), i + 1);
+            assert_eq!(sampler_solutions[i].fitness, vec![0.1]);
+        }
     }
 }
