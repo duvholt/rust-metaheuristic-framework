@@ -167,6 +167,13 @@ impl<'a> Swarm<'a> {
                 new_v *= -1.0;
                 new_x = -self.config.space;
             }
+            let velocity_limit = 10.0;
+            if new_v > velocity_limit {
+                new_v = velocity_limit;
+            }
+            if new_v < -velocity_limit {
+                new_v = -velocity_limit;
+            }
             velocity.push(new_v);
             position.push(new_x);
         }
