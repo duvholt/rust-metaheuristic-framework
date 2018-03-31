@@ -1,8 +1,10 @@
+extern crate ansi_term;
 #[macro_use]
 extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
+use ansi_term::Color::{Blue, Green, Red, Yellow};
 use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
@@ -240,16 +242,6 @@ fn start_algorithm() -> Result<(), &'static str> {
     let sampler_mode_name = value_t_or_exit!(matches, "sampler_mode", String);
     let samples = value_t_or_exit!(matches, "samples", i64);
 
-    println!(
-        "Max iterations: {}, Max fitness evaluations: {}, Bounds: ({}, {}), Function: {}, Population: {}",
-        common.iterations,
-        common.evaluations,
-        common.upper_bound,
-        common.lower_bound,
-        test_function_name,
-        common.population
-    );
-
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
     let &(_, ref run_subcommand) = match algorithms.get(algorithm_name) {
@@ -266,6 +258,22 @@ fn start_algorithm() -> Result<(), &'static str> {
         _ => SamplerMode::LastGeneration,
     };
     let sampler = Sampler::new(samples, common.iterations, sampler_mode);
+
+    println!(
+        "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
+        Green.paint(algorithm_name.to_owned()),
+        Green.paint(test_function_name.to_owned()),
+        Green.paint(common.upper_bound.to_string()),
+        Green.paint(common.lower_bound.to_string()),
+        Green.paint(common.dimension.to_string()),
+    );
+
+    println!(
+        "Using a population of {} and {} iterations for a maximum of {} fitness evalutions",
+        Blue.paint(common.population.to_string()),
+        Blue.paint(common.iterations.to_string()),
+        Blue.paint(common.evaluations.to_string()),
+    );
 
     // Run algorithm
     let (_, evaluations) = match run_subcommand {
@@ -289,13 +297,20 @@ fn start_algorithm() -> Result<(), &'static str> {
 
     let solutions = sampler.solutions();
 
-    println!("Number of fitness evaluations: {}", evaluations);
+    println!(
+        "Number of fitness evaluations: {}",
+        Green.paint(evaluations.to_string())
+    );
     {
         let best_solution = solutions
             .iter()
             .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
         if let Some(solution) = best_solution {
-            println!("Best solution: ({:?}) {:?}", solution.x, solution.fitness);
+            println!(
+                "Best solution: {} with fitness {}",
+                Yellow.paint(format!("{:?}", solution.x)),
+                Yellow.paint(format!("{:?}", solution.fitness))
+            );
         }
     }
     write_solutions("solutions.json", solutions, test_function_name);
@@ -304,7 +319,7 @@ fn start_algorithm() -> Result<(), &'static str> {
 
 fn main() {
     if let Err(e) = start_algorithm() {
-        eprintln!("Error while trying to run algorithm: {}", e);
+        eprintln!("{}: {}", Red.paint("Error"), e);
         process::exit(1);
     }
 }
