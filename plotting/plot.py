@@ -32,12 +32,8 @@ def plot_json_solutions(json_solutions):
     X, Y = np.meshgrid(X, Y)
 
     def plot_solution(x, y, z, iteration):
-        ax.plot(
-            [x], [y], [z], 'o',
-            mew=1, markersize=2, color='white',
-            path_effects=[PathEffects.withStroke(
-                linewidth=2, foreground='black')]
-        )
+        if len(solutions) > 300:
+            return
         txt = ax.text(x, y, z, iteration, color='#eeeeee', weight='bold')
         black_border = PathEffects.withStroke(linewidth=2, foreground='black')
         txt.set_path_effects([black_border])
