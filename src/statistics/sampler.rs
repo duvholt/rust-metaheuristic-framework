@@ -25,7 +25,7 @@ impl Sampler {
         }
     }
 
-    pub fn criteria_met(&self, iteration: i64) -> bool {
+    fn criteria_met(&self, iteration: i64) -> bool {
         match self.mode {
             SamplerMode::Evolution => {
                 if iteration == self.max_iterations {
@@ -91,7 +91,7 @@ impl Sampler {
         match self.mode {
             SamplerMode::FitnessSearch => {
                 self.add_solution(solution);
-            },
+            }
             _ => {}
         }
     }
@@ -106,7 +106,7 @@ impl Sampler {
     pub fn sample_fitness_multi(&self, fitness: &Vec<f64>, position: &Vec<f64>) {
         self.sample_fitness(SolutionJSON {
             x: position.to_vec(),
-            fitness: fitness.to_vec()
+            fitness: fitness.to_vec(),
         });
     }
 
@@ -123,7 +123,7 @@ mod tests {
     #[test]
     fn samples_every_other_iteration() {
         let fitness: Vec<f64> = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 10.0];
-        let sampler: Sampler = Sampler::new(5, fitness.len() as i64, SamplerMode::Evolution);
+        let sampler = Sampler::new(5, fitness.len() as i64, SamplerMode::Evolution);
 
         for (iteration, fitness) in fitness.iter().enumerate() {
             sampler
@@ -147,7 +147,7 @@ mod tests {
             vec![0.7, 0.8],
             vec![0.9, 1.0],
         ];
-        let sampler: Sampler = Sampler::new(
+        let sampler = Sampler::new(
             3,
             (generations.len() - 1) as i64,
             SamplerMode::LastGeneration,
@@ -163,5 +163,35 @@ mod tests {
 
         let sampler_fitness: Vec<_> = sampler.solutions().iter().map(|s| s.fitness[0]).collect();
         assert_eq!(sampler_fitness, generations[4]);
+    }
+
+    #[test]
+    fn samples_fitness_if_fitness_search() {
+        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch);
+
+        assert_eq!(sampler.solutions().len(), 0);
+        sampler.sample_fitness_single(&1.0, &vec![0.0, 0.1]);
+
+        assert_eq!(sampler.solutions().len(), 1);
+    }
+
+    #[test]
+    fn samples_fitness_if_fitness_search_multi() {
+        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch);
+
+        assert_eq!(sampler.solutions().len(), 0);
+        sampler.sample_fitness_multi(&vec![1.0, 2.0], &vec![0.0, 0.1]);
+
+        assert_eq!(sampler.solutions().len(), 1);
+    }
+
+    #[test]
+    fn does_not_samples_fitness_if_not_fitness_search() {
+        let sampler = Sampler::new(0, 0, SamplerMode::Evolution);
+
+        assert_eq!(sampler.solutions().len(), 0);
+        sampler.sample_fitness_single(&1.0, &vec![0.0, 0.1]);
+
+        assert_eq!(sampler.solutions().len(), 0);
     }
 }
