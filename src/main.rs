@@ -244,10 +244,9 @@ fn start_algorithm() -> Result<(), &'static str> {
 
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
-    let &(_, ref run_subcommand) = match algorithms.get(algorithm_name) {
-        Some(algorithm) => algorithm,
-        None => return Err("Algorithm was not specified!"),
-    };
+    let &(_, ref run_subcommand) = algorithms
+        .get(algorithm_name)
+        .ok_or("Algorithm was not specified!")?;
 
     // Select sampler mode
     let sampler_mode = match sampler_mode_name.as_ref() {
