@@ -2,6 +2,7 @@ use solution::{Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::io::Write;
 
 pub enum SamplerMode {
     LastGeneration,
@@ -133,31 +134,37 @@ impl Sampler {
         }
     }
 
-    fn print_mean_and_stddev(i: usize, values: Vec<f64>) {
-        println!(
-            "[{:2}] Average {:10.4e} Standard deviation {:10.4e}",
-            i,
+    fn print_mean_and_stddev(mut writer: impl Write, values: Vec<f64>) {
+        write!(
+            writer,
+            "Average {:10.4e} Standard deviation {:10.4e}\n",
             mean(&values),
             population_standard_deviation(&values, None),
-        );
+        ).unwrap();
     }
 
-    pub fn print_statistics(&self) {
+    pub fn print_statistics(&self, mut writer: impl Write) {
         // TODO: Support multi-objective
         println!("------ Sample Statistics ------");
         match self.mode {
             SamplerMode::Evolution => {
-                println!("Mode: Evolution with {} samples", self.samples);
+                write!(
+                    &mut writer,
+                    "Mode: Evolution with {} samples\n",
+                    self.samples
+                ).unwrap();
                 for (i, generation) in self.generations.borrow().iter().enumerate() {
                     let fitness_values: Vec<_> = generation
                         .iter()
                         .map(|solution| solution.fitness[0])
                         .collect();
-                    Sampler::print_mean_and_stddev(i, fitness_values);
+                    // Prefix with generation index
+                    write!(&mut writer, "[{:2}] ", i).unwrap();
+                    Sampler::print_mean_and_stddev(&mut writer, fitness_values);
                 }
             }
             SamplerMode::LastGeneration => {
-                println!("Mode: Last Generation");
+                write!(&mut writer, "Mode: Last Generation\n").unwrap();
                 let fitness_values: Vec<_> = self.solutions
                     .borrow()
                     .iter()
@@ -168,27 +175,36 @@ impl Sampler {
                         .iter()
                         .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
                         .unwrap();
-                    println!("Best solution from last generation: {:10.4e}", best);
+                    write!(
+                        &mut writer,
+                        "Best solution from last generation: {:10.4e}\n",
+                        best
+                    ).unwrap();
                 }
-                Sampler::print_mean_and_stddev(0, fitness_values);
+                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
             }
             SamplerMode::EvolutionBest => {
-                println!(
-                    "Mode: Best Solution Evolution with {} samples",
+                write!(
+                    &mut writer,
+                    "Mode: Best Solution Evolution with {} samples\n",
                     self.samples
-                );
+                ).unwrap();
                 for (i, solution) in self.solutions.borrow().iter().enumerate() {
-                    println!("[{:2}] Fitness: {:10.4e}", i, solution.fitness[0]);
+                    write!(
+                        &mut writer,
+                        "[{:2}] Fitness: {:10.4e}\n",
+                        i, solution.fitness[0]
+                    ).unwrap();
                 }
             }
             SamplerMode::FitnessSearch => {
-                println!("Mode: All fitness evaluations");
+                write!(&mut writer, "Mode: All fitness evaluations\n").unwrap();
                 let fitness_values: Vec<_> = self.solutions
                     .borrow()
                     .iter()
                     .map(|solution| solution.fitness[0])
                     .collect();
-                Sampler::print_mean_and_stddev(0, fitness_values);
+                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
             }
         }
         println!("---- End Sample Statistics ----");
