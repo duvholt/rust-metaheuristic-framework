@@ -21,6 +21,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::stdout;
 use std::process;
 
 type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
@@ -297,7 +298,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     };
 
     let solutions = sampler.solutions();
-    sampler.print_statistics();
+    sampler.print_statistics(stdout());
 
     println!(
         "Number of fitness evaluations: {}",
