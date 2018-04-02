@@ -308,4 +308,71 @@ mod tests {
             assert_eq!(sampler_solutions[i].fitness, vec![0.1]);
         }
     }
+
+    fn create_solutions() -> Vec<SingleTestSolution> {
+        let samples = [0.3, 0.2, 0.1, 0.4];
+        samples
+            .iter()
+            .map(|fitness| SingleTestSolution::new(*fitness))
+            .collect()
+    }
+
+    #[test]
+    fn prints_evolution() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::Evolution);
+
+        sampler.population_sample_single(0, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(output, "Mode: Evolution with 10 samples\n[ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n");
+    }
+
+    #[test]
+    fn prints_best() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest);
+
+        sampler.population_sample_single(0, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: Best Solution Evolution with 10 samples\n[ 0] Fitness:  1.0000e-1\n"
+        );
+    }
+
+    #[test]
+    fn prints_last() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::LastGeneration);
+
+        sampler.population_sample_single(10, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(output, "Mode: Last Generation\nBest solution from last generation:  1.0000e-1\nAverage  2.5000e-1 Standard deviation  1.1180e-1\n");
+    }
+
+    #[test]
+    fn prints_fitness() {
+        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch);
+
+        sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
+        sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
+        sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+        );
+    }
 }
