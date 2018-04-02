@@ -143,8 +143,11 @@ impl Sampler {
     }
 
     pub fn print_statistics(&self) {
+        // TODO: Support multi-objective
+        println!("------ Sample Statistics ------");
         match self.mode {
             SamplerMode::Evolution => {
+                println!("Mode: Evolution with {} samples", self.samples);
                 for (i, generation) in self.generations.borrow().iter().enumerate() {
                     let fitness_values: Vec<_> = generation
                         .iter()
@@ -153,8 +156,42 @@ impl Sampler {
                     Sampler::print_mean_and_stddev(i, fitness_values);
                 }
             }
-            _ => {}
+            SamplerMode::LastGeneration => {
+                println!("Mode: Last Generation");
+                let fitness_values: Vec<_> = self.solutions
+                    .borrow()
+                    .iter()
+                    .map(|solution| solution.fitness[0])
+                    .collect();
+                {
+                    let best = fitness_values
+                        .iter()
+                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
+                        .unwrap();
+                    println!("Best solution from last generation: {:10.4e}", best);
+                }
+                Sampler::print_mean_and_stddev(0, fitness_values);
+            }
+            SamplerMode::EvolutionBest => {
+                println!(
+                    "Mode: Best Solution Evolution with {} samples",
+                    self.samples
+                );
+                for (i, solution) in self.solutions.borrow().iter().enumerate() {
+                    println!("[{:2}] Fitness: {:10.4e}", i, solution.fitness[0]);
+                }
+            }
+            SamplerMode::FitnessSearch => {
+                println!("Mode: All fitness evaluations");
+                let fitness_values: Vec<_> = self.solutions
+                    .borrow()
+                    .iter()
+                    .map(|solution| solution.fitness[0])
+                    .collect();
+                Sampler::print_mean_and_stddev(0, fitness_values);
+            }
         }
+        println!("---- End Sample Statistics ----");
     }
 }
 
