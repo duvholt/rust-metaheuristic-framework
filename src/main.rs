@@ -297,6 +297,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     };
 
     let solutions = sampler.solutions();
+    sampler.print_statistics();
 
     println!(
         "Number of fitness evaluations: {}",

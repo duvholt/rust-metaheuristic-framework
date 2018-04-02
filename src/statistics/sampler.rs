@@ -1,4 +1,5 @@
 use solution::{Solution, SolutionJSON};
+use statistical::{mean, population_standard_deviation};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 
@@ -129,6 +130,30 @@ impl Sampler {
                 .flat_map(|generation| generation)
                 .collect(),
             _ => self.solutions.borrow().clone(),
+        }
+    }
+
+    fn print_mean_and_stddev(i: usize, values: Vec<f64>) {
+        println!(
+            "[{:2}] Average {:10.4e} Standard deviation {:10.4e}",
+            i,
+            mean(&values),
+            population_standard_deviation(&values, None),
+        );
+    }
+
+    pub fn print_statistics(&self) {
+        match self.mode {
+            SamplerMode::Evolution => {
+                for (i, generation) in self.generations.borrow().iter().enumerate() {
+                    let fitness_values: Vec<_> = generation
+                        .iter()
+                        .map(|solution| solution.fitness[0])
+                        .collect();
+                    Sampler::print_mean_and_stddev(i, fitness_values);
+                }
+            }
+            _ => {}
         }
     }
 }
