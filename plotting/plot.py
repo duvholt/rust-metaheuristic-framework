@@ -83,7 +83,7 @@ def multi_plot(json_solutions):
     solutions = np.transpose(solutions)
 
     function_name = json_solutions['test_function']
-    plot_data = json.load(open(function_name + '-' + str(len(solutions)) + 'd.json'))
+    plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.array(plot_data))
 
     if len(solutions) == 2:
