@@ -313,6 +313,7 @@ mod tests {
     use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions::multi_dummy;
+    use testing::utils::{create_evaluator_multi, create_sampler_multi};
 
     fn create_config() -> Config {
         Config {
@@ -331,14 +332,6 @@ mod tests {
         }
     }
 
-    fn create_sampler() -> Sampler {
-        Sampler::new(10, 10, SamplerMode::Evolution)
-    }
-
-    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<Vec<f64>> {
-        FitnessEvaluator::new(multi_dummy, 100, &sampler)
-    }
-
     fn create_particle_with_fitness(fitness: f64) -> Particle {
         Particle {
             position: vec![0.0, 1.0],
@@ -351,8 +344,8 @@ mod tests {
     #[test]
     fn generates_population() {
         let config = create_config();
-        let sampler = create_sampler();
-        let function_evaluator = create_evaluator(&sampler);
+        let sampler = create_sampler_multi();
+        let function_evaluator = create_evaluator_multi(&sampler);
         let swarm = Swarm::new(&config, &function_evaluator);
 
         let population = swarm.generate_population(10);
@@ -368,8 +361,8 @@ mod tests {
             create_particle_with_fitness(1.0),
             create_particle_with_fitness(0.1),
         ];
-        let sampler = create_sampler();
-        let function_evaluator = create_evaluator(&sampler);
+        let sampler = create_sampler_multi();
+        let function_evaluator = create_evaluator_multi(&sampler);
         let mut swarm = Swarm::new(&config, &function_evaluator);
         swarm.population = population;
         let particle = create_particle_with_fitness(2.0);
@@ -382,8 +375,8 @@ mod tests {
     #[ignore]
     #[bench]
     fn bench_run(b: &mut Bencher) {
-        let sampler = create_sampler();
-        let function_evaluator = create_evaluator(&sampler);
+        let sampler = create_sampler_multi();
+        let function_evaluator = create_evaluator_multi(&sampler);
         b.iter(|| run(create_config(), &function_evaluator));
     }
 }

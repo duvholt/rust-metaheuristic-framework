@@ -71,16 +71,8 @@ mod tests {
 
     #[test]
     fn calculates_igd_asymmetric() {
-        let approx_front = vec![
-            vec![0.0, 6.0],
-            vec![3.0, 4.0],
-            vec![6.0, 1.0]
-        ];
-        let front = vec![
-            vec![0.0, 4.0],
-            vec![1.0, 2.0],
-            vec![4.0, 0.0]
-        ];
+        let approx_front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
+        let front = vec![vec![0.0, 4.0], vec![1.0, 2.0], vec![4.0, 0.0]];
 
         let igd_score = igd(&approx_front, &front);
 
@@ -89,16 +81,8 @@ mod tests {
 
     #[test]
     fn calculates_igd_equal() {
-        let approx_front = vec![
-            vec![0.0, 6.0],
-            vec![3.0, 4.0],
-            vec![6.0, 1.0]
-        ];
-        let front = vec![
-            vec![0.0, 6.0],
-            vec![3.0, 4.0],
-            vec![6.0, 1.0]
-        ];
+        let approx_front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
+        let front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
 
         let igd_score = igd(&approx_front, &front);
 
