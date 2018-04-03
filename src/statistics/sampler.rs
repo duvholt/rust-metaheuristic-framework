@@ -1,5 +1,6 @@
 use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
+use statistics::measure::igd;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::io::Write;
@@ -13,11 +14,12 @@ pub enum SamplerMode {
 
 pub struct Sampler {
     mode: SamplerMode,
-    objective: Objective,
+    pub objective: Objective,
     samples: i64,
     max_iterations: i64,
     solutions: RefCell<Vec<SolutionJSON>>,
     generations: RefCell<Vec<Vec<SolutionJSON>>>,
+    pareto_front: Option<Vec<Vec<f64>>>,
 }
 
 impl Sampler {
@@ -34,7 +36,12 @@ impl Sampler {
             solutions: RefCell::new(vec![]),
             generations: RefCell::new(vec![]),
             objective,
+            pareto_front: None,
         }
+    }
+
+    pub fn set_pareto_front(&mut self, pareto_front: Vec<Vec<f64>>) {
+        self.pareto_front = Some(pareto_front);
     }
 
     fn criteria_met(&self, iteration: i64) -> bool {
@@ -158,6 +165,15 @@ impl Sampler {
         ).unwrap();
     }
 
+    fn print_igd(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
+        let front = generation
+            .iter()
+            .map(|solution| solution.fitness.clone())
+            .collect();
+        let igd_value = igd(&self.pareto_front.clone().unwrap(), &front);
+        write!(&mut writer, "IGD: {}\n", igd_value);
+    }
+
     pub fn print_statistics(&self, mut writer: impl Write) {
         println!("------ Sample Statistics ------");
         match self.mode {
@@ -168,34 +184,48 @@ impl Sampler {
                     self.samples
                 ).unwrap();
                 for (i, generation) in self.generations.borrow().iter().enumerate() {
-                    let fitness_values: Vec<_> = generation
-                        .iter()
-                        .map(|solution| solution.fitness[0])
-                        .collect();
                     // Prefix with generation index
                     write!(&mut writer, "[{:2}] ", i).unwrap();
-                    Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                    match self.objective {
+                        Objective::Single => {
+                            let fitness_values: Vec<_> = generation
+                                .iter()
+                                .map(|solution| solution.fitness[0])
+                                .collect();
+                            Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                        }
+                        Objective::Multi => {
+                            self.print_igd(&mut writer, &generation);
+                        }
+                    }
                 }
             }
             SamplerMode::LastGeneration => {
                 write!(&mut writer, "Mode: Last Generation\n").unwrap();
-                let fitness_values: Vec<_> = self.solutions
-                    .borrow()
-                    .iter()
-                    .map(|solution| solution.fitness[0])
-                    .collect();
-                {
-                    let best = fitness_values
-                        .iter()
-                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
-                        .unwrap();
-                    write!(
-                        &mut writer,
-                        "Best solution from last generation: {:10.4e}\n",
-                        best
-                    ).unwrap();
+                match self.objective {
+                    Objective::Single => {
+                        let fitness_values: Vec<_> = self.solutions
+                            .borrow()
+                            .iter()
+                            .map(|solution| solution.fitness[0])
+                            .collect();
+                        {
+                            let best = fitness_values
+                                .iter()
+                                .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
+                                .unwrap();
+                            write!(
+                                &mut writer,
+                                "Best solution from last generation: {:10.4e}\n",
+                                best
+                            ).unwrap();
+                        }
+                        Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                    }
+                    Objective::Multi => {
+                        self.print_igd(&mut writer, &self.solutions.borrow());
+                    }
                 }
-                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
             }
             SamplerMode::EvolutionBest => {
                 write!(
@@ -394,6 +424,14 @@ mod tests {
             .collect()
     }
 
+    fn create_solutions_multi() -> Vec<MultiTestSolution> {
+        let samples = [0.3, 0.2, 0.1, 0.4];
+        samples
+            .iter()
+            .map(|fitness| MultiTestSolution::new(vec![*fitness, *fitness]))
+            .collect()
+    }
+
     #[test]
     fn prints_evolution() {
         let solutions = create_solutions();
@@ -405,6 +443,23 @@ mod tests {
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(output, "Mode: Evolution with 10 samples\n[ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n");
+    }
+
+    #[test]
+    fn prints_evolution_multi() {
+        let solutions = create_solutions_multi();
+        let mut sampler = Sampler::new(10, 10, SamplerMode::Evolution, Objective::Multi);
+        sampler.set_pareto_front(vec![vec![0.25, 0.25], vec![0.15, 0.15], vec![0.05, 0.05]]);
+
+        sampler.population_sample_multi(0, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: Evolution with 10 samples\n[ 0] IGD: 0.06123724356957946\n"
+        );
     }
 
     #[test]
@@ -437,12 +492,45 @@ mod tests {
     }
 
     #[test]
+    fn prints_last_multi() {
+        let solutions = create_solutions_multi();
+        let mut sampler = Sampler::new(10, 10, SamplerMode::LastGeneration, Objective::Multi);
+        sampler.set_pareto_front(vec![vec![0.25, 0.25], vec![0.15, 0.15], vec![0.05, 0.05]]);
+
+        sampler.population_sample_multi(10, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(output, "Mode: Last Generation\nIGD: 0.06123724356957946\n");
+    }
+
+    #[test]
     fn prints_fitness() {
         let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch, Objective::Single);
 
         sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
         sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
         sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+        );
+    }
+
+    #[test]
+    fn prints_fitness_multi() {
+        let solutions = create_solutions_multi();
+        let fitness_values = vec![2.0, 1.0, 3.0];
+        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch, Objective::Multi);
+
+        for (solution, fitness) in solutions[..3].iter().zip(fitness_values) {
+            sampler.sample_fitness_multi(&vec![fitness, fitness], &solution.fitness());
+        }
         let mut output = Vec::new();
         sampler.print_statistics(&mut output);
 

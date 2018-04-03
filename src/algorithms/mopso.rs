@@ -304,6 +304,9 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
         }
         i += 1;
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_multi(config.iterations, &swarm.archive.population);
     swarm.solutions()
 }
 
