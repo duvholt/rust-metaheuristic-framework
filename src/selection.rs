@@ -3,7 +3,7 @@ use solution::Solution;
 
 pub fn roulette_wheel<S>(population: &[S]) -> (usize, &S)
 where
-    S: Solution,
+    S: Solution<f64>,
 {
     let mut rng = thread_rng();
     let weight_sum: f64 = population.iter().map(|p| p.fitness()).sum();
@@ -25,6 +25,16 @@ mod tests {
     #[derive(Debug, Clone)]
     struct TestFitness {
         fitness: f64,
+        position: Vec<f64>,
+    }
+
+    impl TestFitness {
+        fn new(fitness: f64) -> TestFitness {
+            TestFitness {
+                fitness,
+                position: vec![],
+            }
+        }
     }
 
     impl PartialEq for TestFitness {
@@ -33,21 +43,21 @@ mod tests {
         }
     }
 
-    impl Solution for TestFitness {
-        fn fitness(&self) -> f64 {
-            self.fitness
+    impl Solution<f64> for TestFitness {
+        fn fitness(&self) -> &f64 {
+            &self.fitness
         }
 
-        fn position(&self) -> Vec<f64> {
-            vec![self.fitness, self.fitness]
+        fn position(&self) -> &Vec<f64> {
+            &self.position
         }
     }
 
     #[test]
     fn roulette_wheel_selects_largest() {
-        let fitness1 = TestFitness { fitness: 0.0 };
-        let fitness2 = TestFitness { fitness: 0.0 };
-        let fitness3 = TestFitness { fitness: 1.0 };
+        let fitness1 = TestFitness::new(0.0);
+        let fitness2 = TestFitness::new(0.0);
+        let fitness3 = TestFitness::new(1.0);
         let population = vec![fitness1.clone(), fitness2.clone(), fitness3.clone()];
 
         let (index, selected) = roulette_wheel(&population).clone();
@@ -57,9 +67,9 @@ mod tests {
 
     #[test]
     fn roulette_wheel_selects_largest2() {
-        let fitness1 = TestFitness { fitness: 0.0 };
-        let fitness2 = TestFitness { fitness: 1.0 };
-        let fitness3 = TestFitness { fitness: 0.0 };
+        let fitness1 = TestFitness::new(0.0);
+        let fitness2 = TestFitness::new(1.0);
+        let fitness3 = TestFitness::new(0.0);
         let population = vec![fitness1.clone(), fitness2.clone(), fitness3.clone()];
 
         let (index, selected) = roulette_wheel(&population).clone();

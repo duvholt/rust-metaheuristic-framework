@@ -1,11 +1,11 @@
-use solution::{multi_solutions_to_json, MultiSolution, SolutionJSON};
+use archive::Archive;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
+use domination::dominates;
+use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
 use rand::{thread_rng, Rng};
-use domination::dominates;
-use archive::Archive;
-use test_functions::{get_multi, MultiTestFunction, TestFunctionVar};
-use config::CommonConfig;
-use clap::{App, Arg, ArgMatches, SubCommand};
+use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -58,7 +58,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: &FitnessEvaluator<Vec<f64>>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(1.0);
@@ -86,7 +86,7 @@ pub fn run_subcommand(
         divisions,
         mutation_rate,
     };
-    run(config, &get_multi(test_function))
+    run(config, function_evaluator)
 }
 
 type Position = Vec<f64>;
@@ -116,7 +116,7 @@ struct Particle {
     velocity: Velocity,
 }
 
-impl MultiSolution for Particle {
+impl Solution<Vec<f64>> for Particle {
     fn fitness(&self) -> &Vec<f64> {
         &self.fitness
     }
@@ -129,16 +129,16 @@ impl MultiSolution for Particle {
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Particle>,
-    test_function: &'a MultiTestFunction,
+    fitness_evaluator: &'a FitnessEvaluator<'a, Vec<f64>>,
     archive: Archive<Particle>,
 }
 
 impl<'a> Swarm<'a> {
-    fn new(config: &'a Config, test_function: &'a MultiTestFunction) -> Swarm<'a> {
+    fn new(config: &'a Config, fitness_evaluator: &'a FitnessEvaluator<Vec<f64>>) -> Swarm<'a> {
         Swarm {
             config,
             population: vec![],
-            test_function,
+            fitness_evaluator,
             archive: Archive::new(config.archive_size, config.divisions),
         }
     }
@@ -152,7 +152,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> Vec<f64> {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn generate_population(&self, size: usize) -> Vec<Particle> {
@@ -282,8 +282,8 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &MultiTestFunction) -> Vec<SolutionJSON> {
-    let mut swarm = Swarm::new(&config, test_function);
+pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
+    let mut swarm = Swarm::new(&config, fitness_evaluator);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
@@ -296,6 +296,12 @@ pub fn run(config: Config, test_function: &MultiTestFunction) -> Vec<SolutionJSO
         }
         swarm.archive.update(&swarm.population);
         swarm.update_positions(i);
+        fitness_evaluator
+            .sampler
+            .population_sample_multi(i, &swarm.population);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
         i += 1;
     }
     swarm.solutions()
@@ -304,8 +310,9 @@ pub fn run(config: Config, test_function: &MultiTestFunction) -> Vec<SolutionJSO
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::multi_dummy;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
+    use test_functions::multi_dummy;
 
     fn create_config() -> Config {
         Config {
@@ -324,6 +331,14 @@ mod tests {
         }
     }
 
+    fn create_sampler() -> Sampler {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<Vec<f64>> {
+        FitnessEvaluator::new(multi_dummy, 100, &sampler)
+    }
+
     fn create_particle_with_fitness(fitness: f64) -> Particle {
         Particle {
             position: vec![0.0, 1.0],
@@ -336,7 +351,9 @@ mod tests {
     #[test]
     fn generates_population() {
         let config = create_config();
-        let swarm = Swarm::new(&config, &multi_dummy);
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
+        let swarm = Swarm::new(&config, &function_evaluator);
 
         let population = swarm.generate_population(10);
 
@@ -351,7 +368,9 @@ mod tests {
             create_particle_with_fitness(1.0),
             create_particle_with_fitness(0.1),
         ];
-        let mut swarm = Swarm::new(&config, &multi_dummy);
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
+        let mut swarm = Swarm::new(&config, &function_evaluator);
         swarm.population = population;
         let particle = create_particle_with_fitness(2.0);
         let leader = create_particle_with_fitness(0.01);
@@ -363,6 +382,8 @@ mod tests {
     #[ignore]
     #[bench]
     fn bench_run(b: &mut Bencher) {
-        b.iter(|| run(create_config(), &multi_dummy));
+        let sampler = create_sampler();
+        let function_evaluator = create_evaluator(&sampler);
+        b.iter(|| run(create_config(), &function_evaluator));
     }
 }

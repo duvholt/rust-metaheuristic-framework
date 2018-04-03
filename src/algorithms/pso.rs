@@ -1,10 +1,10 @@
-use solution::{solutions_to_json, Solution, SolutionJSON};
-use position::random_position;
-use rand::{thread_rng, Rng};
-use std::cmp::Ordering;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::FitnessEvaluator;
+use position::random_position;
+use rand::{thread_rng, Rng};
+use solution::{solutions_to_json, Solution, SolutionJSON};
+use std::cmp::Ordering;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -34,7 +34,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
@@ -54,12 +54,11 @@ pub fn run_subcommand(
         c2,
         inertia,
     };
-    run(config, &get_single(test_function))
+    run(config, &function_evaluator)
 }
 
 type Position = Vec<f64>;
 type Velocity = Position;
-type TestFunction = Fn(&Vec<f64>) -> f64;
 
 pub struct Config {
     pub space: f64,
@@ -79,29 +78,29 @@ struct Particle {
     velocity: Velocity,
 }
 
-impl Solution for Particle {
-    fn fitness(&self) -> f64 {
-        self.fitness
+impl Solution<f64> for Particle {
+    fn fitness(&self) -> &f64 {
+        &self.fitness
     }
 
-    fn position(&self) -> Vec<f64> {
-        self.position.to_vec()
+    fn position(&self) -> &Vec<f64> {
+        &self.position
     }
 }
 
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Particle>,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
     leader: Option<Particle>,
 }
 
 impl<'a> Swarm<'a> {
-    fn new(config: &'a Config, test_function: &'a Fn(&Vec<f64>) -> f64) -> Swarm<'a> {
+    fn new(config: &'a Config, fitness_evaluator: &'a FitnessEvaluator<f64>) -> Swarm<'a> {
         Swarm {
             config,
             population: vec![],
-            test_function,
+            fitness_evaluator,
             leader: None,
         }
     }
@@ -111,7 +110,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn generate_population(&self, size: usize) -> Vec<Particle> {
@@ -211,27 +210,33 @@ impl<'a> Swarm<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &TestFunction) -> Vec<SolutionJSON> {
-    let mut swarm = Swarm::new(&config, &test_function);
+pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
+    let mut swarm = Swarm::new(&config, &fitness_evaluator);
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
         swarm.update_leader();
         swarm.update_positions();
-        i += 1;
-        if i % (config.iterations / 20) == 0 {
-            let leader = swarm.get_leader();
-            println!("Leader({:?}) fitness {}", leader.position, leader.fitness);
+        fitness_evaluator
+            .sampler
+            .population_sample_single(i, &swarm.population);
+        if fitness_evaluator.end_criteria() {
+            break;
         }
+        i += 1;
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &swarm.population);
     swarm.solutions()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::rosenbrock;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
+    use test_functions::rosenbrock;
 
     fn create_config() -> Config {
         Config {
@@ -243,6 +248,14 @@ mod tests {
             c2: 2.0,
             inertia: 1.1,
         }
+    }
+
+    fn create_sampler() -> Sampler {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(rosenbrock, 100, &sampler)
     }
 
     fn create_particle_with_fitness(fitness: f64) -> Particle {
@@ -257,7 +270,9 @@ mod tests {
     #[test]
     fn generates_population() {
         let config = create_config();
-        let swarm = Swarm::new(&config, &rosenbrock);
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
+        let swarm = Swarm::new(&config, &fitness_evaluator);
 
         let population = swarm.generate_population(10);
 
@@ -280,6 +295,8 @@ mod tests {
     #[test]
     fn updates_leader_if_better() {
         let config = create_config();
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         let mut swarm = Swarm {
             population: vec![
                 create_particle_with_fitness(1.0),
@@ -287,7 +304,7 @@ mod tests {
             ],
             leader: Some(create_particle_with_fitness(0.02)),
             config: &config,
-            test_function: &rosenbrock,
+            fitness_evaluator: &fitness_evaluator,
         };
 
         swarm.update_leader();
@@ -298,6 +315,8 @@ mod tests {
     #[test]
     fn does_nothing_if_old_leader_better() {
         let config = create_config();
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         let mut swarm = Swarm {
             population: vec![
                 create_particle_with_fitness(1.0),
@@ -305,7 +324,7 @@ mod tests {
             ],
             leader: Some(create_particle_with_fitness(0.02)),
             config: &config,
-            test_function: &rosenbrock,
+            fitness_evaluator: &fitness_evaluator,
         };
 
         swarm.update_leader();
@@ -317,6 +336,8 @@ mod tests {
     #[bench]
     fn bench_move(b: &mut Bencher) {
         let config = create_config();
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         let swarm = Swarm {
             population: vec![
                 create_particle_with_fitness(1.0),
@@ -324,7 +345,7 @@ mod tests {
             ],
             leader: Some(create_particle_with_fitness(0.02)),
             config: &config,
-            test_function: &rosenbrock,
+            fitness_evaluator: &fitness_evaluator,
         };
         let particle = create_particle_with_fitness(2.0);
         let leader = swarm.get_leader();
@@ -336,9 +357,11 @@ mod tests {
     #[ignore]
     #[bench]
     fn bench_pso(b: &mut Bencher) {
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         b.iter(|| {
             let config = create_config();
-            run(config, &rosenbrock);
+            run(config, &fitness_evaluator);
         });
     }
 }

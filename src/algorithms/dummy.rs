@@ -1,7 +1,7 @@
-use solution::SolutionJSON;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::FitnessEvaluator;
+use solution::SolutionJSON;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name).about("dummy solver").arg(
@@ -15,14 +15,14 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     _common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
     println!("Running dummy solver with example: {}", example);
     let config = Config::new(example);
 
-    run(config, &get_single(test_function))
+    run(config, &function_evaluator)
 }
 
 pub struct Config {
@@ -35,9 +35,13 @@ impl Config {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
+pub fn run(config: Config, function_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     println!("Running dummy solver. Example: {}", config.example);
+
     vec![
-        SolutionJSON::new(vec![0.0, 0.0], vec![(test_function)(&vec![0.0, 0.0])]),
+        SolutionJSON::new(
+            vec![0.0, 0.0],
+            vec![function_evaluator.calculate_fitness(&vec![0.0, 0.0])],
+        ),
     ]
 }
