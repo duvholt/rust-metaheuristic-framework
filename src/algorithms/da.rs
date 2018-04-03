@@ -291,14 +291,7 @@ mod tests {
     use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions::rosenbrock;
-
-    fn create_sampler() -> Sampler {
-        Sampler::new(10, 10, SamplerMode::Evolution)
-    }
-
-    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
-        FitnessEvaluator::new(rosenbrock, 100, &sampler)
-    }
+    use testing::utils::{create_evaluator, create_sampler};
 
     fn create_config() -> Config {
         Config {

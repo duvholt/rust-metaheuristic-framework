@@ -22,3 +22,4 @@ pub mod selection;
 pub mod solution;
 pub mod statistics;
 pub mod test_functions;
+pub mod testing;

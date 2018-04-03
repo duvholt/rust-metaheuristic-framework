@@ -14,7 +14,7 @@ use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
-use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
 use rustoa::test_functions;
 use std::cmp::Ordering;
@@ -257,7 +257,11 @@ fn start_algorithm() -> Result<(), &'static str> {
         "fitness" => SamplerMode::FitnessSearch,
         _ => SamplerMode::LastGeneration,
     };
-    let sampler = Sampler::new(samples, common.iterations, sampler_mode);
+    let sampler_objective = match run_subcommand {
+        &AlgorithmType::Single(_) => Objective::Single,
+        &AlgorithmType::Multi(_) => Objective::Multi,
+    };
+    let sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
 
     println!(
         "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",

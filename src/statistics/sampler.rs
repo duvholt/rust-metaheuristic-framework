@@ -1,4 +1,4 @@
-use solution::{Solution, SolutionJSON};
+use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
 use std::cell::RefCell;
 use std::cmp::Ordering;
@@ -13,6 +13,7 @@ pub enum SamplerMode {
 
 pub struct Sampler {
     mode: SamplerMode,
+    objective: Objective,
     samples: i64,
     max_iterations: i64,
     solutions: RefCell<Vec<SolutionJSON>>,
@@ -20,13 +21,19 @@ pub struct Sampler {
 }
 
 impl Sampler {
-    pub fn new(samples: i64, max_iterations: i64, mode: SamplerMode) -> Sampler {
+    pub fn new(
+        samples: i64,
+        max_iterations: i64,
+        mode: SamplerMode,
+        objective: Objective,
+    ) -> Sampler {
         Sampler {
             samples,
             mode,
             max_iterations,
             solutions: RefCell::new(vec![]),
             generations: RefCell::new(vec![]),
+            objective,
         }
     }
 
@@ -219,7 +226,12 @@ mod tests {
     #[test]
     fn samples_every_other_iteration() {
         let fitness: Vec<f64> = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 10.0];
-        let sampler = Sampler::new(5, fitness.len() as i64, SamplerMode::Evolution);
+        let sampler = Sampler::new(
+            5,
+            fitness.len() as i64,
+            SamplerMode::Evolution,
+            Objective::Single,
+        );
 
         for (iteration, fitness) in fitness.iter().enumerate() {
             sampler
@@ -247,6 +259,7 @@ mod tests {
             3,
             (generations.len() - 1) as i64,
             SamplerMode::LastGeneration,
+            Objective::Single,
         );
 
         for (iteration, generation) in generations.iter().enumerate() {
@@ -263,7 +276,7 @@ mod tests {
 
     #[test]
     fn samples_fitness_if_fitness_search() {
-        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch);
+        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch, Objective::Single);
 
         assert_eq!(sampler.solutions().len(), 0);
         sampler.sample_fitness_single(&1.0, &vec![0.0, 0.1]);
@@ -273,7 +286,7 @@ mod tests {
 
     #[test]
     fn samples_fitness_if_fitness_search_multi() {
-        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch);
+        let sampler = Sampler::new(0, 0, SamplerMode::FitnessSearch, Objective::Multi);
 
         assert_eq!(sampler.solutions().len(), 0);
         sampler.sample_fitness_multi(&vec![1.0, 2.0], &vec![0.0, 0.1]);
@@ -283,7 +296,7 @@ mod tests {
 
     #[test]
     fn does_not_samples_fitness_if_not_fitness_search() {
-        let sampler = Sampler::new(0, 0, SamplerMode::Evolution);
+        let sampler = Sampler::new(0, 0, SamplerMode::Evolution, Objective::Single);
 
         assert_eq!(sampler.solutions().len(), 0);
         sampler.sample_fitness_single(&1.0, &vec![0.0, 0.1]);
@@ -298,7 +311,7 @@ mod tests {
             .iter()
             .map(|fitness| SingleTestSolution::new(*fitness))
             .collect();
-        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest);
+        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest, Objective::Single);
 
         for i in 0..10 {
             sampler.population_sample_single(i as i64, &solutions);
@@ -320,7 +333,7 @@ mod tests {
     #[test]
     fn prints_evolution() {
         let solutions = create_solutions();
-        let sampler = Sampler::new(10, 10, SamplerMode::Evolution);
+        let sampler = Sampler::new(10, 10, SamplerMode::Evolution, Objective::Single);
 
         sampler.population_sample_single(0, &solutions);
         let mut output = Vec::new();
@@ -333,7 +346,7 @@ mod tests {
     #[test]
     fn prints_best() {
         let solutions = create_solutions();
-        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest);
+        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest, Objective::Single);
 
         sampler.population_sample_single(0, &solutions);
         let mut output = Vec::new();
@@ -349,7 +362,7 @@ mod tests {
     #[test]
     fn prints_last() {
         let solutions = create_solutions();
-        let sampler = Sampler::new(10, 10, SamplerMode::LastGeneration);
+        let sampler = Sampler::new(10, 10, SamplerMode::LastGeneration, Objective::Single);
 
         sampler.population_sample_single(10, &solutions);
         let mut output = Vec::new();
@@ -361,7 +374,7 @@ mod tests {
 
     #[test]
     fn prints_fitness() {
-        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch);
+        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch, Objective::Single);
 
         sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
         sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
