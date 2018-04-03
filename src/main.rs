@@ -42,6 +42,11 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
     file.write_all(json_solutions.as_bytes()).unwrap();
 }
 
+pub fn read_pareto_front(filename: &str) -> Vec<Vec<f64>> {
+    let file = File::open(filename).unwrap();
+    serde_json::from_reader(file).unwrap()
+}
+
 fn arguments(
     test_functions_map: &HashMap<&str, TestFunctionVar>,
     algorithms: &HashMap<&str, (AlgorithmSubCommand, AlgorithmType)>,
@@ -266,7 +271,10 @@ fn start_algorithm() -> Result<(), &'static str> {
             Objective::Multi
         }
     };
-    let sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
+    let mut sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
+    if let Objective::Multi = sampler.objective {
+        sampler.set_pareto_front(read_pareto_front("optimal_solutions/zdt1-2d.json"));
+    }
 
     println!(
         "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
