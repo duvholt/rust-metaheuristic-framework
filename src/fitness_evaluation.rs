@@ -12,17 +12,19 @@ pub enum TestFunctionVar {
     Multi(MultiTestFunctionVar),
 }
 
-pub fn get_single(test_function_var: TestFunctionVar) -> SingleTestFunctionVar {
+pub fn get_single(
+    test_function_var: TestFunctionVar,
+) -> Result<SingleTestFunctionVar, &'static str> {
     match test_function_var {
-        TestFunctionVar::Single(f) => f,
-        _ => panic!("Algorithm only supports single objective functions"),
+        TestFunctionVar::Single(f) => Ok(f),
+        _ => Err("Algorithm only supports single objective functions"),
     }
 }
 
-pub fn get_multi(test_function_var: TestFunctionVar) -> MultiTestFunctionVar {
+pub fn get_multi(test_function_var: TestFunctionVar) -> Result<MultiTestFunctionVar, &'static str> {
     match test_function_var {
-        TestFunctionVar::Multi(f) => f,
-        _ => panic!("Algorithm only supports multi objective functions"),
+        TestFunctionVar::Multi(f) => Ok(f),
+        _ => Err("Algorithm only supports multi objective functions"),
     }
 }
 
