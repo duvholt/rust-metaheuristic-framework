@@ -259,7 +259,12 @@ fn start_algorithm() -> Result<(), &'static str> {
     };
     let sampler_objective = match run_subcommand {
         &AlgorithmType::Single(_) => Objective::Single,
-        &AlgorithmType::Multi(_) => Objective::Multi,
+        &AlgorithmType::Multi(_) => {
+            if let SamplerMode::EvolutionBest = sampler_mode {
+                return Err("Sampler mode best does not work with multi-objective algorithms");
+            }
+            Objective::Multi
+        }
     };
     let sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
 
