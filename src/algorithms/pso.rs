@@ -142,20 +142,21 @@ impl<'a> Swarm<'a> {
         solutions_to_json(solutions)
     }
 
-    fn particle_move(&self, particle: &Particle, leader: &Particle) -> Particle {
+    fn particle_move(&self, particle: &Particle, leader: &Particle, iteration: i64) -> Particle {
         let mut rng = thread_rng();
-        let r1 = rng.next_f64();
-        let r2 = rng.next_f64();
         let mut velocity = vec![];
         let mut position = vec![];
+        let inertia = self.config.inertia * 0.99_f64.powi(iteration as i32);
         for i in 0..self.config.dimension {
+            let r1 = rng.next_f64();
+            let r2 = rng.next_f64();
             let v = particle.velocity[i];
             let x = particle.position[i];
             let x_p = particle.pbest[i];
             let x_l = leader.position[i];
 
-            let mut new_v = self.config.inertia * v + self.config.c1 * r1 * (x_p - x)
-                + self.config.c2 * r2 * (x_l - x);
+            let mut new_v =
+                inertia * v + self.config.c1 * r1 * (x_p - x) + self.config.c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
             if new_v + x > self.config.space {
                 // Bound hit, move in opposite direction
@@ -165,6 +166,13 @@ impl<'a> Swarm<'a> {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
                 new_x = -self.config.space;
+            }
+            let velocity_limit = 10.0;
+            if new_v > velocity_limit {
+                new_v = velocity_limit;
+            }
+            if new_v < -velocity_limit {
+                new_v = -velocity_limit;
             }
             velocity.push(new_v);
             position.push(new_x);
@@ -183,11 +191,11 @@ impl<'a> Swarm<'a> {
         }
     }
 
-    fn update_positions(&mut self) {
+    fn update_positions(&mut self, iteration: i64) {
         let leader = self.get_leader();
         self.population = self.population
             .iter()
-            .map(|particle| self.particle_move(particle, &leader))
+            .map(|particle| self.particle_move(particle, &leader, iteration))
             .collect();
     }
 
@@ -216,7 +224,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
     let mut i = 0;
     while i < config.iterations {
         swarm.update_leader();
-        swarm.update_positions();
+        swarm.update_positions(i);
         fitness_evaluator
             .sampler
             .population_sample_single(i, &swarm.population);
@@ -350,7 +358,7 @@ mod tests {
         let particle = create_particle_with_fitness(2.0);
         let leader = swarm.get_leader();
         b.iter(|| {
-            swarm.particle_move(&particle, &leader);
+            swarm.particle_move(&particle, &leader, 0);
         });
     }
 
