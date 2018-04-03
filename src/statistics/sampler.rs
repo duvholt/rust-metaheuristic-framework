@@ -1,6 +1,8 @@
 use solution::{Solution, SolutionJSON};
+use statistical::{mean, population_standard_deviation};
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::io::Write;
 
 pub enum SamplerMode {
     LastGeneration,
@@ -131,6 +133,82 @@ impl Sampler {
             _ => self.solutions.borrow().clone(),
         }
     }
+
+    fn print_mean_and_stddev(mut writer: impl Write, values: Vec<f64>) {
+        write!(
+            writer,
+            "Average {:10.4e} Standard deviation {:10.4e}\n",
+            mean(&values),
+            population_standard_deviation(&values, None),
+        ).unwrap();
+    }
+
+    pub fn print_statistics(&self, mut writer: impl Write) {
+        // TODO: Support multi-objective
+        println!("------ Sample Statistics ------");
+        match self.mode {
+            SamplerMode::Evolution => {
+                write!(
+                    &mut writer,
+                    "Mode: Evolution with {} samples\n",
+                    self.samples
+                ).unwrap();
+                for (i, generation) in self.generations.borrow().iter().enumerate() {
+                    let fitness_values: Vec<_> = generation
+                        .iter()
+                        .map(|solution| solution.fitness[0])
+                        .collect();
+                    // Prefix with generation index
+                    write!(&mut writer, "[{:2}] ", i).unwrap();
+                    Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                }
+            }
+            SamplerMode::LastGeneration => {
+                write!(&mut writer, "Mode: Last Generation\n").unwrap();
+                let fitness_values: Vec<_> = self.solutions
+                    .borrow()
+                    .iter()
+                    .map(|solution| solution.fitness[0])
+                    .collect();
+                {
+                    let best = fitness_values
+                        .iter()
+                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
+                        .unwrap();
+                    write!(
+                        &mut writer,
+                        "Best solution from last generation: {:10.4e}\n",
+                        best
+                    ).unwrap();
+                }
+                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+            }
+            SamplerMode::EvolutionBest => {
+                write!(
+                    &mut writer,
+                    "Mode: Best Solution Evolution with {} samples\n",
+                    self.samples
+                ).unwrap();
+                for (i, solution) in self.solutions.borrow().iter().enumerate() {
+                    write!(
+                        &mut writer,
+                        "[{:2}] Fitness: {:10.4e}\n",
+                        i, solution.fitness[0]
+                    ).unwrap();
+                }
+            }
+            SamplerMode::FitnessSearch => {
+                write!(&mut writer, "Mode: All fitness evaluations\n").unwrap();
+                let fitness_values: Vec<_> = self.solutions
+                    .borrow()
+                    .iter()
+                    .map(|solution| solution.fitness[0])
+                    .collect();
+                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+            }
+        }
+        println!("---- End Sample Statistics ----");
+    }
 }
 
 #[cfg(test)]
@@ -229,5 +307,72 @@ mod tests {
             assert_eq!(sampler_solutions.len(), i + 1);
             assert_eq!(sampler_solutions[i].fitness, vec![0.1]);
         }
+    }
+
+    fn create_solutions() -> Vec<SingleTestSolution> {
+        let samples = [0.3, 0.2, 0.1, 0.4];
+        samples
+            .iter()
+            .map(|fitness| SingleTestSolution::new(*fitness))
+            .collect()
+    }
+
+    #[test]
+    fn prints_evolution() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::Evolution);
+
+        sampler.population_sample_single(0, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(output, "Mode: Evolution with 10 samples\n[ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n");
+    }
+
+    #[test]
+    fn prints_best() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::EvolutionBest);
+
+        sampler.population_sample_single(0, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: Best Solution Evolution with 10 samples\n[ 0] Fitness:  1.0000e-1\n"
+        );
+    }
+
+    #[test]
+    fn prints_last() {
+        let solutions = create_solutions();
+        let sampler = Sampler::new(10, 10, SamplerMode::LastGeneration);
+
+        sampler.population_sample_single(10, &solutions);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(output, "Mode: Last Generation\nBest solution from last generation:  1.0000e-1\nAverage  2.5000e-1 Standard deviation  1.1180e-1\n");
+    }
+
+    #[test]
+    fn prints_fitness() {
+        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch);
+
+        sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
+        sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
+        sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+        );
     }
 }
