@@ -13,8 +13,8 @@ fn gamma(x: f64) -> f64 {
     unsafe { tgamma(x) }
 }
 
-use std::f64::consts;
 use rand::{thread_rng, Rng};
+use std::f64::consts;
 
 pub fn cauchy(x: f64, tau: f64) -> f64 {
     1.0 / 2.0 + (1.0 / consts::PI) * (x / tau).atan()

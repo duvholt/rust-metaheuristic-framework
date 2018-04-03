@@ -1,10 +1,10 @@
-use solution::SolutionJSON;
-use rand;
-use rand::{thread_rng, Rng};
-use rand::distributions::{IndependentSample, Range};
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::FitnessEvaluator;
+use rand;
+use rand::distributions::{IndependentSample, Range};
+use rand::{thread_rng, Rng};
+use solution::{Solution, SolutionJSON};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -29,7 +29,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
@@ -47,7 +47,7 @@ pub fn run_subcommand(
         common.dimension,
     );
 
-    run(config, &get_single(test_function))
+    run(config, &function_evaluator)
 }
 
 pub struct Config {
@@ -82,24 +82,33 @@ struct SASolution {
     fitness: f64,
 }
 
+impl Solution<f64> for SASolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.x
+    }
+    fn fitness(&self) -> &f64 {
+        &self.fitness
+    }
+}
+
 struct Neighbourhood<'a> {
     dimonension: usize,
     space: f64,
     rng: rand::ThreadRng,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
 impl<'a> Neighbourhood<'a> {
     fn new(
         dimonension: usize,
         space: f64,
-        test_function: &'a Fn(&Vec<f64>) -> f64,
-    ) -> Neighbourhood {
+        fitness_evaluator: &'a FitnessEvaluator<f64>,
+    ) -> Neighbourhood<'a> {
         return Neighbourhood {
             dimonension,
             space,
             rng: rand::thread_rng(),
-            test_function,
+            fitness_evaluator,
         };
     }
 
@@ -114,7 +123,7 @@ impl<'a> Neighbourhood<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
     fn single_dimension_neighbour(&mut self, x: &f64) -> f64 {
@@ -137,9 +146,9 @@ impl<'a> Neighbourhood<'a> {
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
+pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut t = config.start_t;
-    let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, &test_function);
+    let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, &fitness_evaluator);
     let mut current = neighbourhood.random_solution();
     let mut i = 0;
     let mut rng = thread_rng();
@@ -169,18 +178,17 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
                 }
             }
         }
-        if i % (config.iterations / 20) == 0 {
-            println!("Iterations {} f: {} t: {:0.6}", i, current.fitness, t);
-            solutions.push(current.clone());
+        fitness_evaluator
+            .sampler
+            .population_sample_single(i, &[current.clone()]);
+        if fitness_evaluator.end_criteria() {
+            break;
         }
         i += 1;
     }
-    println!(
-        "Diff {} {} {}",
-        current.fitness,
-        best.fitness,
-        current.fitness - best.fitness
-    );
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &[best.clone()]);
     solutions.push(best);
     solutions
         .iter()
@@ -194,13 +202,23 @@ pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<Solution
 #[cfg(test)]
 mod tests {
     use super::*;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
     use test_functions;
 
+    fn create_sampler() -> Sampler {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(test_functions::rosenbrock, 100, &sampler)
+    }
+
     #[test]
     fn generates_neighbour() {
-        let test_function = test_functions::rosenbrock;
-        let mut neighbourhood = Neighbourhood::new(2, 1.0, &test_function);
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
+        let mut neighbourhood = Neighbourhood::new(2, 1.0, &fitness_evaluator);
         let solution = neighbourhood.random_solution();
         let neighbour = neighbourhood.find(&solution);
 
@@ -215,10 +233,11 @@ mod tests {
     #[ignore]
     #[bench]
     fn test_run(b: &mut Bencher) {
+        let sampler = create_sampler();
+        let fitness_evaluator = create_evaluator(&sampler);
         b.iter(|| {
             let config = Config::new(1.0, 0.9, 1000, 4.0, 2);
-            let test_function = test_functions::rosenbrock;
-            run(config, &test_function);
+            run(config, &fitness_evaluator);
         });
     }
 }

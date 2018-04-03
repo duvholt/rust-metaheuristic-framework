@@ -16,28 +16,34 @@ impl SolutionJSON {
     pub fn new(x: Vec<f64>, fitness: Vec<f64>) -> SolutionJSON {
         SolutionJSON { x, fitness }
     }
+
+    pub fn from_single(solution: &Solution<f64>) -> SolutionJSON {
+        SolutionJSON {
+            x: solution.position().to_vec(),
+            fitness: vec![*solution.fitness()],
+        }
+    }
+
+    pub fn from_multi(solution: &Solution<Vec<f64>>) -> SolutionJSON {
+        SolutionJSON {
+            x: solution.position().to_vec(),
+            fitness: solution.fitness().to_vec(),
+        }
+    }
 }
 
-pub trait Solution {
-    fn position(&self) -> Vec<f64>;
-    fn fitness(&self) -> f64;
-}
-
-pub trait MultiSolution {
+pub trait Solution<F> {
     fn position(&self) -> &Vec<f64>;
-    fn fitness(&self) -> &Vec<f64>;
+    fn fitness(&self) -> &F;
 }
 
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
 where
-    S: Solution,
+    S: Solution<f64>,
 {
     let mut solutions: Vec<SolutionJSON> = population
         .iter()
-        .map(|solution| SolutionJSON {
-            x: solution.position(),
-            fitness: vec![solution.fitness()],
-        })
+        .map(|s| SolutionJSON::from_single(s))
         .collect();
     solutions.sort_unstable_by(|a, b| {
         b.fitness[0]
@@ -49,13 +55,61 @@ where
 
 pub fn multi_solutions_to_json<M>(population: Vec<M>) -> Vec<SolutionJSON>
 where
-    M: MultiSolution,
+    M: Solution<Vec<f64>>,
 {
     population
         .iter()
-        .map(|solution| SolutionJSON {
-            x: solution.position().to_vec(),
-            fitness: solution.fitness().to_vec(),
-        })
+        .map(|s| SolutionJSON::from_multi(s))
         .collect()
+}
+
+// Structs used for testing
+#[derive(Clone, Debug)]
+pub struct SingleTestSolution {
+    fitness: f64,
+    position: Vec<f64>,
+}
+
+impl SingleTestSolution {
+    pub fn new(fitness: f64) -> SingleTestSolution {
+        SingleTestSolution {
+            position: vec![fitness, fitness],
+            fitness,
+        }
+    }
+}
+
+impl Solution<f64> for SingleTestSolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.position
+    }
+
+    fn fitness(&self) -> &f64 {
+        &self.fitness
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct MultiTestSolution {
+    fitness: Vec<f64>,
+    position: Vec<f64>,
+}
+
+impl MultiTestSolution {
+    pub fn new(fitness: Vec<f64>) -> MultiTestSolution {
+        MultiTestSolution {
+            position: fitness.to_vec(),
+            fitness,
+        }
+    }
+}
+
+impl Solution<Vec<f64>> for MultiTestSolution {
+    fn position(&self) -> &Vec<f64> {
+        &self.position
+    }
+
+    fn fitness(&self) -> &Vec<f64> {
+        &self.fitness
+    }
 }

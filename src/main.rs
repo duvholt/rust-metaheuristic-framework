@@ -3,20 +3,22 @@ extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
-use rustoa::test_functions;
-use test_functions::TestFunctionVar;
-use rustoa::algorithms::sa;
+use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
-use rustoa::algorithms::pso;
 use rustoa::algorithms::ewa;
 use rustoa::algorithms::mopso;
-use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::algorithms::pso;
+use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
-use clap::{App, Arg, ArgMatches};
+use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
+use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::statistics::sampler::{Sampler, SamplerMode};
+use rustoa::test_functions;
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::collections::HashMap;
 
 fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
     println!("Writing solutions to {}", filename);
@@ -30,16 +32,44 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
 }
 
 type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun = fn(&CommonConfig, TestFunctionVar, &ArgMatches) -> Vec<SolutionJSON>;
+type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
+enum AlgorithmType {
+    Single(AlgorithmRun<f64>),
+    Multi(AlgorithmRun<Vec<f64>>),
+}
 
 fn main() {
-    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmRun)> = HashMap::new();
-    algorithms.insert("da", (da::subcommand, da::run_subcommand));
-    algorithms.insert("dummy", (dummy::subcommand, dummy::run_subcommand));
-    algorithms.insert("ewa", (ewa::subcommand, ewa::run_subcommand));
-    algorithms.insert("pso", (pso::subcommand, pso::run_subcommand));
-    algorithms.insert("sa", (sa::subcommand, sa::run_subcommand));
-    algorithms.insert("mopso", (mopso::subcommand, mopso::run_subcommand));
+    let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
+    algorithms.insert(
+        "da",
+        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
+    );
+    algorithms.insert(
+        "dummy",
+        (
+            dummy::subcommand,
+            AlgorithmType::Single(dummy::run_subcommand),
+        ),
+    );
+    algorithms.insert(
+        "ewa",
+        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
+    );
+    algorithms.insert(
+        "pso",
+        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
+    );
+    algorithms.insert(
+        "sa",
+        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
+    );
+    algorithms.insert(
+        "mopso",
+        (
+            mopso::subcommand,
+            AlgorithmType::Multi(mopso::run_subcommand),
+        ),
+    );
 
     let mut test_functions_map = HashMap::new();
     // Single-objective
@@ -105,6 +135,14 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("evaluations")
+                .short("e")
+                .long("evaluations")
+                .value_name("evaluations")
+                .help("Number of fitness evaluations algorithm will run for")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("upper_bound")
                 .short("u")
                 .long("ub")
@@ -137,6 +175,24 @@ fn main() {
                 .takes_value(true),
         )
         .arg(
+            Arg::with_name("sampler_mode")
+                .long("sampler-mode")
+                .value_name("sampler_mode")
+                .help("Sampling mode")
+                .possible_values(&["last", "evolution", "best", "fitness"])
+                .default_value("last")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("samples")
+                .short("s")
+                .long("samples")
+                .value_name("samples")
+                .help("Number of samples")
+                .default_value("30")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .short("v")
                 .long("verbose")
@@ -154,6 +210,7 @@ fn main() {
     let upper_bound = value_t!(matches, "upper_bound", f64).unwrap_or(4.0);
     let common = CommonConfig {
         verbose: matches.is_present("verbose"),
+        evaluations: value_t!(matches, "evaluations", i64).unwrap_or(300000),
         iterations: value_t!(matches, "iterations", i64).unwrap_or(1000),
         upper_bound,
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
@@ -161,9 +218,13 @@ fn main() {
         population: value_t!(matches, "population", usize).unwrap_or(50),
     };
 
+    let sampler_mode_name = value_t!(matches, "sampler_mode", String).unwrap();
+    let samples = value_t!(matches, "samples", i64).unwrap();
+
     println!(
-        "Max iterations: {}, Upper bound: {}, Lower bound: {}, Function: {}, Population: {}",
+        "Max iterations: {}, Max fitness evaluations: {}, Bounds: ({}, {}), Function: {}, Population: {}",
         common.iterations,
+        common.evaluations,
         common.upper_bound,
         common.lower_bound,
         test_function_name,
@@ -172,15 +233,47 @@ fn main() {
 
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
-    let &(_, run_subcommand) = algorithms
+    let &(_, ref run_subcommand) = algorithms
         .get(algorithm_name)
         .unwrap_or_else(|| panic!("Algorithm was not specified!"));
+    let sampler_mode = match sampler_mode_name.as_ref() {
+        "last" => SamplerMode::LastGeneration,
+        "evolution" => SamplerMode::Evolution,
+        "best" => SamplerMode::EvolutionBest,
+        "fitness" => SamplerMode::FitnessSearch,
+        _ => SamplerMode::LastGeneration,
+    };
     // Run algorithm
-    let solutions = run_subcommand(&common, test_function, sub_m.unwrap());
+    let sampler = Sampler::new(samples, common.iterations, sampler_mode);
+    let (_, evaluations) = match run_subcommand {
+        &AlgorithmType::Single(run) => {
+            let fitness_evaluator =
+                FitnessEvaluator::new(get_single(test_function), common.evaluations, &sampler);
+            (
+                run(&common, &fitness_evaluator, sub_m.unwrap()),
+                fitness_evaluator.evaluations(),
+            )
+        }
+        &AlgorithmType::Multi(run) => {
+            let fitness_evaluator =
+                FitnessEvaluator::new(get_multi(test_function), common.evaluations, &sampler);
+            (
+                run(&common, &fitness_evaluator, sub_m.unwrap()),
+                fitness_evaluator.evaluations(),
+            )
+        }
+    };
 
-    if let Some(solution) = solutions.last() {
-        println!("Final solution: ({:?}) {:?}", solution.x, solution.fitness);
+    let solutions = sampler.solutions();
+
+    println!("Number of fitness evaluations: {}", evaluations);
+    {
+        let best_solution = solutions
+            .iter()
+            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+        if let Some(solution) = best_solution {
+            println!("Best solution: ({:?}) {:?}", solution.x, solution.fitness);
+        }
     }
-
     write_solutions("solutions.json", solutions, test_function_name);
 }

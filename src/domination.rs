@@ -1,5 +1,5 @@
+use solution::Solution;
 use std::collections::HashSet;
-use solution::MultiSolution;
 
 pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
     let mut equal = true;
@@ -15,7 +15,7 @@ pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
 
 pub fn find_non_dominated<M>(solutions: &[M]) -> HashSet<usize>
 where
-    M: MultiSolution,
+    M: Solution<Vec<f64>>,
 {
     let mut non_dominated = HashSet::new();
     for (p_i, p) in solutions.iter().enumerate() {
@@ -93,11 +93,12 @@ mod tests {
         assert!(!a_dominates_b);
     }
 
+    #[derive(Clone)]
     struct TestMultiSolution {
         fitness: Vec<f64>,
     }
 
-    impl MultiSolution for TestMultiSolution {
+    impl Solution<Vec<f64>> for TestMultiSolution {
         fn fitness(&self) -> &Vec<f64> {
             &self.fitness
         }

@@ -1,11 +1,11 @@
-use solution::{solutions_to_json, SolutionJSON};
-use rand::distributions::{IndependentSample, Range};
-use rand::{thread_rng, Rng};
-use std::f64;
-use solution::Solution;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use test_functions::{get_single, TestFunctionVar};
+use fitness_evaluation::FitnessEvaluator;
+use rand::distributions::{IndependentSample, Range};
+use rand::{thread_rng, Rng};
+use solution::Solution;
+use solution::SolutionJSON;
+use std::f64;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -46,7 +46,7 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 
 pub fn run_subcommand(
     common: &CommonConfig,
-    test_function: TestFunctionVar,
+    function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
@@ -69,7 +69,7 @@ pub fn run_subcommand(
         self_learning_seeds,
     };
 
-    run(config, &get_single(test_function))
+    run(config, &function_evaluator)
 }
 
 pub struct Config {
@@ -98,28 +98,28 @@ struct Seed {
     position: Vec<f64>,
 }
 
-impl Solution for Seed {
-    fn fitness(&self) -> f64 {
-        self.fitness
+impl Solution<f64> for Seed {
+    fn fitness(&self) -> &f64 {
+        &self.fitness
     }
 
-    fn position(&self) -> Vec<f64> {
-        self.position.to_vec()
+    fn position(&self) -> &Vec<f64> {
+        &self.position
     }
 }
 
 struct Swarm<'a> {
     config: &'a Config,
     population: Vec<Dandelion>,
-    test_function: &'a Fn(&Vec<f64>) -> f64,
+    fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
 impl<'a> Swarm<'a> {
-    fn new(config: &'a Config, test_function: &'a Fn(&Vec<f64>) -> f64) -> Swarm<'a> {
+    fn new(config: &'a Config, fitness_evaluator: &'a FitnessEvaluator<f64>) -> Swarm<'a> {
         Swarm {
             config,
             population: vec![],
-            test_function,
+            fitness_evaluator,
         }
     }
 
@@ -248,43 +248,57 @@ impl<'a> Swarm<'a> {
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
-        (self.test_function)(x)
+        self.fitness_evaluator.calculate_fitness(x)
     }
 
-    fn get_solutions(&self) -> Vec<SolutionJSON> {
-        let mut solutions = vec![];
-        for dandelion in &self.population {
-            solutions.push(dandelion.core_dandelion.clone());
-        }
-        solutions_to_json(solutions)
+    fn get_population(&self) -> Vec<Seed> {
+        self.population
+            .iter()
+            .map(|dandelion| dandelion.core_dandelion.clone())
+            .collect()
     }
 }
 
-pub fn run(config: Config, test_function: &Fn(&Vec<f64>) -> f64) -> Vec<SolutionJSON> {
+pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut i = 1;
-    let mut swarm = Swarm::new(&config, &test_function);
-    let mut solutions = vec![];
+    let mut swarm = Swarm::new(&config, &fitness_evaluator);
+    let solutions = vec![];
 
     swarm.population = swarm.generate_random_population(config.population);
-    while i <= config.iterations {
+    while i < config.iterations {
         swarm.calculate_sowing_radius(i);
         swarm.dandelion_sowing();
         swarm.self_learning_sowing();
         swarm.select_best_seed();
 
-        if i % (config.iterations / 20) == 0 {
-            solutions.append(&mut swarm.get_solutions());
+        fitness_evaluator
+            .sampler
+            .population_sample_single(i, &swarm.get_population());
+        if fitness_evaluator.end_criteria() {
+            break;
         }
         i += 1;
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &swarm.get_population());
     solutions
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::rosenbrock;
+    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
+    use test_functions::rosenbrock;
+
+    fn create_sampler() -> Sampler {
+        Sampler::new(10, 10, SamplerMode::Evolution)
+    }
+
+    fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
+        FitnessEvaluator::new(rosenbrock, 100, &sampler)
+    }
 
     fn create_config() -> Config {
         Config {
@@ -315,8 +329,9 @@ mod tests {
     #[test]
     fn find_average_seed_position_test() {
         let config = create_config();
+        let sampler = create_sampler();
         let swarm = Swarm {
-            test_function: &rosenbrock,
+            fitness_evaluator: &create_evaluator(&sampler),
             config: &config,
             population: vec![],
         };
@@ -348,8 +363,9 @@ mod tests {
     #[test]
     fn calculate_core_radius_test() {
         let config = create_config();
+        let sampler = create_sampler();
         let mut swarm = Swarm {
-            test_function: &rosenbrock,
+            fitness_evaluator: &create_evaluator(&sampler),
             config: &config,
             population: vec![],
         };
@@ -379,8 +395,10 @@ mod tests {
     #[bench]
     fn bench_da(b: &mut Bencher) {
         b.iter(|| {
+            let sampler = create_sampler();
+            let evaluator = create_evaluator(&sampler);
             let config = create_config();
-            run(config, &rosenbrock);
+            run(config, &evaluator);
         });
     }
 }
