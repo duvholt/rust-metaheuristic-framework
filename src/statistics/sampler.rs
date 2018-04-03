@@ -103,7 +103,15 @@ impl Sampler {
             .iter()
             .map(|sample| SolutionJSON::from_multi(sample))
             .collect();
-        self.solutions.borrow_mut().append(&mut solutions);
+        match self.mode {
+            SamplerMode::Evolution => {
+                self.generations.borrow_mut().push(solutions);
+            }
+            SamplerMode::LastGeneration => {
+                self.solutions.borrow_mut().append(&mut solutions);
+            }
+            _ => {}
+        }
     }
 
     fn sample_fitness(&self, solution: SolutionJSON) {
@@ -151,7 +159,6 @@ impl Sampler {
     }
 
     pub fn print_statistics(&self, mut writer: impl Write) {
-        // TODO: Support multi-objective
         println!("------ Sample Statistics ------");
         match self.mode {
             SamplerMode::Evolution => {
@@ -221,7 +228,7 @@ impl Sampler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solution::SingleTestSolution;
+    use solution::{MultiTestSolution, SingleTestSolution};
 
     #[test]
     fn samples_every_other_iteration() {
@@ -236,6 +243,31 @@ mod tests {
         for (iteration, fitness) in fitness.iter().enumerate() {
             sampler
                 .population_sample_single(iteration as i64, &[SingleTestSolution::new(*fitness)]);
+        }
+
+        // Convert Solution back to fitness
+        let sampler_fitness: Vec<_> = sampler.solutions().iter().map(|s| s.fitness[0]).collect();
+        assert_eq!(
+            sampler_fitness,
+            vec![fitness[0], fitness[2], fitness[4], fitness[6], fitness[8]]
+        );
+    }
+
+    #[test]
+    fn samples_every_other_iteration_multi() {
+        let fitness: Vec<f64> = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 10.0];
+        let sampler = Sampler::new(
+            5,
+            fitness.len() as i64,
+            SamplerMode::Evolution,
+            Objective::Multi,
+        );
+
+        for (iteration, fitness) in fitness.iter().enumerate() {
+            sampler.population_sample_multi(
+                iteration as i64,
+                &[MultiTestSolution::new(vec![*fitness, *fitness])],
+            );
         }
 
         // Convert Solution back to fitness
@@ -271,6 +303,38 @@ mod tests {
         }
 
         let sampler_fitness: Vec<_> = sampler.solutions().iter().map(|s| s.fitness[0]).collect();
+        assert_eq!(sampler_fitness, generations[4]);
+    }
+
+    #[test]
+    fn samples_only_last_generation_multi() {
+        let generations = vec![
+            vec![vec![0.1, 0.1], vec![0.2, 0.2]],
+            vec![vec![0.4, 0.4], vec![0.5, 0.5]],
+            vec![vec![0.5, 0.5], vec![0.6, 0.6]],
+            vec![vec![0.7, 0.7], vec![0.8, 0.8]],
+            vec![vec![0.9, 0.9], vec![1.0, 1.0]],
+        ];
+        let sampler = Sampler::new(
+            3,
+            (generations.len() - 1) as i64,
+            SamplerMode::LastGeneration,
+            Objective::Multi,
+        );
+
+        for (iteration, generation) in generations.iter().enumerate() {
+            let solutions: Vec<_> = generation
+                .iter()
+                .map(|fitness| MultiTestSolution::new(fitness.clone()))
+                .collect();
+            sampler.population_sample_multi(iteration as i64, &solutions);
+        }
+
+        let sampler_fitness: Vec<_> = sampler
+            .solutions()
+            .iter()
+            .map(|s| s.fitness.clone())
+            .collect();
         assert_eq!(sampler_fitness, generations[4]);
     }
 
