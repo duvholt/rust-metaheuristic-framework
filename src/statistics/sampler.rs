@@ -171,7 +171,7 @@ impl Sampler {
             .map(|solution| solution.fitness.clone())
             .collect();
         let igd_value = igd(&self.pareto_front.clone().unwrap(), &front);
-        write!(&mut writer, "IGD: {}\n", igd_value);
+        write!(&mut writer, "IGD: {}\n", igd_value).unwrap();
     }
 
     pub fn print_statistics(&self, mut writer: impl Write) {

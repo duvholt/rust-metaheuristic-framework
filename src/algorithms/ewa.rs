@@ -259,8 +259,6 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 #[cfg(test)]
 mod tests {
     use super::*;
-    use statistics::sampler::{Sampler, SamplerMode};
-    use test_functions::rosenbrock;
     use testing::utils::{create_evaluator, create_sampler};
 
     fn create_config() -> Config {
