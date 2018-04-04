@@ -203,7 +203,6 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 mod tests {
     use super::*;
     use test::Bencher;
-    use test_functions;
     use testing::utils::{create_evaluator, create_sampler};
 
     #[test]

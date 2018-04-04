@@ -313,9 +313,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
 #[cfg(test)]
 mod tests {
     use super::*;
-    use statistics::sampler::{Sampler, SamplerMode};
     use test::Bencher;
-    use test_functions::multi_dummy;
     use testing::utils::{create_evaluator_multi, create_sampler_multi};
 
     fn create_config() -> Config {

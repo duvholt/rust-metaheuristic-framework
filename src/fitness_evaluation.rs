@@ -89,7 +89,7 @@ mod tests {
     use super::*;
     use test_functions::multi_dummy;
     use test_functions::sphere;
-    use testing::utils::{create_evaluator, create_sampler_multi};
+    use testing::utils::create_sampler_multi;
 
     #[test]
     fn fitness_evalator_calculates_single_fitness() {
