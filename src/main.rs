@@ -337,7 +337,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         "Number of fitness evaluations: {}",
         Green.paint(evaluations.to_string())
     );
-    {
+    if let Objective::Single = sampler.objective {
         let best_solution = solutions
             .iter()
             .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
