@@ -21,10 +21,18 @@ struct Config {
     immigate_rate: f64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+enum Sex {
+    Male,
+    Female,
+    None,
+}
+
 #[derive(Debug, Clone)]
 struct Lion {
     position: Vec<f64>,
     fitness: f64,
+    sex: Sex,
 }
 
 impl Lion {
@@ -65,17 +73,34 @@ fn random_population(config: &Config, fitness_evaluator: &FitnessEvaluator<f64>)
             let position =
                 random_position(config.lower_bound, config.upper_bound, config.dimension);
             let fitness = fitness_evaluator.calculate_fitness(&position);
-            Lion { position, fitness }
+            Lion {
+                position,
+                fitness,
+                sex: Sex::None,
+            }
         })
         .collect()
 }
 
+fn find_sex(r: f64, sex_rate: f64, nomad: bool) -> Sex {
+    let female = if nomad { r > sex_rate } else { r < sex_rate };
+    if female {
+        Sex::Female
+    } else {
+        Sex::Male
+    }
+}
+
 fn partition_lions<'a>(
     config: &Config,
-    population: &'a Vec<Lion>,
+    population: &'a mut Vec<Lion>,
     rng: &mut impl Rng,
 ) -> (Nomad<'a>, Vec<Pride<'a>>) {
     let last_nomad_index = (population.len() as f64 * config.nomad_percent) as usize;
+    for (i, lion) in population.iter_mut().enumerate() {
+        let r: f64 = rng.gen();
+        lion.sex = find_sex(r, config.sex_rate, i > last_nomad_index);
+    }
     let nomad = Nomad {
         population: HashSet::from_iter(population[..last_nomad_index].iter()),
     };
@@ -124,42 +149,52 @@ mod tests {
             Lion {
                 position: vec![1.0, 1.0],
                 fitness: 1.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![2.0, 2.0],
                 fitness: 2.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![3.0, 3.0],
                 fitness: 3.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![4.0, 4.0],
                 fitness: 4.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![5.0, 5.0],
                 fitness: 5.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![6.0, 6.0],
                 fitness: 6.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![7.0, 7.0],
                 fitness: 7.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![8.0, 8.0],
                 fitness: 8.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![9.0, 9.0],
                 fitness: 9.0,
+                sex: Sex::None,
             },
             Lion {
                 position: vec![10.0, 10.0],
                 fitness: 10.0,
+                sex: Sex::None,
             },
         ]
     }
@@ -178,15 +213,66 @@ mod tests {
     #[test]
     fn partitions_into_nomad_and_prides() {
         let config = create_config();
-        let population = create_population();
+        let mut population = create_population();
         let seed: &[_] = &[1, 2, 3, 4];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
 
-        let (nomad, prides) = partition_lions(&config, &population, &mut rng);
+        let (nomad, prides) = partition_lions(&config, &mut population, &mut rng);
 
         assert_eq!(nomad.population.len(), 2);
         assert_eq!(prides.len(), 4);
         let prides_sum: usize = prides.iter().map(|p| p.population.len()).sum();
         assert_eq!(prides_sum, 8);
+        // Check that all lions have been assigned a sex
+        for lion in nomad.population.iter() {
+            assert!(Sex::None != lion.sex);
+        }
+        for lion in prides.iter().flat_map(|p| &p.population) {
+            assert!(Sex::None != lion.sex);
+        }
+    }
+
+    #[test]
+    fn assigns_nomad_sex_female() {
+        let r = 0.9;
+        let sex_rate = 0.8;
+        let nomad = true;
+
+        let sex = find_sex(r, sex_rate, nomad);
+
+        assert_eq!(sex, Sex::Female);
+    }
+
+    #[test]
+    fn assigns_nomad_sex_male() {
+        let r = 0.5;
+        let sex_rate = 0.8;
+        let nomad = true;
+
+        let sex = find_sex(r, sex_rate, nomad);
+
+        assert_eq!(sex, Sex::Male);
+    }
+
+    #[test]
+    fn assigns_pride_sex_female() {
+        let r = 0.6;
+        let sex_rate = 0.8;
+        let nomad = false;
+
+        let sex = find_sex(r, sex_rate, nomad);
+
+        assert_eq!(sex, Sex::Female);
+    }
+
+    #[test]
+    fn assigns_pride_sex_male() {
+        let r = 0.85;
+        let sex_rate = 0.8;
+        let nomad = false;
+
+        let sex = find_sex(r, sex_rate, nomad);
+
+        assert_eq!(sex, Sex::Male);
     }
 }
