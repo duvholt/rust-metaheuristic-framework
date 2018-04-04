@@ -298,7 +298,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
         swarm.update_positions(i);
         fitness_evaluator
             .sampler
-            .population_sample_multi(i, &swarm.population);
+            .population_sample_multi(i, &swarm.archive.population);
         if fitness_evaluator.end_criteria() {
             break;
         }
