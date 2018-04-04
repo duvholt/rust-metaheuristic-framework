@@ -215,13 +215,28 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
-        TestFunctionVar::Multi(test_functions::schaffer1),
+        TestFunctionVar::Multi(test_functions::schaffer1, "schaffer1-2d"),
     );
-    test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
-    test_functions_map.insert("zdt2", TestFunctionVar::Multi(test_functions::zdt2));
-    test_functions_map.insert("zdt3", TestFunctionVar::Multi(test_functions::zdt3));
-    test_functions_map.insert("zdt6", TestFunctionVar::Multi(test_functions::zdt6));
-    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(test_functions::dtlz1));
+    test_functions_map.insert(
+        "zdt1",
+        TestFunctionVar::Multi(test_functions::zdt1, "zdt1-2d"),
+    );
+    test_functions_map.insert(
+        "zdt2",
+        TestFunctionVar::Multi(test_functions::zdt2, "zdt2-2d"),
+    );
+    test_functions_map.insert(
+        "zdt3",
+        TestFunctionVar::Multi(test_functions::zdt3, "zdt3-2d"),
+    );
+    test_functions_map.insert(
+        "zdt6",
+        TestFunctionVar::Multi(test_functions::zdt6, "zdt6-2d"),
+    );
+    test_functions_map.insert(
+        "dtlz1",
+        TestFunctionVar::Multi(test_functions::dtlz1, "dtlz1-3d"),
+    );
 
     let matches = arguments(&test_functions_map, &algorithms);
 
@@ -272,9 +287,6 @@ fn start_algorithm() -> Result<(), &'static str> {
         }
     };
     let mut sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
-    if let Objective::Multi = sampler.objective {
-        sampler.set_pareto_front(read_pareto_front("optimal_solutions/zdt1-2d.json"));
-    }
 
     println!(
         "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
@@ -304,7 +316,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             )
         }
         &AlgorithmType::Multi(run) => {
-            let multi_test_function = get_multi(test_function)?;
+            let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+            sampler.set_pareto_front(read_pareto_front(&format!(
+                "optimal_solutions/{}.json",
+                pareto_filename
+            )));
             let fitness_evaluator =
                 FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
             (
