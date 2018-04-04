@@ -45,10 +45,6 @@ pub fn himmelblau(x: &Vec<f64>) -> f64 {
     return (x_1.powf(2.0) + x_2 - 11.0).powf(2.0) + (x_1 + x_2.powf(2.0) - 7.0).powf(2.0);
 }
 
-pub fn multi_dummy(x: &Vec<f64>) -> Vec<f64> {
-    x.to_vec()
-}
-
 pub fn schaffer1(x: &Vec<f64>) -> Vec<f64> {
     vec![x[0].powf(2.0), (x[0] - 2.0).powf(2.0)]
 }

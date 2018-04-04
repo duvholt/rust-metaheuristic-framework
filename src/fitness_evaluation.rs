@@ -87,14 +87,14 @@ impl<'a> FitnessEvaluator<'a, Vec<f64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_functions::multi_dummy;
-    use test_functions::sphere;
+    use testing::test_functions::multi_dummy;
+    use testing::test_functions::single_dummy;
     use testing::utils::create_sampler_multi;
 
     #[test]
     fn fitness_evalator_calculates_single_fitness() {
         let sampler = create_sampler_multi();
-        let fitness_evalator = FitnessEvaluator::new(sphere, 100, &sampler);
+        let fitness_evalator = FitnessEvaluator::new(single_dummy, 100, &sampler);
 
         let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);
 
