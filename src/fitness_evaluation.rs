@@ -9,7 +9,7 @@ pub type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
 #[derive(Clone)]
 pub enum TestFunctionVar {
     Single(SingleTestFunctionVar),
-    Multi(MultiTestFunctionVar),
+    Multi(MultiTestFunctionVar, &'static str),
 }
 
 pub fn get_single(
@@ -21,9 +21,11 @@ pub fn get_single(
     }
 }
 
-pub fn get_multi(test_function_var: TestFunctionVar) -> Result<MultiTestFunctionVar, &'static str> {
+pub fn get_multi(
+    test_function_var: TestFunctionVar,
+) -> Result<(MultiTestFunctionVar, &'static str), &'static str> {
     match test_function_var {
-        TestFunctionVar::Multi(f) => Ok(f),
+        TestFunctionVar::Multi(f, s) => Ok((f, s)),
         _ => Err("Algorithm only supports multi objective functions"),
     }
 }
@@ -85,21 +87,13 @@ impl<'a> FitnessEvaluator<'a, Vec<f64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use statistics::sampler::{Sampler, SamplerMode};
     use test_functions::multi_dummy;
     use test_functions::sphere;
-
-    fn create_sampler() -> Sampler {
-        Sampler::new(10, 10, SamplerMode::Evolution)
-    }
-
-    fn create_sampler_multi() -> Sampler {
-        Sampler::new(10, 10, SamplerMode::Evolution)
-    }
+    use testing::utils::create_sampler_multi;
 
     #[test]
     fn fitness_evalator_calculates_single_fitness() {
-        let sampler = create_sampler();
+        let sampler = create_sampler_multi();
         let fitness_evalator = FitnessEvaluator::new(sphere, 100, &sampler);
 
         let fitness = fitness_evalator.calculate_fitness(&vec![0.0, 0.0]);

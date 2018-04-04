@@ -14,7 +14,7 @@ use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
-use rustoa::solution::{SolutionJSON, Solutions};
+use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
 use rustoa::test_functions;
 use std::cmp::Ordering;
@@ -40,6 +40,11 @@ fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: 
     };
     let json_solutions = serde_json::to_string(&solutions_struct).unwrap();
     file.write_all(json_solutions.as_bytes()).unwrap();
+}
+
+pub fn read_pareto_front(filename: &str) -> Vec<Vec<f64>> {
+    let file = File::open(filename).unwrap();
+    serde_json::from_reader(file).unwrap()
 }
 
 fn arguments(
@@ -210,13 +215,28 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
-        TestFunctionVar::Multi(test_functions::schaffer1),
+        TestFunctionVar::Multi(test_functions::schaffer1, "schaffer1-2d"),
     );
-    test_functions_map.insert("zdt1", TestFunctionVar::Multi(test_functions::zdt1));
-    test_functions_map.insert("zdt2", TestFunctionVar::Multi(test_functions::zdt2));
-    test_functions_map.insert("zdt3", TestFunctionVar::Multi(test_functions::zdt3));
-    test_functions_map.insert("zdt6", TestFunctionVar::Multi(test_functions::zdt6));
-    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(test_functions::dtlz1));
+    test_functions_map.insert(
+        "zdt1",
+        TestFunctionVar::Multi(test_functions::zdt1, "zdt1-2d"),
+    );
+    test_functions_map.insert(
+        "zdt2",
+        TestFunctionVar::Multi(test_functions::zdt2, "zdt2-2d"),
+    );
+    test_functions_map.insert(
+        "zdt3",
+        TestFunctionVar::Multi(test_functions::zdt3, "zdt3-2d"),
+    );
+    test_functions_map.insert(
+        "zdt6",
+        TestFunctionVar::Multi(test_functions::zdt6, "zdt6-2d"),
+    );
+    test_functions_map.insert(
+        "dtlz1",
+        TestFunctionVar::Multi(test_functions::dtlz1, "dtlz1-3d"),
+    );
 
     let matches = arguments(&test_functions_map, &algorithms);
 
@@ -257,7 +277,16 @@ fn start_algorithm() -> Result<(), &'static str> {
         "fitness" => SamplerMode::FitnessSearch,
         _ => SamplerMode::LastGeneration,
     };
-    let sampler = Sampler::new(samples, common.iterations, sampler_mode);
+    let sampler_objective = match run_subcommand {
+        &AlgorithmType::Single(_) => Objective::Single,
+        &AlgorithmType::Multi(_) => {
+            if let SamplerMode::EvolutionBest = sampler_mode {
+                return Err("Sampler mode best does not work with multi-objective algorithms");
+            }
+            Objective::Multi
+        }
+    };
+    let mut sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
 
     println!(
         "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
@@ -287,7 +316,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             )
         }
         &AlgorithmType::Multi(run) => {
-            let multi_test_function = get_multi(test_function)?;
+            let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+            sampler.set_pareto_front(read_pareto_front(&format!(
+                "optimal_solutions/{}.json",
+                pareto_filename
+            )));
             let fitness_evaluator =
                 FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
             (
@@ -304,7 +337,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         "Number of fitness evaluations: {}",
         Green.paint(evaluations.to_string())
     );
-    {
+    if let Objective::Single = sampler.objective {
         let best_solution = solutions
             .iter()
             .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));

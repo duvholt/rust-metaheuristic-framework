@@ -1,5 +1,10 @@
 use std::cmp::Ordering;
 
+pub enum Objective {
+    Single,
+    Multi,
+}
+
 #[derive(Serialize)]
 pub struct Solutions {
     pub solutions: Vec<SolutionJSON>,

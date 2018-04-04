@@ -8,6 +8,7 @@ extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate statistical;
 extern crate test;
 
@@ -22,3 +23,4 @@ pub mod selection;
 pub mod solution;
 pub mod statistics;
 pub mod test_functions;
+pub mod testing;
