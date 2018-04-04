@@ -174,6 +174,71 @@ impl Sampler {
         write!(&mut writer, "IGD: {}\n", igd_value).unwrap();
     }
 
+    fn print_evolution(&self, mut writer: impl Write) {
+        for (i, generation) in self.generations.borrow().iter().enumerate() {
+            // Prefix with generation index
+            write!(&mut writer, "[{:2}] ", i).unwrap();
+            match self.objective {
+                Objective::Single => {
+                    let fitness_values: Vec<_> = generation
+                        .iter()
+                        .map(|solution| solution.fitness[0])
+                        .collect();
+                    Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                }
+                Objective::Multi => {
+                    self.print_igd(&mut writer, &generation);
+                }
+            }
+        }
+    }
+
+    fn print_last_generation(&self, mut writer: impl Write) {
+        match self.objective {
+            Objective::Single => {
+                let fitness_values: Vec<_> = self.solutions
+                    .borrow()
+                    .iter()
+                    .map(|solution| solution.fitness[0])
+                    .collect();
+                {
+                    let best = fitness_values
+                        .iter()
+                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
+                        .unwrap();
+                    write!(
+                        &mut writer,
+                        "Best solution from last generation: {:10.4e}\n",
+                        best
+                    ).unwrap();
+                }
+                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+            }
+            Objective::Multi => {
+                self.print_igd(&mut writer, &self.solutions.borrow());
+            }
+        }
+    }
+
+    fn print_evolution_best(&self, mut writer: impl Write) {
+        for (i, solution) in self.solutions.borrow().iter().enumerate() {
+            write!(
+                &mut writer,
+                "[{:2}] Fitness: {:10.4e}\n",
+                i, solution.fitness[0]
+            ).unwrap();
+        }
+    }
+
+    fn print_fitness_search(&self, mut writer: impl Write) {
+        let fitness_values: Vec<_> = self.solutions
+            .borrow()
+            .iter()
+            .map(|solution| solution.fitness[0])
+            .collect();
+        Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+    }
+
     pub fn print_statistics(&self, mut writer: impl Write) {
         println!("------ Sample Statistics ------");
         match self.mode {
@@ -183,49 +248,11 @@ impl Sampler {
                     "Mode: Evolution with {} samples\n",
                     self.samples
                 ).unwrap();
-                for (i, generation) in self.generations.borrow().iter().enumerate() {
-                    // Prefix with generation index
-                    write!(&mut writer, "[{:2}] ", i).unwrap();
-                    match self.objective {
-                        Objective::Single => {
-                            let fitness_values: Vec<_> = generation
-                                .iter()
-                                .map(|solution| solution.fitness[0])
-                                .collect();
-                            Sampler::print_mean_and_stddev(&mut writer, fitness_values);
-                        }
-                        Objective::Multi => {
-                            self.print_igd(&mut writer, &generation);
-                        }
-                    }
-                }
+                self.print_evolution(&mut writer);
             }
             SamplerMode::LastGeneration => {
                 write!(&mut writer, "Mode: Last Generation\n").unwrap();
-                match self.objective {
-                    Objective::Single => {
-                        let fitness_values: Vec<_> = self.solutions
-                            .borrow()
-                            .iter()
-                            .map(|solution| solution.fitness[0])
-                            .collect();
-                        {
-                            let best = fitness_values
-                                .iter()
-                                .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
-                                .unwrap();
-                            write!(
-                                &mut writer,
-                                "Best solution from last generation: {:10.4e}\n",
-                                best
-                            ).unwrap();
-                        }
-                        Sampler::print_mean_and_stddev(&mut writer, fitness_values);
-                    }
-                    Objective::Multi => {
-                        self.print_igd(&mut writer, &self.solutions.borrow());
-                    }
-                }
+                self.print_last_generation(&mut writer);
             }
             SamplerMode::EvolutionBest => {
                 write!(
@@ -233,22 +260,11 @@ impl Sampler {
                     "Mode: Best Solution Evolution with {} samples\n",
                     self.samples
                 ).unwrap();
-                for (i, solution) in self.solutions.borrow().iter().enumerate() {
-                    write!(
-                        &mut writer,
-                        "[{:2}] Fitness: {:10.4e}\n",
-                        i, solution.fitness[0]
-                    ).unwrap();
-                }
+                self.print_evolution_best(&mut writer);
             }
             SamplerMode::FitnessSearch => {
                 write!(&mut writer, "Mode: All fitness evaluations\n").unwrap();
-                let fitness_values: Vec<_> = self.solutions
-                    .borrow()
-                    .iter()
-                    .map(|solution| solution.fitness[0])
-                    .collect();
-                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                self.print_fitness_search(&mut writer);
             }
         }
         println!("---- End Sample Statistics ----");
