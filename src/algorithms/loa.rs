@@ -1,6 +1,6 @@
 use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
-use rand::Rng;
+use rand::{seq, thread_rng, Rng};
 use std::collections::HashSet;
 use std::hash;
 use std::iter::FromIterator;
@@ -61,6 +61,17 @@ impl Eq for Lion {}
 #[derive(Clone)]
 struct Pride<'a> {
     population: HashSet<&'a Lion>,
+}
+
+impl<'a> Pride<'a> {
+    fn random_female(&self, mut rng: impl Rng) -> Option<&'a Lion> {
+        let females = self.population
+            .iter()
+            .cloned()
+            .filter(|lion| lion.sex == Sex::Female);
+        let sample = seq::sample_iter(&mut rng, females, 1).ok()?;
+        Some(sample.first()?)
+    }
 }
 
 struct Nomad<'a> {
@@ -199,6 +210,11 @@ mod tests {
         ]
     }
 
+    fn create_rng() -> StdRng {
+        let seed: &[_] = &[1, 2, 3, 4];
+        SeedableRng::from_seed(seed)
+    }
+
     #[test]
     fn creates_population_with_correct_size() {
         let sampler = create_sampler();
@@ -214,8 +230,7 @@ mod tests {
     fn partitions_into_nomad_and_prides() {
         let config = create_config();
         let mut population = create_population();
-        let seed: &[_] = &[1, 2, 3, 4];
-        let mut rng: StdRng = SeedableRng::from_seed(seed);
+        let mut rng = create_rng();
 
         let (nomad, prides) = partition_lions(&config, &mut population, &mut rng);
 
@@ -274,5 +289,58 @@ mod tests {
         let sex = find_sex(r, sex_rate, nomad);
 
         assert_eq!(sex, Sex::Male);
+    }
+
+    #[test]
+    fn finds_female_in_pride() {
+        let population = vec![
+            Lion {
+                position: vec![1.0, 1.0],
+                fitness: 1.0,
+                sex: Sex::Male,
+            },
+            Lion {
+                position: vec![2.0, 2.0],
+                fitness: 2.0,
+                sex: Sex::Female,
+            },
+            Lion {
+                position: vec![3.0, 3.0],
+                fitness: 3.0,
+                sex: Sex::Male,
+            },
+        ];
+        let pride = Pride {
+            population: HashSet::from_iter(&population),
+        };
+        let mut rng = create_rng();
+
+        let female = pride.random_female(&mut rng);
+
+        assert_eq!(female, Some(&population[1]));
+    }
+
+    #[test]
+    fn does_not_find_female_in_pride() {
+        let population = vec![
+            Lion {
+                position: vec![1.0, 1.0],
+                fitness: 1.0,
+                sex: Sex::Male,
+            },
+            Lion {
+                position: vec![3.0, 3.0],
+                fitness: 3.0,
+                sex: Sex::Male,
+            },
+        ];
+        let pride = Pride {
+            population: HashSet::from_iter(&population),
+        };
+        let mut rng = create_rng();
+
+        let female = pride.random_female(&mut rng);
+
+        assert_eq!(female, None);
     }
 }
