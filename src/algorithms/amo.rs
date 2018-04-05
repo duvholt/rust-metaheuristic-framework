@@ -81,6 +81,18 @@ fn get_random_neighbor_index(index_offset: i64, length: usize) -> usize {
     index as usize
 }
 
+fn get_two_unique_numbers(i: usize, length: usize, mut rng: impl Rng) -> (usize, usize) {
+    let mut r1 = i;
+    let mut r2 = i;
+    while r1 == i {
+        r1 = rng.gen_range(0, length) as usize;
+    }
+    while r2 == r1 || r2 == i {
+        r2 = rng.gen_range(0, length) as usize;
+    }
+    (r1, r2)
+}
+
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut solutions = vec![];
     let mut population: Vec<Animal> = vec![];
@@ -111,6 +123,17 @@ mod tests {
             population: 50,
             radius: 2,
         }
+    }
+
+    #[test]
+    fn get_two_unique_numbers_test() {
+        let i = 2;
+        let length = 3;
+        let seed: &[_] = &[1, 2, 3, 4];
+        let mut rng: StdRng = SeedableRng::from_seed(seed);
+        assert_eq!(get_two_unique_numbers(i, length, &mut rng), (1, 0));
+        assert_eq!(get_two_unique_numbers(i, length, &mut rng), (0, 1));
+        assert_eq!(get_two_unique_numbers(i, length, &mut rng), (0, 1));
     }
 
     #[test]
