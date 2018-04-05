@@ -2,13 +2,11 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
-use rand;
 use rand::distributions::normal::StandardNormal;
 use rand::{thread_rng, Rng};
 use solution::Solution;
 use solution::SolutionJSON;
 use solution::sort_solutions_by_fitness;
-use std::cmp::Ordering;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -82,13 +80,24 @@ fn animal_migration(
     let moved_animals: Vec<Animal> = (0..population.len())
         .map(|i| {
             let mut moved_animal = population[i].clone();
+            let mut out_of_bounds = false;
+            let StandardNormal(gaussian) = rng.gen();
             for d in 0..config.dimension {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 let index = get_random_neighbor_index(index_offset, population.len());
-                let StandardNormal(gaussian) = rng.gen();
                 moved_animal.position[d] +=
                     gaussian * (population[index].position[d] - population[i].position[d]);
+                if moved_animal.position[d] > config.upper_bound
+                    || moved_animal.position[d] < config.lower_bound
+                {
+                    out_of_bounds = true;
+                    break;
+                }
+            }
+            if out_of_bounds {
+                moved_animal.position =
+                    random_position(config.lower_bound, config.upper_bound, config.dimension);
             }
             moved_animal.fitness = fitness_evaluator.calculate_fitness(&moved_animal.position);
             moved_animal
@@ -98,28 +107,41 @@ fn animal_migration(
 }
 
 fn animal_replacement(
-    mut population: Vec<Animal>,
+    population: Vec<Animal>,
     best_animal: &Animal,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
-    sort_solutions_by_fitness(&mut population);
     let new_population: Vec<Animal> = (0..population.len())
         .map(|i| {
             let mut animal = population[i].clone();
+            let mut changed = false;
+            let mut out_of_bounds = false;
             for d in 0..config.dimension {
                 let r = get_two_unique_numbers(population.len(), population.len(), &mut rng);
                 if rng.next_f64() > (population.len() - i) as f64 / population.len() as f64 {
+                    changed = true;
                     let r1 = population[r.0].position[d];
                     let r2 = population[r.1].position[d];
                     let best = best_animal.position[d];
                     let current = population[i].position[d];
                     animal.position[d] =
                         r1 + rng.next_f64() * (best - current) + rng.next_f64() * (r2 - current);
+                    if animal.position[d] > config.upper_bound
+                        || animal.position[d] < config.lower_bound
+                    {
+                        out_of_bounds = true;
+                    }
                 }
             }
-            animal.fitness = fitness_evaluator.calculate_fitness(&animal.position);
+            if changed {
+                if out_of_bounds {
+                    animal.position =
+                        random_position(config.lower_bound, config.upper_bound, config.dimension);
+                }
+                animal.fitness = fitness_evaluator.calculate_fitness(&animal.position);
+            }
             animal
         })
         .collect();
@@ -184,14 +206,15 @@ fn generate_random_animal(fitness_evaluator: &FitnessEvaluator<f64>, config: &Co
 }
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
-    let mut solutions = vec![];
+    let solutions = vec![];
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut best_animal = population[0].clone();
     let mut i = 1;
     let mut rng = thread_rng();
-    while (i <= config.iterations) {
+    while i <= config.iterations {
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
+        sort_solutions_by_fitness(&mut population);
         population = animal_replacement(
             population,
             &best_animal,
@@ -201,7 +224,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         );
 
         for animal in &population {
-            if (animal.fitness < best_animal.fitness) {
+            if animal.fitness < best_animal.fitness {
                 best_animal = animal.clone();
             }
         }
