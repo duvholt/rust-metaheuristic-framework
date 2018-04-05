@@ -1,4 +1,5 @@
 use fitness_evaluation::FitnessEvaluator;
+use position::random_position;
 use rand;
 use rand::distributions::normal::StandardNormal;
 use rand::{thread_rng, Rng};
@@ -95,13 +96,15 @@ fn find_best_solutions(old_population: Vec<Animal>, new_population: Vec<Animal>)
     old_population
         .into_iter()
         .zip(new_population)
-        .map(|(old, new)| {
-            if old.fitness > new.fitness {
-                new
-            } else {
-                old
-            }
-        })
+        .map(
+            |(old, new)| {
+                if old.fitness > new.fitness {
+                    new
+                } else {
+                    old
+                }
+            },
+        )
         .collect()
 }
 
@@ -123,6 +126,26 @@ fn get_two_unique_numbers(i: usize, length: usize, mut rng: impl Rng) -> (usize,
         r2 = rng.gen_range(0, length) as usize;
     }
     (r1, r2)
+}
+
+fn generate_random_population(
+    size: usize,
+    fitness_evaluator: &FitnessEvaluator<f64>,
+    config: &Config,
+) -> Vec<Animal> {
+    let mut population = vec![];
+    for _ in 0..size {
+        population.push(generate_random_animal(&fitness_evaluator, &config));
+    }
+    population
+}
+
+fn generate_random_animal(fitness_evaluator: &FitnessEvaluator<f64>, config: &Config) -> Animal {
+    let position = random_position(config.lower_bound, config.upper_bound, config.dimension);
+    Animal {
+        fitness: fitness_evaluator.calculate_fitness(&position),
+        position,
+    }
 }
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
@@ -160,6 +183,15 @@ mod tests {
     fn create_seedable_rng() -> StdRng {
         let seed: &[_] = &[1, 2, 3, 4];
         SeedableRng::from_seed(seed)
+    }
+
+    #[test]
+    fn generate_random_population_test() {
+        let config = create_config();
+        let sampler = create_sampler();
+        let fitness_evaluator = &create_evaluator(&sampler);
+        let population = generate_random_population(5, &fitness_evaluator, &config);
+        assert_eq!(population.len(), 5);
     }
 
     #[test]
