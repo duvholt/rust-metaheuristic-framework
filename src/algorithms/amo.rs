@@ -38,30 +38,30 @@ impl Solution<f64> for Animal {
     }
 }
 
-fn generate_next_generation(
+fn animal_migration(
     population: Vec<Animal>,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
-    let new_animals: Vec<Animal> = (0..population.len())
+    let moved_animals: Vec<Animal> = (0..population.len())
         .map(|i| {
-            let mut new_animal = population[i].clone();
+            let mut moved_animal = population[i].clone();
             for d in 0..config.dimension {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 let index = get_random_neighbor_index(index_offset, population.len());
                 let StandardNormal(gaussian) = rng.gen();
-                new_animal.position[d] +=
+                moved_animal.position[d] +=
                     gaussian * (population[index].position[d] - population[i].position[d]);
             }
-            new_animal.fitness = fitness_evaluator.calculate_fitness(&new_animal.position);
-            new_animal
+            moved_animal.fitness = fitness_evaluator.calculate_fitness(&moved_animal.position);
+            moved_animal
         })
         .collect();
     population
         .into_iter()
-        .zip(new_animals)
+        .zip(moved_animals)
         .map(|(old, new)| {
             println!("old {:?}    new {:?}", old, new);
             if old.fitness > new.fitness {
@@ -144,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn generate_next_generation_test() {
+    fn animal_migration_test() {
         let config = create_config();
         let sampler = create_sampler();
         let fitness_evaluator = &create_evaluator(&sampler);
@@ -169,8 +169,7 @@ mod tests {
 
         let seed: &[_] = &[1, 2, 3, 4];
         let mut rng: StdRng = SeedableRng::from_seed(seed);
-        let next_generation =
-            generate_next_generation(population, rng, &fitness_evaluator, &config);
+        let next_generation = animal_migration(population, rng, &fitness_evaluator, &config);
         assert_eq!(next_generation[0].fitness, 1.0);
         assert_eq!(next_generation[1].fitness, 2.584863028248279);
         assert_eq!(next_generation[2].fitness, 5.0);
