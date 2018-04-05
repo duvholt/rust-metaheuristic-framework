@@ -1,3 +1,5 @@
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
 use rand;
@@ -7,6 +9,38 @@ use solution::Solution;
 use solution::SolutionJSON;
 use solution::sort_solutions_by_fitness;
 use std::cmp::Ordering;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("Animal migration optimization")
+        .arg(
+            Arg::with_name("r")
+                .short("-r")
+                .long("r")
+                .value_name("r")
+                .help("neighborhood radius")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    function_evaluator: &FitnessEvaluator<f64>,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let radius = value_t!(sub_m, "r", i64).unwrap_or(2);
+    println!("Running AMO with radius: {}", radius);
+    let config = Config {
+        upper_bound: common.upper_bound,
+        lower_bound: common.lower_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        radius,
+    };
+
+    run(config, &function_evaluator)
+}
 
 pub struct Config {
     pub iterations: i64,
@@ -65,7 +99,7 @@ fn animal_migration(
 
 fn animal_replacement(
     mut population: Vec<Animal>,
-    best_animal: Animal,
+    best_animal: &Animal,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
@@ -137,6 +171,7 @@ fn generate_random_population(
     for _ in 0..size {
         population.push(generate_random_animal(&fitness_evaluator, &config));
     }
+    sort_solutions_by_fitness(&mut population);
     population
 }
 
@@ -150,12 +185,37 @@ fn generate_random_animal(fitness_evaluator: &FitnessEvaluator<f64>, config: &Co
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut solutions = vec![];
-    let mut population: Vec<Animal> = vec![];
+    let mut population: Vec<Animal> =
+        generate_random_population(config.population, &fitness_evaluator, &config);
+    let mut best_animal = population[0].clone();
     let mut i = 1;
-
+    let mut rng = thread_rng();
     while (i <= config.iterations) {
+        population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
+        population = animal_replacement(
+            population,
+            &best_animal,
+            &mut rng,
+            &fitness_evaluator,
+            &config,
+        );
+
+        for animal in &population {
+            if (animal.fitness < best_animal.fitness) {
+                best_animal = animal.clone();
+            }
+        }
+        fitness_evaluator
+            .sampler
+            .population_sample_single(i, &population);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
         i += 1;
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &population);
     solutions
 }
 
@@ -239,8 +299,9 @@ mod tests {
             },
         ];
 
-        let rng = create_seedable_rng();
-        let new_population = animal_replacement(population, best, rng, &fitness_evaluator, &config);
+        let mut rng = create_seedable_rng();
+        let new_population =
+            animal_replacement(population, &best, rng, &fitness_evaluator, &config);
         assert_eq!(new_population[0].fitness, 3.0);
         assert_eq!(new_population[1].fitness, 4.1);
         assert_eq!(new_population[2].fitness, 4.0448939501300325);
