@@ -4,6 +4,8 @@ use rand::distributions::normal::StandardNormal;
 use rand::{thread_rng, Rng};
 use solution::Solution;
 use solution::SolutionJSON;
+use solution::sort_solutions_by_fitness;
+use std::cmp::Ordering;
 
 pub struct Config {
     pub iterations: i64,
@@ -18,6 +20,12 @@ pub struct Config {
 struct Animal {
     fitness: f64,
     position: Vec<f64>,
+}
+
+impl PartialEq for Animal {
+    fn eq(&self, other: &Animal) -> bool {
+        self.fitness == other.fitness
+    }
 }
 
 impl Solution<f64> for Animal {
