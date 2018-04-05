@@ -59,9 +59,13 @@ fn animal_migration(
             moved_animal
         })
         .collect();
-    population
+    find_best_solutions(population, moved_animals)
+}
+
+fn find_best_solutions(old_population: Vec<Animal>, new_population: Vec<Animal>) -> Vec<Animal> {
+    old_population
         .into_iter()
-        .zip(moved_animals)
+        .zip(new_population)
         .map(|(old, new)| {
             println!("old {:?}    new {:?}", old, new);
             if old.fitness > new.fitness {
