@@ -275,7 +275,7 @@ fn calculate_tournament_size(lions: &[&mut Lion]) -> usize {
 fn move_towards_safe_place(lion: &mut Lion, selected_lion: &Lion, mut rng: impl Rng) {
     let distance = euclidean_distance(&lion.position, &selected_lion.position);
     let r1 = lion.diff_position(&selected_lion.position);
-    let r2 = perpendicular_position(&r1);
+    let r2 = perpendicular_position(&r1, &mut rng);
     let r: f64 = rng.gen();
     let u = rng.gen_range(-1.0, 1.0);
     let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
@@ -606,7 +606,7 @@ mod tests {
         // More or less hoping that this is the correct result
         assert_eq!(
             lion.position,
-            vec![-2.6533490136626963, 14.325522823530564, -3.725983496850878]
+            vec![1.3007198471921408, 3.6600263569150973, 3.110842479077025]
         );
     }
 
