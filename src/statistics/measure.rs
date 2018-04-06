@@ -1,12 +1,5 @@
+use position::euclidean_distance;
 use std::f64::INFINITY;
-
-fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
-    a.iter()
-        .zip(b)
-        .map(|(a1, b1)| (b1 - a1).powi(2))
-        .sum::<f64>()
-        .sqrt()
-}
 
 fn distance_closest_point_to_front(point: &[f64], front: &[Vec<f64>]) -> f64 {
     front
@@ -32,16 +25,6 @@ pub fn igd(approx_set: &Vec<Vec<f64>>, pareto_set: &Vec<Vec<f64>>) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn euclidean_distance_correct() {
-        let a = vec![1.0, 0.0];
-        let b = vec![4.0, 3.0];
-
-        let distance = euclidean_distance(&a, &b);
-
-        assert_eq!(distance, 18f64.sqrt());
-    }
 
     #[test]
     fn finds_closest_point() {

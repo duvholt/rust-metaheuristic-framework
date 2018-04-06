@@ -1,8 +1,9 @@
 use fitness_evaluation::FitnessEvaluator;
-use position::random_position;
+use position::{euclidean_distance, perpendicular_position, random_position};
 use rand::{seq, thread_rng, Rng};
 use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::f64::consts::PI;
 use std::hash;
 use std::iter::FromIterator;
 use std::mem;
@@ -61,6 +62,18 @@ impl Lion {
 
     fn key(&self) -> u64 {
         unsafe { mem::transmute(self.fitness) }
+    }
+
+    fn diff_position(&self, other: &Vec<f64>) -> Vec<f64> {
+        self.position
+            .iter()
+            .zip(other.iter())
+            .map(|(p1, p2)| p2 - p1)
+            .collect()
+    }
+
+    fn has_improved(&self) -> bool {
+        self.fitness < self.prev_fitness
     }
 }
 
@@ -252,6 +265,24 @@ fn hunt(
                 prey = update_prey(&hunter.position, &prey, hunter.fitness - fitness, &mut rng);
             }
         }
+    }
+}
+
+fn calculate_tournament_size(lions: &[&mut Lion]) -> usize {
+    lions.iter().map(|lion| lion.has_improved() as usize).sum()
+}
+
+fn move_towards_safe_place(lion: &mut Lion, selected_lion: &Lion, mut rng: impl Rng) {
+    let distance = euclidean_distance(&lion.position, &selected_lion.position);
+    let r1 = lion.diff_position(&selected_lion.position);
+    let r2 = perpendicular_position(&r1);
+    let r: f64 = rng.gen();
+    let u = rng.gen_range(-1.0, 1.0);
+    let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
+    for i in 0..lion.position.len() {
+        let r1_i = r1[i];
+        let r2_i = r2[i];
+        lion.position[i] += 2.0 * distance * r * r1_i + u * theta.tan() * distance * r2_i;
     }
 }
 
@@ -553,5 +584,42 @@ mod tests {
         lion.update_position(vec![0.4, 0.5], 0.6);
 
         assert_eq!(lion.prev_fitness, 0.3);
+    }
+
+    #[test]
+    fn finds_diff_position() {
+        let lion = Lion::new(vec![0.1, 0.2, 0.3], 4.0);
+
+        let diff = lion.diff_position(&vec![0.05, 0.2, 0.4]);
+
+        assert_eq!(diff, vec![-0.05, 0.0, 0.10000000000000003]);
+    }
+
+    #[test]
+    fn moves_lion() {
+        let mut lion = Lion::new(vec![2.0, 3.0, 4.0], 2.0);
+        let selected_lion = Lion::new(vec![1.0, 6.0, 2.0], 1.0);
+        let mut rng = create_rng();
+
+        move_towards_safe_place(&mut lion, &selected_lion, rng);
+
+        // More or less hoping that this is the correct result
+        assert_eq!(
+            lion.position,
+            vec![-2.6533490136626963, 14.325522823530564, -3.725983496850878]
+        );
+    }
+
+    #[test]
+    fn counts_improved_lions() {
+        let mut lion1 = Lion::new(vec![0.1, 0.2, 0.31], 0.31);
+        let mut lion2 = Lion::new(vec![0.1, 0.2, 0.32], 0.32);
+        let mut lion3 = Lion::new(vec![0.1, 0.2, 0.33], 0.33);
+        lion1.update_position(vec![0.1, 0.2, 0.21], 0.21);
+        lion3.update_position(vec![0.1, 0.2, 0.23], 0.23);
+
+        let tournament_size = calculate_tournament_size(&vec![&mut lion1, &mut lion2, &mut lion3]);
+
+        assert_eq!(tournament_size, 2);
     }
 }
