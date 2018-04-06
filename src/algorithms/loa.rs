@@ -37,6 +37,19 @@ struct Lion {
 }
 
 impl Lion {
+    fn new(position: Vec<f64>, fitness: f64) -> Lion {
+        Lion {
+            position,
+            fitness,
+            sex: Sex::None,
+        }
+    }
+
+    fn update_position(&mut self, position: Vec<f64>, fitness: f64) {
+        self.position = position;
+        self.fitness = fitness;
+    }
+
     fn key(&self) -> u64 {
         unsafe { mem::transmute(self.fitness) }
     }
@@ -85,11 +98,7 @@ fn random_population(config: &Config, fitness_evaluator: &FitnessEvaluator<f64>)
             let position =
                 random_position(config.lower_bound, config.upper_bound, config.dimension);
             let fitness = fitness_evaluator.calculate_fitness(&position);
-            Lion {
-                position,
-                fitness,
-                sex: Sex::None,
-            }
+            Lion::new(position, fitness)
         })
         .collect()
 }
@@ -230,12 +239,7 @@ fn hunt(
             };
             let fitness = fitness_evaluator.calculate_fitness(&position);
             if fitness < hunter.fitness {
-                let sex = hunter.sex.clone();
-                **hunter = Lion {
-                    position,
-                    fitness,
-                    sex,
-                };
+                hunter.update_position(position, fitness);
                 prey = update_prey(&hunter.position, &prey, hunter.fitness - fitness, &mut rng);
             }
         }
@@ -637,5 +641,16 @@ mod tests {
         let new_prey = update_prey(&hunter, &prey, 5.0, rng);
 
         assert_eq!(new_prey.len(), 2);
+    }
+
+    #[test]
+    fn updates_lion_position() {
+        let mut lion = Lion::new(vec![0.1, 0.2], 0.3);
+
+        lion.update_position(vec![0.4, 0.5], 0.6);
+
+        assert_eq!(lion.position, vec![0.4, 0.5]);
+        assert_eq!(lion.fitness, 0.6);
+        assert_eq!(lion.sex, Sex::None);
     }
 }
