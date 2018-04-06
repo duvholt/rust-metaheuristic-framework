@@ -34,6 +34,7 @@ struct Lion {
     position: Vec<f64>,
     best_position: Vec<f64>,
     fitness: f64,
+    prev_fitness: f64,
     sex: Sex,
 }
 
@@ -44,6 +45,7 @@ impl Lion {
             position,
             best_position,
             fitness,
+            prev_fitness: fitness,
             sex: Sex::None,
         }
     }
@@ -52,6 +54,7 @@ impl Lion {
         if self.fitness > fitness {
             self.best_position = position.clone();
         }
+        self.prev_fitness = self.fitness;
         self.position = position;
         self.fitness = fitness;
     }
@@ -299,6 +302,12 @@ mod tests {
         SeedableRng::from_seed(seed)
     }
 
+    fn create_lion_with_sex(position: Vec<f64>, fitness: f64, sex: Sex) -> Lion {
+        let mut lion = Lion::new(position, fitness);
+        lion.sex = sex;
+        lion
+    }
+
     #[test]
     fn creates_population_with_correct_size() {
         let sampler = create_sampler();
@@ -378,24 +387,9 @@ mod tests {
     #[test]
     fn finds_female_in_pride() {
         let population = vec![
-            Lion {
-                position: vec![1.0, 1.0],
-                best_position: vec![1.0, 1.0],
-                fitness: 1.0,
-                sex: Sex::Male,
-            },
-            Lion {
-                position: vec![2.0, 2.0],
-                best_position: vec![2.0, 2.0],
-                fitness: 2.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![3.0, 3.0],
-                best_position: vec![3.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Male,
-            },
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
         let pride = Pride {
             population: HashSet::from_iter(&population),
@@ -410,18 +404,8 @@ mod tests {
     #[test]
     fn does_not_find_female_in_pride() {
         let population = vec![
-            Lion {
-                position: vec![1.0, 1.0],
-                best_position: vec![1.0, 1.0],
-                fitness: 1.0,
-                sex: Sex::Male,
-            },
-            Lion {
-                position: vec![3.0, 3.0],
-                best_position: vec![3.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Male,
-            },
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
         let pride = Pride {
             population: HashSet::from_iter(&population),
@@ -436,42 +420,12 @@ mod tests {
     #[test]
     fn finds_one_hunter_from_all_prides() {
         let population = vec![
-            Lion {
-                position: vec![1.0, 1.0],
-                best_position: vec![1.0, 1.0],
-                fitness: 1.0,
-                sex: Sex::Male,
-            },
-            Lion {
-                position: vec![2.0, 2.0],
-                best_position: vec![2.0, 2.0],
-                fitness: 2.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![3.0, 3.0],
-                best_position: vec![3.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Male,
-            },
-            Lion {
-                position: vec![4.0, 4.0],
-                best_position: vec![4.0, 4.0],
-                fitness: 4.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![5.0, 5.0],
-                best_position: vec![5.0, 5.0],
-                fitness: 5.0,
-                sex: Sex::Male,
-            },
-            Lion {
-                position: vec![6.0, 6.0],
-                best_position: vec![6.0, 6.0],
-                fitness: 6.0,
-                sex: Sex::Female,
-            },
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
         ];
         let prides = vec![
             Pride {
@@ -497,18 +451,8 @@ mod tests {
     #[test]
     fn calculates_prey_position_correctly() {
         let mut population = vec![
-            Lion {
-                position: vec![2.0, 3.0],
-                best_position: vec![2.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![7.0, 2.0],
-                best_position: vec![7.0, 2.0],
-                fitness: 3.0,
-                sex: Sex::Female,
-            },
+            create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
+            create_lion_with_sex(vec![7.0, 2.0], 3.0, Sex::Female),
         ];
         let hunters = population.iter_mut().map(|l| l).collect();
 
@@ -520,30 +464,10 @@ mod tests {
     #[test]
     fn partitions_hunters_randomly() {
         let mut population = vec![
-            Lion {
-                position: vec![2.0, 3.0],
-                best_position: vec![2.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![7.0, 1.0],
-                best_position: vec![7.0, 1.0],
-                fitness: 2.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![3.0, 6.0],
-                best_position: vec![3.0, 6.0],
-                fitness: 7.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![2.0, 3.0],
-                best_position: vec![2.0, 3.0],
-                fitness: 4.0,
-                sex: Sex::Female,
-            },
+            create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
+            create_lion_with_sex(vec![7.0, 1.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 6.0], 7.0, Sex::Female),
+            create_lion_with_sex(vec![2.0, 3.0], 4.0, Sex::Female),
         ];
         let hunters: Vec<&mut Lion> = population.iter_mut().map(|l| l).collect();
         let rng = create_rng();
@@ -558,30 +482,10 @@ mod tests {
     #[test]
     fn selects_group_with_highest_fitness() {
         let mut population = vec![
-            Lion {
-                position: vec![3.0, 6.0],
-                best_position: vec![3.0, 6.0],
-                fitness: 6.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![2.0, 3.0],
-                best_position: vec![2.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![2.0, 3.0],
-                best_position: vec![2.0, 3.0],
-                fitness: 5.0,
-                sex: Sex::Female,
-            },
-            Lion {
-                position: vec![7.0, 1.0],
-                best_position: vec![7.0, 1.0],
-                fitness: 2.0,
-                sex: Sex::Female,
-            },
+            create_lion_with_sex(vec![3.0, 6.0], 6.0, Sex::Female),
+            create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
+            create_lion_with_sex(vec![2.0, 3.0], 5.0, Sex::Female),
+            create_lion_with_sex(vec![7.0, 1.0], 2.0, Sex::Female),
         ];
         let (first, last) = population.split_at_mut(2);
         let (l1, l2) = first.split_at_mut(1);
@@ -640,5 +544,14 @@ mod tests {
         assert_eq!(lion.fitness, 0.6);
         assert_eq!(lion.sex, Sex::None);
         assert_eq!(lion.best_position, vec![0.1, 0.2]);
+    }
+
+    #[test]
+    fn keeps_track_of_previous_fitness() {
+        let mut lion = Lion::new(vec![0.1, 0.2], 0.3);
+
+        lion.update_position(vec![0.4, 0.5], 0.6);
+
+        assert_eq!(lion.prev_fitness, 0.3);
     }
 }
