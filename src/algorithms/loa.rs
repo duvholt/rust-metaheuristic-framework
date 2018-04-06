@@ -32,20 +32,26 @@ enum Sex {
 #[derive(Debug, Clone)]
 struct Lion {
     position: Vec<f64>,
+    best_position: Vec<f64>,
     fitness: f64,
     sex: Sex,
 }
 
 impl Lion {
     fn new(position: Vec<f64>, fitness: f64) -> Lion {
+        let best_position = position.clone();
         Lion {
             position,
+            best_position,
             fitness,
             sex: Sex::None,
         }
     }
 
     fn update_position(&mut self, position: Vec<f64>, fitness: f64) {
+        if self.fitness > fitness {
+            self.best_position = position.clone();
+        }
         self.position = position;
         self.fitness = fitness;
     }
@@ -275,56 +281,16 @@ mod tests {
 
     fn create_population() -> Vec<Lion> {
         vec![
-            Lion {
-                position: vec![1.0, 1.0],
-                fitness: 1.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![2.0, 2.0],
-                fitness: 2.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![3.0, 3.0],
-                fitness: 3.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![4.0, 4.0],
-                fitness: 4.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![5.0, 5.0],
-                fitness: 5.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![6.0, 6.0],
-                fitness: 6.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![7.0, 7.0],
-                fitness: 7.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![8.0, 8.0],
-                fitness: 8.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![9.0, 9.0],
-                fitness: 9.0,
-                sex: Sex::None,
-            },
-            Lion {
-                position: vec![10.0, 10.0],
-                fitness: 10.0,
-                sex: Sex::None,
-            },
+            Lion::new(vec![1.0, 1.0], 1.0),
+            Lion::new(vec![2.0, 2.0], 2.0),
+            Lion::new(vec![3.0, 3.0], 3.0),
+            Lion::new(vec![4.0, 4.0], 4.0),
+            Lion::new(vec![5.0, 5.0], 5.0),
+            Lion::new(vec![6.0, 6.0], 6.0),
+            Lion::new(vec![7.0, 7.0], 7.0),
+            Lion::new(vec![8.0, 8.0], 8.0),
+            Lion::new(vec![9.0, 9.0], 9.0),
+            Lion::new(vec![10.0, 10.0], 10.0),
         ]
     }
 
@@ -414,16 +380,19 @@ mod tests {
         let population = vec![
             Lion {
                 position: vec![1.0, 1.0],
+                best_position: vec![1.0, 1.0],
                 fitness: 1.0,
                 sex: Sex::Male,
             },
             Lion {
                 position: vec![2.0, 2.0],
+                best_position: vec![2.0, 2.0],
                 fitness: 2.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![3.0, 3.0],
+                best_position: vec![3.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Male,
             },
@@ -443,11 +412,13 @@ mod tests {
         let population = vec![
             Lion {
                 position: vec![1.0, 1.0],
+                best_position: vec![1.0, 1.0],
                 fitness: 1.0,
                 sex: Sex::Male,
             },
             Lion {
                 position: vec![3.0, 3.0],
+                best_position: vec![3.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Male,
             },
@@ -467,31 +438,37 @@ mod tests {
         let population = vec![
             Lion {
                 position: vec![1.0, 1.0],
+                best_position: vec![1.0, 1.0],
                 fitness: 1.0,
                 sex: Sex::Male,
             },
             Lion {
                 position: vec![2.0, 2.0],
+                best_position: vec![2.0, 2.0],
                 fitness: 2.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![3.0, 3.0],
+                best_position: vec![3.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Male,
             },
             Lion {
                 position: vec![4.0, 4.0],
+                best_position: vec![4.0, 4.0],
                 fitness: 4.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![5.0, 5.0],
+                best_position: vec![5.0, 5.0],
                 fitness: 5.0,
                 sex: Sex::Male,
             },
             Lion {
                 position: vec![6.0, 6.0],
+                best_position: vec![6.0, 6.0],
                 fitness: 6.0,
                 sex: Sex::Female,
             },
@@ -522,11 +499,13 @@ mod tests {
         let mut population = vec![
             Lion {
                 position: vec![2.0, 3.0],
+                best_position: vec![2.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![7.0, 2.0],
+                best_position: vec![7.0, 2.0],
                 fitness: 3.0,
                 sex: Sex::Female,
             },
@@ -543,21 +522,25 @@ mod tests {
         let mut population = vec![
             Lion {
                 position: vec![2.0, 3.0],
+                best_position: vec![2.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![7.0, 1.0],
+                best_position: vec![7.0, 1.0],
                 fitness: 2.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![3.0, 6.0],
+                best_position: vec![3.0, 6.0],
                 fitness: 7.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![2.0, 3.0],
+                best_position: vec![2.0, 3.0],
                 fitness: 4.0,
                 sex: Sex::Female,
             },
@@ -577,21 +560,25 @@ mod tests {
         let mut population = vec![
             Lion {
                 position: vec![3.0, 6.0],
+                best_position: vec![3.0, 6.0],
                 fitness: 6.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![2.0, 3.0],
+                best_position: vec![2.0, 3.0],
                 fitness: 3.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![2.0, 3.0],
+                best_position: vec![2.0, 3.0],
                 fitness: 5.0,
                 sex: Sex::Female,
             },
             Lion {
                 position: vec![7.0, 1.0],
+                best_position: vec![7.0, 1.0],
                 fitness: 2.0,
                 sex: Sex::Female,
             },
@@ -652,5 +639,6 @@ mod tests {
         assert_eq!(lion.position, vec![0.4, 0.5]);
         assert_eq!(lion.fitness, 0.6);
         assert_eq!(lion.sex, Sex::None);
+        assert_eq!(lion.best_position, vec![0.1, 0.2]);
     }
 }
