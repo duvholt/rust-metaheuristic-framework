@@ -606,7 +606,7 @@ mod tests {
         // More or less hoping that this is the correct result
         assert_eq!(
             lion.position,
-            vec![1.3007198471921408, 3.6600263569150973, 3.110842479077025]
+            vec![-0.1871267537276311, 8.110923553399498, 0.004037574347936168]
         );
     }
 

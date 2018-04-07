@@ -21,11 +21,17 @@ fn approx_equal(a: f64, b: f64) -> bool {
 
 // Creates perpendicular vector with euclidean norm of 1
 pub fn perpendicular_position(position: &Vec<f64>, mut rng: impl Rng) -> Vec<f64> {
-    let mut perpendicular = position.clone();
+    let mut perpendicular = position.iter().map(|_| rng.gen_range(-1.0, 1.0)).collect();
     while !approx_equal(dot_product(&position, &perpendicular), 0.0) {
-        perpendicular = (0..position.len())
-            .map(|_| rng.gen_range(-1.0, 1.0))
-            .collect();
+        let dot = dot_product(&position, &perpendicular);
+        let d = rng.gen_range(0, position.len());
+        let dot_d = (position[d] * perpendicular[d]);
+        let perp_d = perpendicular[d];
+        if (dot > 0.0) == ((dot_d > 0.0) == (perp_d > 0.0)) {
+            perpendicular[d] = rng.gen_range(-1.0, perpendicular[d]);
+        } else {
+            perpendicular[d] = rng.gen_range(perpendicular[d], 1.0);
+        }
     }
     let norm = (perpendicular.iter().map(|p| p.powi(2)).sum::<f64>()).sqrt();
     perpendicular.iter().map(|p| p / norm).collect()
@@ -42,6 +48,7 @@ pub fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::Bencher;
     use testing::utils::create_rng;
 
     #[test]
@@ -87,11 +94,11 @@ mod tests {
         assert_eq!(
             perpendicular,
             vec![
-                -0.7049741017675644,
-                0.4509785592528697,
-                -0.3103158966001,
-                0.4256205043263164,
-                0.14893315797870466,
+                -0.4510884382825031,
+                -0.48170017037179613,
+                0.5052849241820805,
+                0.506681167501091,
+                -0.22900983953899332,
             ]
         );
     }
@@ -105,13 +112,21 @@ mod tests {
         assert_eq!(
             perpendicular,
             vec![
-                0.44283537290032515,
-                0.2551870898263465,
-                -0.14579575974568937,
-                0.4534522884199409,
-                -0.44872805883790945,
-                -0.5572648647390644,
+                0.16556261327398303,
+                -0.47293524388015784,
+                -0.11411503808514509,
+                0.4549193955638799,
+                0.49722485154735896,
+                -0.5307681459999574,
             ]
         );
+    }
+
+    #[bench]
+    #[ignore]
+    fn bench_perpendicular(b: &mut Bencher) {
+        let position = vec![2.0, 2.0, 2.0, 2.0, 2.0, 2.0];
+        let mut rng = thread_rng();
+        b.iter(|| perpendicular_position(&position, &mut rng));
     }
 }
