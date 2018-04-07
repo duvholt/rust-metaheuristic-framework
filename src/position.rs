@@ -21,18 +21,31 @@ fn approx_equal(a: f64, b: f64) -> bool {
 
 // Creates perpendicular vector with euclidean norm of 1
 pub fn perpendicular_position(position: &Vec<f64>, mut rng: impl Rng) -> Vec<f64> {
+    // Create random vector with values -1.0 to 1.0
     let mut perpendicular = position.iter().map(|_| rng.gen_range(-1.0, 1.0)).collect();
+    // Loop until dot product is 0 (vector is perpendicular)
     while !approx_equal(dot_product(&position, &perpendicular), 0.0) {
         let dot = dot_product(&position, &perpendicular);
+        // Random dimension
         let d = rng.gen_range(0, position.len());
-        let dot_d = (position[d] * perpendicular[d]);
+
+        let pos_d = position[d];
         let perp_d = perpendicular[d];
-        if (dot > 0.0) == ((dot_d > 0.0) == (perp_d > 0.0)) {
-            perpendicular[d] = rng.gen_range(-1.0, perpendicular[d]);
-        } else {
-            perpendicular[d] = rng.gen_range(perpendicular[d], 1.0);
+        let dot_d = (pos_d * perp_d);
+
+        // Calculate new value
+        let mut new_perp_d = -(dot - dot_d) / (pos_d);
+
+        // Limit to either -1.0 or 1.0
+        if new_perp_d < -1.0 {
+            new_perp_d = -1.0;
+        } else if new_perp_d > 1.0 {
+            new_perp_d = 1.0;
         }
+
+        perpendicular[d] = new_perp_d;
     }
+    // Normalize vector (||v|| = 1)
     let norm = (perpendicular.iter().map(|p| p.powi(2)).sum::<f64>()).sqrt();
     perpendicular.iter().map(|p| p / norm).collect()
 }
@@ -91,16 +104,8 @@ mod tests {
 
         let perpendicular = perpendicular_position(&position, create_rng());
 
-        assert_eq!(
-            perpendicular,
-            vec![
-                -0.4510884382825031,
-                -0.48170017037179613,
-                0.5052849241820805,
-                0.506681167501091,
-                -0.22900983953899332,
-            ]
-        );
+        assert_approx_eq!(dot_product(&position, &perpendicular), 0.0);
+        assert_approx_eq!(perpendicular.iter().map(|a| a.powi(2)).sum::<f64>(), 1.0);
     }
 
     #[test]
@@ -109,17 +114,8 @@ mod tests {
 
         let perpendicular = perpendicular_position(&position, create_rng());
 
-        assert_eq!(
-            perpendicular,
-            vec![
-                0.16556261327398303,
-                -0.47293524388015784,
-                -0.11411503808514509,
-                0.4549193955638799,
-                0.49722485154735896,
-                -0.5307681459999574,
-            ]
-        );
+        assert_approx_eq!(dot_product(&position, &perpendicular), 0.0);
+        assert_approx_eq!(perpendicular.iter().map(|a| a.powi(2)).sum::<f64>(), 1.0);
     }
 
     #[bench]
