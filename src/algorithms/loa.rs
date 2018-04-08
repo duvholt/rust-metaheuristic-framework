@@ -312,6 +312,39 @@ fn roam_pride(
     }
 }
 
+fn min_value(val1: f64, val2: f64) -> f64 {
+    if val1 > val2 {
+        val1
+    } else {
+        val2
+    }
+}
+
+fn roam_nomad(
+    nomad: &mut Lion,
+    best: &Lion,
+    lower_bound: f64,
+    upper_bound: f64,
+    fitness_evaluator: &FitnessEvaluator<f64>,
+    mut rng: impl Rng,
+) {
+    let pr = 0.1 + min_value(0.5, (nomad.fitness - best.fitness) / best.fitness);
+    let position: Vec<_> = nomad
+        .position
+        .iter()
+        .map(|p_i| {
+            let r: f64 = rng.gen();
+            if r > pr {
+                *p_i
+            } else {
+                rng.gen_range(lower_bound, upper_bound)
+            }
+        })
+        .collect();
+    let fitness = fitness_evaluator.calculate_fitness(&position);
+    nomad.update_position(position, fitness);
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -647,6 +680,22 @@ mod tests {
         let tournament_size = calculate_tournament_size(&vec![&mut lion1, &mut lion2, &mut lion3]);
 
         assert_eq!(tournament_size, 2);
+    }
+
+    #[test]
+    fn moves_lion_with_roam_nomad() {
+        let mut lion = create_lion_with_sex(vec![0.2, 0.1, 0.3], 0.3, Sex::Male);
+        let best = create_lion_with_sex(vec![0.2, 0.1, 0.0], 0.1, Sex::Male);
+        let mut rng = create_rng();
+        let sampler = create_sampler();
+        let mut fitness_evaluator = create_evaluator(&sampler);
+
+        let original_position = lion.position.clone();
+        roam_nomad(&mut lion, &best, -10.0, 10.0, &fitness_evaluator, &mut rng);
+
+        assert!(lion.position != original_position);
+        println!("{:?}", lion);
+        assert!(false);
     }
 
     #[test]
