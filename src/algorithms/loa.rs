@@ -286,6 +286,32 @@ fn move_towards_safe_place(lion: &mut Lion, selected_lion: &Lion, mut rng: impl 
     }
 }
 
+fn roam_pride(
+    lion: &mut Lion,
+    pride: &Pride,
+    roaming_percent: f64,
+    fitness_evaluator: &FitnessEvaluator<f64>,
+    mut rng: impl Rng,
+) {
+    let roaming_count = (roaming_percent * pride.population.len() as f64) as usize;
+    let selected = seq::sample_iter(&mut rng, &pride.population, roaming_count).unwrap();
+    let roam_positions: Vec<_> = selected
+        .into_iter()
+        .map(|lion| &lion.best_position)
+        .collect();
+    for roam_position in roam_positions {
+        let distance = euclidean_distance(&lion.position, &roam_position);
+        let x = rng.gen_range(0.0, 2.0 * distance);
+        let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
+        let position: Vec<_> = lion.position
+            .iter()
+            .map(|p_i| p_i + x * theta.tan())
+            .collect();
+        let fitness = fitness_evaluator.calculate_fitness(&position);
+        lion.update_position(position, fitness);
+    }
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -621,5 +647,28 @@ mod tests {
         let tournament_size = calculate_tournament_size(&vec![&mut lion1, &mut lion2, &mut lion3]);
 
         assert_eq!(tournament_size, 2);
+    }
+
+    #[test]
+    fn moves_lion_with_roam_pride() {
+        let mut lion = create_lion_with_sex(vec![0.2, 0.1, 0.3], 0.3, Sex::Male);
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0, 0.3], 1.1, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0, 0.2], 2.2, Sex::Female),
+            create_lion_with_sex(vec![3.2, 0.0, 1.1], 1.3, Sex::Male),
+            create_lion_with_sex(vec![4.0, 1.0, 0.1], 2.4, Sex::Male),
+            create_lion_with_sex(vec![3.0, 5.0, 2.1], 1.5, Sex::Male),
+        ];
+        let pride = Pride {
+            population: HashSet::from_iter(&population),
+        };
+        let mut rng = create_rng();
+        let sampler = create_sampler();
+        let mut fitness_evaluator = create_evaluator(&sampler);
+
+        let original_position = lion.position.clone();
+        roam_pride(&mut lion, &pride, 0.4, &fitness_evaluator, &mut rng);
+
+        assert!(lion.position != original_position);
     }
 }
