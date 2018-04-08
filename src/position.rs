@@ -13,18 +13,12 @@ fn dot_product(vec1: &Vec<f64>, vec2: &Vec<f64>) -> f64 {
     vec1.iter().zip(vec2).map(|(v1, v2)| v1 * v2).sum()
 }
 
-fn approx_equal(a: f64, b: f64) -> bool {
-    let c = b - a;
-    let eps = 0.001;
-    (c < eps && c >= 0.0) || (c > -eps && c <= 0.0)
-}
-
 // Creates perpendicular vector with euclidean norm of 1
 pub fn perpendicular_position(position: &Vec<f64>, mut rng: impl Rng) -> Vec<f64> {
     // Create random vector with values -1.0 to 1.0
     let mut perpendicular = position.iter().map(|_| rng.gen_range(-1.0, 1.0)).collect();
     // Loop until dot product is 0 (vector is perpendicular)
-    while !approx_equal(dot_product(&position, &perpendicular), 0.0) {
+    while dot_product(&position, &perpendicular) != 0.0 {
         let dot = dot_product(&position, &perpendicular);
         // Random dimension
         let d = rng.gen_range(0, position.len());
@@ -96,6 +90,16 @@ mod tests {
                 upper_space
             );
         }
+    }
+
+    #[test]
+    fn finds_perpendicular_vector_simple() {
+        let position = vec![1.0, 0.0];
+
+        let perpendicular = perpendicular_position(&position, create_rng());
+
+        assert_approx_eq!(dot_product(&position, &perpendicular), 0.0);
+        assert_approx_eq!(perpendicular.iter().map(|a| a.powi(2)).sum::<f64>(), 1.0);
     }
 
     #[test]
