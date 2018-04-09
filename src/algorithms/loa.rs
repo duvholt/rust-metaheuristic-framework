@@ -3,9 +3,10 @@ use position::{euclidean_distance, perpendicular_position, random_position};
 use rand::{seq, thread_rng, Rng};
 use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::collections::hash_set::Iter;
 use std::f64::consts::PI;
 use std::hash;
-use std::iter::FromIterator;
+use std::iter::{Filter, FromIterator};
 use std::mem;
 
 struct Config {
@@ -110,6 +111,7 @@ impl<'a> Pride<'a> {
     }
 }
 
+#[derive(Debug)]
 struct Nomad<'a> {
     population: HashSet<&'a Lion>,
 }
@@ -345,15 +347,24 @@ fn roam_nomad(
     nomad.update_position(position, fitness);
 }
 
-fn mutate_random(position: &Vec<f64>, mutation_probability: f64, lower_bound: f64, upper_bound: f64, mut rng: impl Rng) -> Vec<f64> {
-    position.iter().map(|pos_i| {
-        let r: f64 = rng.gen();
-        if r < mutation_probability {
-            rng.gen_range(lower_bound, upper_bound)
-        } else {
-            *pos_i
-        }
-    }).collect()
+fn mutate_random(
+    position: &Vec<f64>,
+    mutation_probability: f64,
+    lower_bound: f64,
+    upper_bound: f64,
+    mut rng: impl Rng,
+) -> Vec<f64> {
+    position
+        .iter()
+        .map(|pos_i| {
+            let r: f64 = rng.gen();
+            if r < mutation_probability {
+                rng.gen_range(lower_bound, upper_bound)
+            } else {
+                *pos_i
+            }
+        })
+        .collect()
 }
 
 // TODO: Replace with generic sort
@@ -363,13 +374,52 @@ fn sort_lions(population: &mut Vec<&mut Lion>) {
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
 
-fn defense_resident_male<'a>(old_males: Vec<&'a mut Lion>, mut new_males: Vec<&'a mut Lion>) -> (Vec<&'a mut Lion>, Vec<&'a mut Lion>) {
+fn defense_resident_male<'a>(
+    old_males: Vec<&'a mut Lion>,
+    mut new_males: Vec<&'a mut Lion>,
+) -> (Vec<&'a mut Lion>, Vec<&'a mut Lion>) {
     let old_males_size = old_males.len();
     let mut males = old_males;
     males.append(&mut new_males);
     sort_lions(&mut males);
     let nomads = males.split_off(old_males_size);
     (males, nomads)
+}
+
+fn defense_against_nomad_male<'a>(
+    mut prides: Vec<Pride<'a>>,
+    nomad: Nomad<'a>,
+    mut rng: impl Rng,
+) -> (Vec<Pride<'a>>, Nomad<'a>) {
+    let nomad: HashSet<_> = nomad
+        .population
+        .into_iter()
+        .map(|nomad| {
+            for pride in prides.iter_mut() {
+                if rng.gen() {
+                    continue;
+                }
+                let mut swapped = None;
+                pride.population.retain(|&lion| {
+                    if lion.sex != Sex::Male {
+                        return true;
+                    }
+                    if swapped.is_none() && lion.fitness > nomad.fitness {
+                        swapped = Some(lion);
+                        false
+                    } else {
+                        true
+                    }
+                });
+                if let Some(male) = swapped {
+                    pride.population.insert(nomad);
+                    return male;
+                }
+            }
+            nomad
+        })
+        .collect();
+    (prides, Nomad { population: nomad })
 }
 
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
@@ -777,5 +827,51 @@ mod tests {
         assert_eq!(pride_males_fitness, vec![0.1, 0.2, 0.3]);
         let nomads_fitness: Vec<_> = nomads.iter().map(|l| l.fitness).collect();
         assert_eq!(nomads_fitness, vec![0.4, 0.5, 0.6]);
+    }
+
+    #[test]
+    fn defends_against_nomad_male() {
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
+        ];
+        let prides = vec![
+            Pride {
+                population: HashSet::from_iter(&population[..2]),
+            },
+            Pride {
+                population: HashSet::from_iter(&population[2..4]),
+            },
+            Pride {
+                population: HashSet::from_iter(&population[4..6]),
+            },
+        ];
+        let nomad_males = vec![
+            create_lion_with_sex(vec![0.5, 0.3], 0.8, Sex::Male),
+            create_lion_with_sex(vec![2.5, 1.3], 1.4, Sex::Male),
+            create_lion_with_sex(vec![10.0, 10.0], 10.0, Sex::Male),
+        ];
+        let nomad = Nomad {
+            population: HashSet::from_iter(&nomad_males),
+        };
+        let rng = create_rng();
+        let worst_nomad = nomad_males[2].clone();
+
+        let (prides, nomad) = defense_against_nomad_male(prides, nomad, rng);
+
+        assert_eq!(nomad.population.len(), 3);
+        let pride_population: HashSet<_> =
+            prides.iter().flat_map(|pride| &pride.population).collect();
+        assert_eq!(pride_population.len(), 6);
+        let females: HashSet<_> = pride_population
+            .iter()
+            .filter(|lion| lion.sex == Sex::Female)
+            .collect();
+        assert_eq!(females.len(), 3);
+        assert!(nomad.population.contains(&worst_nomad));
     }
 }
