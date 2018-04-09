@@ -356,6 +356,22 @@ fn mutate_random(position: &Vec<f64>, mutation_probability: f64, lower_bound: f6
     }).collect()
 }
 
+// TODO: Replace with generic sort
+
+fn sort_lions(population: &mut Vec<&mut Lion>) {
+    population
+        .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+}
+
+fn defense_resident_male<'a>(old_males: Vec<&'a mut Lion>, mut new_males: Vec<&'a mut Lion>) -> (Vec<&'a mut Lion>, Vec<&'a mut Lion>) {
+    let old_males_size = old_males.len();
+    let mut males = old_males;
+    males.append(&mut new_males);
+    sort_lions(&mut males);
+    let nomads = males.split_off(old_males_size);
+    (males, nomads)
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -738,5 +754,28 @@ mod tests {
         let new_position = mutate_random(&position, 0.3, -10.0, 10.0, rng);
 
         assert!(position != new_position);
+    }
+
+    #[test]
+    fn defends_against_resident_males() {
+        let mut population = vec![
+            create_lion_with_sex(vec![0.5, 0.5], 0.5, Sex::Male),
+            create_lion_with_sex(vec![0.3, 0.3], 0.3, Sex::Male),
+            create_lion_with_sex(vec![0.2, 0.2], 0.2, Sex::Male),
+            create_lion_with_sex(vec![0.4, 0.4], 0.4, Sex::Male),
+            create_lion_with_sex(vec![0.6, 0.6], 0.6, Sex::Male),
+            create_lion_with_sex(vec![0.1, 0.1], 0.1, Sex::Male),
+        ];
+        let (old_males, new_males) = population.split_at_mut(3);
+        let old_males: Vec<&mut Lion> = old_males.iter_mut().map(|lion| lion).collect();
+        let new_males: Vec<&mut Lion> = new_males.iter_mut().map(|lion| lion).collect();
+
+        let (pride_males, nomads) = defense_resident_male(old_males, new_males);
+
+        // Checking fitness only as several mutable referens does not work good in Rust
+        let pride_males_fitness: Vec<_> = pride_males.iter().map(|l| l.fitness).collect();
+        assert_eq!(pride_males_fitness, vec![0.1, 0.2, 0.3]);
+        let nomads_fitness: Vec<_> = nomads.iter().map(|l| l.fitness).collect();
+        assert_eq!(nomads_fitness, vec![0.4, 0.5, 0.6]);
     }
 }
