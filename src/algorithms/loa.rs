@@ -694,8 +694,6 @@ mod tests {
         roam_nomad(&mut lion, &best, -10.0, 10.0, &fitness_evaluator, &mut rng);
 
         assert!(lion.position != original_position);
-        println!("{:?}", lion);
-        assert!(false);
     }
 
     #[test]
