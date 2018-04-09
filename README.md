@@ -25,7 +25,7 @@ Build the project using `cargo build --release` or run it directly with `cargo r
 The project comes with a cli. See help for a detailed list of all the options.
 `cargo run --release -- --help`
 
-Example: `cargo run --release -- -f ackley -d 30 - pso`
+Example: `cargo run --release -- -f ackley -d 30 pso`
 
 ### Formatting
 
