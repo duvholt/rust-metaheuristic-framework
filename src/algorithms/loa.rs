@@ -345,6 +345,17 @@ fn roam_nomad(
     nomad.update_position(position, fitness);
 }
 
+fn mutate_random(position: &Vec<f64>, mutation_probability: f64, lower_bound: f64, upper_bound: f64, mut rng: impl Rng) -> Vec<f64> {
+    position.iter().map(|pos_i| {
+        let r: f64 = rng.gen();
+        if r < mutation_probability {
+            rng.gen_range(lower_bound, upper_bound)
+        } else {
+            *pos_i
+        }
+    }).collect()
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -717,5 +728,15 @@ mod tests {
         roam_pride(&mut lion, &pride, 0.4, &fitness_evaluator, &mut rng);
 
         assert!(lion.position != original_position);
+    }
+
+    #[test]
+    fn mutates_randomly() {
+        let position = vec![0.0, 0.1, 0.2, 0.3];
+        let rng = create_rng();
+
+        let new_position = mutate_random(&position, 0.3, -10.0, 10.0, rng);
+
+        assert!(position != new_position);
     }
 }
