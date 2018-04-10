@@ -12,11 +12,12 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
         .about("Animal migration optimization")
         .arg(
-            Arg::with_name("r")
+            Arg::with_name("radius")
                 .short("-r")
-                .long("r")
-                .value_name("r")
+                .long("radius")
+                .value_name("INTEGER")
                 .help("neighborhood radius")
+                .default_value("2")
                 .takes_value(true),
         )
 }
@@ -26,7 +27,8 @@ pub fn run_subcommand(
     function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
-    let radius = value_t!(sub_m, "r", i64).unwrap_or(2);
+    let radius = value_t_or_exit!(sub_m, "radius", i64);
+    println!("Running AMO with radius: {}", radius);
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
@@ -76,30 +78,35 @@ fn animal_migration(
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
-    let moved_animals: Vec<Animal> = (0..population.len())
-        .map(|i| {
-            let mut moved_animal = population[i].clone();
+    let moved_animals: Vec<Animal> = population
+        .iter()
+        .enumerate()
+        .map(|(i, current_animal)| {
+            let mut moved_position = vec![];
             let mut out_of_bounds = false;
             let StandardNormal(gaussian) = rng.gen();
             for d in 0..config.dimension {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 let index = get_random_neighbor_index(index_offset, population.len());
-                moved_animal.position[d] +=
-                    gaussian * (population[index].position[d] - population[i].position[d]);
-                if moved_animal.position[d] > config.upper_bound
-                    || moved_animal.position[d] < config.lower_bound
+                moved_position.push(
+                    current_animal.position[d]
+                        + gaussian * (population[index].position[d] - current_animal.position[d]),
+                );
+                if moved_position[d] > config.upper_bound || moved_position[d] < config.lower_bound
                 {
                     out_of_bounds = true;
                     break;
                 }
             }
             if out_of_bounds {
-                moved_animal.position =
+                moved_position =
                     random_position(config.lower_bound, config.upper_bound, config.dimension);
             }
-            moved_animal.fitness = fitness_evaluator.calculate_fitness(&moved_animal.position);
-            moved_animal
+            Animal {
+                fitness: fitness_evaluator.calculate_fitness(&moved_position),
+                position: moved_position,
+            }
         })
         .collect();
     find_best_solutions(population, moved_animals)
@@ -112,9 +119,12 @@ fn animal_replacement(
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
-    let new_population: Vec<Animal> = (0..population.len())
-        .map(|i| {
-            let mut animal = population[i].clone();
+    let new_population: Vec<Animal> = population
+        .iter()
+        .enumerate()
+        .map(|(i, current_animal)| {
+            let mut new_position = vec![];
+            let mut fitness = current_animal.fitness;
             let mut changed = false;
             let mut out_of_bounds = false;
             for d in 0..config.dimension {
@@ -124,24 +134,29 @@ fn animal_replacement(
                     let r1 = population[r.0].position[d];
                     let r2 = population[r.1].position[d];
                     let best = best_animal.position[d];
-                    let current = population[i].position[d];
-                    animal.position[d] =
-                        r1 + rng.next_f64() * (best - current) + rng.next_f64() * (r2 - current);
-                    if animal.position[d] > config.upper_bound
-                        || animal.position[d] < config.lower_bound
+                    let current = current_animal.position[d];
+                    new_position.push(
+                        r1 + rng.next_f64() * (best - current) + rng.next_f64() * (r2 - current),
+                    );
+                    if new_position[d] > config.upper_bound || new_position[d] < config.lower_bound
                     {
                         out_of_bounds = true;
                     }
+                } else {
+                    new_position.push(current_animal.position[d]);
                 }
             }
             if changed {
                 if out_of_bounds {
-                    animal.position =
+                    new_position =
                         random_position(config.lower_bound, config.upper_bound, config.dimension);
                 }
-                animal.fitness = fitness_evaluator.calculate_fitness(&animal.position);
+                fitness = fitness_evaluator.calculate_fitness(&new_position);
             }
-            animal
+            Animal {
+                position: new_position,
+                fitness,
+            }
         })
         .collect();
     find_best_solutions(population, new_population)
@@ -151,14 +166,15 @@ fn find_best_solutions(old_population: Vec<Animal>, new_population: Vec<Animal>)
     old_population
         .into_iter()
         .zip(new_population)
-        .map(|(old, new)| {
-            println!("old {:?} new {:?}", old, new);
-            if old.fitness > new.fitness {
-                new
-            } else {
-                old
-            }
-        })
+        .map(
+            |(old, new)| {
+                if old.fitness > new.fitness {
+                    new
+                } else {
+                    old
+                }
+            },
+        )
         .collect()
 }
 
@@ -174,10 +190,10 @@ fn get_two_unique_numbers(i: usize, length: usize, mut rng: impl Rng) -> (usize,
     let mut r1 = i;
     let mut r2 = i;
     while r1 == i {
-        r1 = rng.gen_range(0, length) as usize;
+        r1 = rng.gen_range(0, length);
     }
     while r2 == r1 || r2 == i {
-        r2 = rng.gen_range(0, length) as usize;
+        r2 = rng.gen_range(0, length);
     }
     (r1, r2)
 }
@@ -187,10 +203,9 @@ fn generate_random_population(
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
-    let mut population = vec![];
-    for _ in 0..size {
-        population.push(generate_random_animal(&fitness_evaluator, &config));
-    }
+    let mut population: Vec<Animal> = (0..size)
+        .map(|_| generate_random_animal(&fitness_evaluator, &config))
+        .collect();
     sort_solutions_by_fitness(&mut population);
     population
 }
@@ -208,9 +223,8 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut best_animal = population[0].clone();
-    let mut i = 1;
     let mut rng = thread_rng();
-    while i <= config.iterations {
+    for i in 0..config.iterations {
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
         sort_solutions_by_fitness(&mut population);
         population = animal_replacement(
@@ -232,7 +246,6 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         if fitness_evaluator.end_criteria() {
             break;
         }
-        i += 1;
     }
     fitness_evaluator
         .sampler
