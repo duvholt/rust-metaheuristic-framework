@@ -6,6 +6,7 @@ extern crate serde_json;
 
 use ansi_term::Color::{Blue, Green, Red, Yellow};
 use clap::{App, Arg, ArgMatches};
+use rustoa::algorithms::amo;
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::ewa;
@@ -182,6 +183,10 @@ fn start_algorithm() -> Result<(), &'static str> {
             mopso::subcommand,
             AlgorithmType::Multi(mopso::run_subcommand),
         ),
+    );
+    algorithms.insert(
+        "amo",
+        (amo::subcommand, AlgorithmType::Single(amo::run_subcommand)),
     );
 
     let mut test_functions_map = HashMap::new();

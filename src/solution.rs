@@ -68,6 +68,14 @@ where
         .collect()
 }
 
+pub fn sort_solutions_by_fitness(solutions: &mut [impl Solution<f64>]) {
+    solutions.sort_unstable_by(|a, b| {
+        a.fitness()
+            .partial_cmp(&b.fitness())
+            .unwrap_or(Ordering::Equal)
+    })
+}
+
 // Structs used for testing
 #[derive(Clone, Debug)]
 pub struct SingleTestSolution {
@@ -81,6 +89,12 @@ impl SingleTestSolution {
             position: vec![fitness, fitness],
             fitness,
         }
+    }
+}
+
+impl PartialEq for SingleTestSolution {
+    fn eq(&self, other: &SingleTestSolution) -> bool {
+        self.fitness == other.fitness
     }
 }
 
@@ -116,5 +130,37 @@ impl Solution<Vec<f64>> for MultiTestSolution {
 
     fn fitness(&self) -> &Vec<f64> {
         &self.fitness
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sort_population_by_fitness_test() {
+        let mut population = vec![
+            SingleTestSolution {
+                position: vec![4.0, 2.6],
+                fitness: 1000.0,
+            },
+            SingleTestSolution {
+                position: vec![3.0, 2.3],
+                fitness: 100.0,
+            },
+            SingleTestSolution {
+                position: vec![2.0, 2.1],
+                fitness: 10.0,
+            },
+            SingleTestSolution {
+                position: vec![1.0, 2.0],
+                fitness: 1.0,
+            },
+        ];
+        let mut population_clone = population.clone();
+        population_clone.swap(0, 3);
+        population_clone.swap(2, 1);
+        sort_solutions_by_fitness(&mut population);
+        assert_eq!(population, population_clone);
     }
 }
