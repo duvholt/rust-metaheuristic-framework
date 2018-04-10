@@ -369,7 +369,12 @@ fn mutate_random(
 
 // TODO: Replace with generic sort
 
-fn sort_lions(population: &mut Vec<&mut Lion>) {
+fn sort_lions_mut(population: &mut Vec<&mut Lion>) {
+    population
+        .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+}
+
+fn sort_lions(population: &mut Vec<&Lion>) {
     population
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
@@ -381,7 +386,7 @@ fn defense_resident_male<'a>(
     let old_males_size = old_males.len();
     let mut males = old_males;
     males.append(&mut new_males);
-    sort_lions(&mut males);
+    sort_lions_mut(&mut males);
     let nomads = males.split_off(old_males_size);
     (males, nomads)
 }
@@ -447,6 +452,29 @@ fn migration<'a>(
         }
     }
     (prides, new_nomads)
+}
+
+fn assign_to_prides<'a>(
+    prides: Vec<Pride<'a>>,
+    mut nomad_females: Vec<&'a Lion>,
+    sex_rate: f64,
+    immigate_rate: f64,
+    mut rng: impl Rng,
+) -> Vec<Pride<'a>> {
+    let mut nomad_female_index = 0;
+    prides
+        .into_iter()
+        .map(|mut pride| {
+            let max_females = (sex_rate * pride.population.len() as f64) as usize;
+            let missing_females = (immigate_rate * max_females as f64) as usize;
+            for _ in 0..missing_females {
+                let i = rng.gen_range(0, nomad_females.len());
+                pride.population.insert(nomad_females[i]);
+                nomad_females.remove(i);
+            }
+            pride
+        })
+        .collect::<Vec<Pride<'a>>>()
 }
 
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
@@ -950,5 +978,44 @@ mod tests {
 
         assert_eq!(prides[0].population.len(), 4);
         assert_eq!(new_nomads.len(), 2);
+    }
+
+    #[test]
+    fn test_assigns_nomads_to_prides() {
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Male),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Male),
+            create_lion_with_sex(vec![7.0, 7.0], 7.0, Sex::Male),
+            create_lion_with_sex(vec![8.0, 8.0], 8.0, Sex::Female),
+            create_lion_with_sex(vec![9.0, 9.0], 9.0, Sex::Male),
+            create_lion_with_sex(vec![10.0, 10.0], 10.0, Sex::Female),
+        ];
+        let prides = vec![
+            Pride {
+                population: HashSet::from_iter(&population[..5]),
+            },
+            Pride {
+                population: HashSet::from_iter(&population[5..]),
+            },
+        ];
+        let nomads = vec![
+            create_lion_with_sex(vec![0.1, 0.3], 0.1, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.2, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.3, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.4, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.5, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.6, Sex::Female),
+        ];
+        let rng = create_rng();
+
+        let prides = assign_to_prides(prides, nomads.iter().collect(), 0.8, 0.5, rng);
+
+        assert_eq!(prides.len(), 2);
+        assert_eq!(prides[0].population.len(), 7);
+        assert_eq!(prides[1].population.len(), 7);
     }
 }
