@@ -422,6 +422,33 @@ fn defense_against_nomad_male<'a>(
     (prides, Nomad { population: nomad })
 }
 
+fn migration<'a>(
+    mut prides: Vec<Pride<'a>>,
+    sex_rate: f64,
+    immigate_rate: f64,
+    mut rng: impl Rng,
+) -> (Vec<Pride<'a>>, HashSet<&Lion>) {
+    let mut new_nomads: HashSet<&Lion> = HashSet::new();
+    for pride in prides.iter_mut() {
+        let max_females = (sex_rate * pride.population.len() as f64) as usize;
+        let females: Vec<_> = pride
+            .population
+            .iter()
+            .cloned()
+            .filter(|lion| lion.sex == Sex::Female)
+            .collect();
+        let surplus = females.len() - max_females;
+        let females_to_migrate = (immigate_rate * max_females as f64) as usize;
+        let total_migrate = surplus + females_to_migrate;
+        let migrated_females = seq::sample_iter(&mut rng, &females, total_migrate).unwrap();
+        for female in migrated_females {
+            pride.population.remove(female);
+            new_nomads.insert(female);
+        }
+    }
+    (prides, new_nomads)
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -873,5 +900,55 @@ mod tests {
             .collect();
         assert_eq!(females.len(), 3);
         assert!(nomad.population.contains(&worst_nomad));
+    }
+
+    #[test]
+    fn migrates_surplus() {
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
+        ];
+        let prides = vec![
+            Pride {
+                population: HashSet::from_iter(&population[..3]),
+            },
+            Pride {
+                population: HashSet::from_iter(&population[3..6]),
+            },
+        ];
+        let rng = create_rng();
+
+        let (prides, new_nomads) = migration(prides, 0.4, 0.0, rng);
+
+        assert_eq!(prides[0].population.len(), 3);
+        assert_eq!(prides[1].population.len(), 2);
+        assert_eq!(new_nomads.len(), 1);
+    }
+
+    #[test]
+    fn migrates_surplus_and_random() {
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
+        ];
+        let prides = vec![
+            Pride {
+                population: HashSet::from_iter(&population),
+            },
+        ];
+        let rng = create_rng();
+
+        let (prides, new_nomads) = migration(prides, 0.4, 0.5, rng);
+
+        assert_eq!(prides[0].population.len(), 4);
+        assert_eq!(new_nomads.len(), 2);
     }
 }
