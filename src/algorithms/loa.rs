@@ -477,6 +477,53 @@ fn assign_to_prides<'a>(
         .collect::<Vec<Pride<'a>>>()
 }
 
+fn equilibrium<'a>(
+    prides: Vec<Pride<'a>>,
+    nomad: Nomad<'a>,
+    config: &Config,
+    mut rng: impl Rng,
+) -> (Vec<Pride<'a>>, Nomad<'a>) {
+    let mut sorted_nomads = nomad.population.into_iter().collect();
+    sort_lions(&mut sorted_nomads);
+    let (sorted_females, sorted_males) = sorted_nomads.into_iter().fold(
+        (vec![], vec![]),
+        |(mut females, mut males), lion| {
+            if lion.sex == Sex::Female {
+                females.push(lion);
+            } else {
+                males.push(lion);
+            }
+            (females, males)
+        },
+    );
+
+    let females_for_prides = (config.population as f64 * (1.0 - config.nomad_percent)
+        * config.sex_rate * config.immigate_rate) as usize;
+
+    let prides = assign_to_prides(
+        prides,
+        sorted_females[..females_for_prides].to_vec(),
+        config.sex_rate,
+        config.immigate_rate,
+        &mut rng,
+    );
+
+    let nomad_males_count =
+        (config.population as f64 * config.nomad_percent * config.sex_rate) as usize;
+    let nomad_females_count =
+        (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate)) as usize;
+    let mut population = sorted_males[..nomad_males_count].to_vec();
+    population.extend(
+        sorted_females[females_for_prides..females_for_prides + nomad_females_count].iter(),
+    );
+    (
+        prides,
+        Nomad {
+            population: population.into_iter().collect(),
+        },
+    )
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let population = random_population(&config, &fitness_evaluator);
 }
@@ -1017,5 +1064,64 @@ mod tests {
         assert_eq!(prides.len(), 2);
         assert_eq!(prides[0].population.len(), 7);
         assert_eq!(prides[1].population.len(), 7);
+    }
+
+    #[test]
+    fn test_equilibrium() {
+        let population = vec![
+            create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
+            create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Male),
+            create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
+            create_lion_with_sex(vec![4.0, 4.0], 4.0, Sex::Female),
+            create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
+            create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Male),
+            create_lion_with_sex(vec![7.0, 7.0], 7.0, Sex::Male),
+            create_lion_with_sex(vec![8.0, 8.0], 8.0, Sex::Female),
+            create_lion_with_sex(vec![9.0, 9.0], 9.0, Sex::Male),
+            create_lion_with_sex(vec![10.0, 10.0], 10.0, Sex::Male),
+        ];
+        let prides = vec![
+            Pride {
+                population: HashSet::from_iter(&population[..5]),
+            },
+            Pride {
+                population: HashSet::from_iter(&population[5..]),
+            },
+        ];
+        let nomads = vec![
+            create_lion_with_sex(vec![0.1, 0.3], 0.1, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.2, Sex::Male),
+            create_lion_with_sex(vec![0.2, 0.3], 0.3, Sex::Male),
+            create_lion_with_sex(vec![0.2, 0.3], 0.4, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.5, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.6, Sex::Female),
+            create_lion_with_sex(vec![0.2, 0.3], 0.7, Sex::Male),
+            create_lion_with_sex(vec![0.2, 0.3], 0.8, Sex::Female),
+        ];
+        let nomad = Nomad {
+            population: HashSet::from_iter(&nomads),
+        };
+
+        let config = Config {
+            iterations: 100,
+            population: 15,
+            upper_bound: 1.0,
+            lower_bound: -1.0,
+            dimension: 2,
+            prides: 2,
+            nomad_percent: 0.2,
+            roaming_percent: 0.2,
+            mutation_probability: 0.2,
+            sex_rate: 0.8,
+            mating_probability: 0.3,
+            immigate_rate: 0.3,
+        };
+        let rng = create_rng();
+
+        let (prides, nomad) = equilibrium(prides, nomad, &config, rng);
+
+        assert_eq!(prides[0].population.len(), 6);
+        assert_eq!(prides[1].population.len(), 6);
+        assert_eq!(nomad.population.len(), 2);
     }
 }
