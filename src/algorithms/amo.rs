@@ -257,10 +257,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
 mod tests {
     use super::*;
     use rand::{SeedableRng, StdRng};
-    use statistics::sampler::{Sampler, SamplerMode};
-    use std::u64::MAX;
     use test::Bencher;
-    use test_functions::rosenbrock;
     use testing::utils::{create_evaluator, create_sampler};
 
     fn create_config() -> Config {
@@ -333,7 +330,7 @@ mod tests {
             },
         ];
 
-        let mut rng = create_seedable_rng();
+        let rng = create_seedable_rng();
         let new_population =
             animal_replacement(population, &best, rng, &fitness_evaluator, &config);
         assert_eq!(new_population[0].fitness, 3.0);
@@ -366,8 +363,19 @@ mod tests {
             },
         ];
 
-        let mut rng = create_seedable_rng();
+        let rng = create_seedable_rng();
         let next_generation = animal_migration(population, rng, &fitness_evaluator, &config);
         assert_eq!(next_generation[2].fitness, 5.0);
+    }
+
+    #[ignore]
+    #[bench]
+    fn bench_amo(b: &mut Bencher) {
+        b.iter(|| {
+            let sampler = create_sampler();
+            let evaluator = create_evaluator(&sampler);
+            let config = create_config();
+            run(config, &evaluator);
+        });
     }
 }
