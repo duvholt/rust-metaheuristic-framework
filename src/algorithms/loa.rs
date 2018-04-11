@@ -163,16 +163,18 @@ fn partition_lions(
     (nomad, prides)
 }
 
-fn find_hunters<'a>(prides: &'a Vec<Pride>, mut rng: impl Rng) -> Vec<&'a Lion> {
+fn find_hunters<'a>(prides: &'a mut Vec<Pride>, mut rng: impl Rng) -> Vec<(usize, Lion)> {
     prides
-        .iter()
-        .map(|pride| pride.random_female(&mut rng))
-        .filter(|female| female.is_some())
-        .map(|female| female.unwrap())
+        .iter_mut()
+        .enumerate()
+        .filter_map(|(i, pride)| {
+            let random_female = pride.random_female(&mut rng)?.clone();
+            Some((i, pride.population.take(&random_female).unwrap()))
+        })
         .collect()
 }
 
-fn calculate_prey_position(hunters: &Vec<&mut Lion>, dimensions: usize) -> Vec<f64> {
+fn calculate_prey_position(hunters: &Vec<&Lion>, dimensions: usize) -> Vec<f64> {
     hunters
         .iter()
         .fold(vec![0.0; dimensions], |prey, hunter| {
@@ -186,19 +188,19 @@ fn calculate_prey_position(hunters: &Vec<&mut Lion>, dimensions: usize) -> Vec<f
         .collect()
 }
 
-fn group_hunters(hunters: Vec<&mut Lion>, mut rng: impl Rng) -> Vec<Vec<&mut Lion>> {
+fn group_hunters(hunters: Vec<(usize, Lion)>, mut rng: impl Rng) -> Vec<Vec<(usize, Lion)>> {
     let mut groups = vec![vec![], vec![], vec![]];
-    for mut hunter in hunters {
+    for hunter in hunters.into_iter() {
         let index = rng.gen_range(0, 3);
         groups[index].push(hunter);
     }
     groups
 }
 
-fn find_center_group(groups: &Vec<Vec<&mut Lion>>) -> usize {
+fn find_center_group(groups: &Vec<Vec<(usize, Lion)>>) -> usize {
     let cumulative_fitness = groups
         .iter()
-        .map(|group| group.iter().map(|lion| lion.fitness).sum());
+        .map(|group| group.iter().map(|(_, lion)| lion.fitness).sum());
 
     // Find index of largest cumulative fitness
     let (index, _) = cumulative_fitness
@@ -247,16 +249,18 @@ fn update_prey(hunter: &Vec<f64>, prey: &Vec<f64>, pi: f64, mut rng: impl Rng) -
 }
 
 fn hunt(
-    hunters: Vec<&mut Lion>,
+    hunters: Vec<(usize, Lion)>,
     dimensions: usize,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
-) {
-    let mut prey = calculate_prey_position(&hunters, dimensions);
+) -> Vec<(usize, Lion)> {
+    let mut prey =
+        calculate_prey_position(&hunters.iter().map(|(_, lion)| lion).collect(), dimensions);
+    let mut new_hunters = Vec::with_capacity(hunters.len());
     let mut groups = group_hunters(hunters, &mut rng);
     let center_group_index = find_center_group(&groups);
-    for (i, group) in groups.iter_mut().enumerate() {
-        for mut hunter in group {
+    for (i, group) in groups.into_iter().enumerate() {
+        for (j, mut hunter) in group.into_iter() {
             let position = if i == center_group_index {
                 hunting_position_center(&hunter.position, &prey, &mut rng)
             } else {
@@ -267,8 +271,10 @@ fn hunt(
                 hunter.update_position(position, fitness);
                 prey = update_prey(&hunter.position, &prey, hunter.fitness - fitness, &mut rng);
             }
+            new_hunters.push((j, hunter));
         }
     }
+    new_hunters
 }
 
 fn calculate_tournament_size(lions: &[&mut Lion]) -> usize {
@@ -526,7 +532,17 @@ fn equilibrium(
 }
 
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
+    let mut rng = thread_rng();
     let population = random_population(&config, &fitness_evaluator);
+    let (nomad, mut prides) = partition_lions(&config, population, &mut rng);
+
+    for i in 0..config.iterations {
+        let hunters = find_hunters(&mut prides, &mut rng);
+        let hunters = hunt(hunters, config.dimension, &mut rng, &fitness_evaluator);
+        for (pride_index, hunter) in hunters.into_iter() {
+            prides[pride_index].population.insert(hunter);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -663,12 +679,12 @@ mod tests {
 
     #[test]
     fn finds_female_in_pride() {
-        let population = vec![
+        let mut population = vec![
             create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
             create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
-        let pride = Pride {
+        let mut pride = Pride {
             population: population.iter().cloned().collect(),
         };
         let mut rng = create_rng();
@@ -680,11 +696,11 @@ mod tests {
 
     #[test]
     fn does_not_find_female_in_pride() {
-        let population = vec![
+        let mut population = vec![
             create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
-        let pride = Pride {
+        let mut pride = Pride {
             population: population.into_iter().collect(),
         };
         let mut rng = create_rng();
@@ -704,7 +720,7 @@ mod tests {
             create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
             create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
         ];
-        let prides = vec![
+        let mut prides = vec![
             Pride {
                 population: population[..2].iter().cloned().collect(),
             },
@@ -717,11 +733,15 @@ mod tests {
         ];
         let rng = create_rng();
 
-        let hunters = find_hunters(&prides, rng);
+        let hunters = find_hunters(&mut prides, rng);
 
         assert_eq!(
             hunters,
-            vec![&population[1], &population[3], &population[5]]
+            vec![
+                (0, population[1].clone()),
+                (1, population[3].clone()),
+                (2, population[5].clone()),
+            ]
         );
     }
 
@@ -731,7 +751,7 @@ mod tests {
             create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
             create_lion_with_sex(vec![7.0, 2.0], 3.0, Sex::Female),
         ];
-        let hunters = population.iter_mut().map(|l| l).collect();
+        let hunters = population.iter().collect();
 
         let prey_position = calculate_prey_position(&hunters, 2);
 
@@ -746,7 +766,7 @@ mod tests {
             create_lion_with_sex(vec![3.0, 6.0], 7.0, Sex::Female),
             create_lion_with_sex(vec![2.0, 3.0], 4.0, Sex::Female),
         ];
-        let hunters: Vec<&mut Lion> = population.iter_mut().map(|l| l).collect();
+        let hunters: Vec<(usize, Lion)> = population.into_iter().map(|l| (0, l)).collect();
         let rng = create_rng();
 
         let groups = group_hunters(hunters, rng);
@@ -758,19 +778,13 @@ mod tests {
 
     #[test]
     fn selects_group_with_highest_fitness() {
-        let mut population = vec![
-            create_lion_with_sex(vec![3.0, 6.0], 6.0, Sex::Female),
-            create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
-            create_lion_with_sex(vec![2.0, 3.0], 5.0, Sex::Female),
-            create_lion_with_sex(vec![7.0, 1.0], 2.0, Sex::Female),
-        ];
-        let (first, last) = population.split_at_mut(2);
-        let (l1, l2) = first.split_at_mut(1);
-        let (l3, l4) = last.split_at_mut(1);
         let groups = vec![
-            vec![&mut l1[0]],
-            vec![&mut l2[0], &mut l3[0]],
-            vec![&mut l4[0]],
+            vec![(0, create_lion_with_sex(vec![3.0, 6.0], 6.0, Sex::Female))],
+            vec![
+                (1, create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female)),
+                (1, create_lion_with_sex(vec![2.0, 3.0], 5.0, Sex::Female)),
+            ],
+            vec![(2, create_lion_with_sex(vec![7.0, 1.0], 2.0, Sex::Female))],
         ];
 
         let center_index = find_center_group(&groups);
