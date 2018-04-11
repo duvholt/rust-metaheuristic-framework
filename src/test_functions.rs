@@ -12,14 +12,8 @@ pub fn ackley(x: &Vec<f64>) -> f64 {
 }
 
 pub fn rosenbrock(x: &Vec<f64>) -> f64 {
-    let a = 1.0;
-    let b = 100.0;
-    (0..x.len() / 2)
-        .map(|i| {
-            let i1 = 2 * i;
-            let i2 = i1 + 1;
-            b * (x[i1].powf(2.0) - x[i2]).powf(2.0) + (x[i1] - a).powf(2.0)
-        })
+    (0..x.len() - 1)
+        .map(|i| 100.0 * (x[i + 1] - x[i].powi(2)).powi(2) + (1.0 - x[i]).powi(2))
         .sum()
 }
 
