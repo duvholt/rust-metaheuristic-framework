@@ -96,24 +96,24 @@ impl PartialEq for Lion {
 impl Eq for Lion {}
 
 #[derive(Clone, Debug)]
-struct Pride<'a> {
-    population: HashSet<&'a Lion>,
+struct Pride {
+    population: HashSet<Lion>,
 }
 
-impl<'a> Pride<'a> {
-    fn random_female(&self, mut rng: impl Rng) -> Option<&'a Lion> {
+impl Pride {
+    fn random_female(&self, mut rng: impl Rng) -> Option<&Lion> {
         let females = self.population
             .iter()
-            .cloned()
             .filter(|lion| lion.sex == Sex::Female);
-        let sample = seq::sample_iter(&mut rng, females, 1).ok()?;
-        Some(sample.first()?)
+
+        let lion: Vec<&Lion> = seq::sample_iter(&mut rng, females, 1).ok()?;
+        Some(lion.first()?)
     }
 }
 
 #[derive(Debug)]
-struct Nomad<'a> {
-    population: HashSet<&'a Lion>,
+struct Nomad {
+    population: HashSet<Lion>,
 }
 
 fn random_population(config: &Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Lion> {
@@ -136,18 +136,19 @@ fn find_sex(r: f64, sex_rate: f64, nomad: bool) -> Sex {
     }
 }
 
-fn partition_lions<'a>(
+fn partition_lions(
     config: &Config,
-    population: &'a mut Vec<Lion>,
+    mut population: Vec<Lion>,
     rng: &mut impl Rng,
-) -> (Nomad<'a>, Vec<Pride<'a>>) {
+) -> (Nomad, Vec<Pride>) {
     let last_nomad_index = (population.len() as f64 * config.nomad_percent) as usize;
     for (i, lion) in population.iter_mut().enumerate() {
         let r: f64 = rng.gen();
         lion.sex = find_sex(r, config.sex_rate, i > last_nomad_index);
     }
+    let pride_lions = population.split_off(last_nomad_index);
     let nomad = Nomad {
-        population: HashSet::from_iter(population[..last_nomad_index].iter()),
+        population: population.into_iter().collect(),
     };
     let mut prides = vec![
         Pride {
@@ -155,7 +156,7 @@ fn partition_lions<'a>(
         };
         config.prides
     ];
-    for lion in population[last_nomad_index..].iter() {
+    for lion in pride_lions.into_iter() {
         let pride_index = rng.gen_range(0, config.prides);
         prides[pride_index].population.insert(lion);
     }
@@ -374,7 +375,7 @@ fn sort_lions_mut(population: &mut Vec<&mut Lion>) {
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
 
-fn sort_lions(population: &mut Vec<&Lion>) {
+fn sort_lions(population: &mut Vec<Lion>) {
     population
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
@@ -392,11 +393,11 @@ fn defense_resident_male<'a>(
 }
 
 fn defense_against_nomad_male<'a>(
-    mut prides: Vec<Pride<'a>>,
-    nomad: Nomad<'a>,
+    mut prides: Vec<Pride>,
+    nomad: Nomad,
     mut rng: impl Rng,
-) -> (Vec<Pride<'a>>, Nomad<'a>) {
-    let nomad: HashSet<_> = nomad
+) -> (Vec<Pride>, Nomad) {
+    let nomad: HashSet<Lion> = nomad
         .population
         .into_iter()
         .map(|nomad| {
@@ -404,13 +405,13 @@ fn defense_against_nomad_male<'a>(
                 if rng.gen() {
                     continue;
                 }
-                let mut swapped = None;
-                pride.population.retain(|&lion| {
+                let mut swapped: Option<Lion> = None;
+                pride.population.retain(|lion| {
                     if lion.sex != Sex::Male {
                         return true;
                     }
                     if swapped.is_none() && lion.fitness > nomad.fitness {
-                        swapped = Some(lion);
+                        swapped = Some(lion.clone());
                         false
                     } else {
                         true
@@ -428,12 +429,12 @@ fn defense_against_nomad_male<'a>(
 }
 
 fn migration<'a>(
-    mut prides: Vec<Pride<'a>>,
+    mut prides: Vec<Pride>,
     sex_rate: f64,
     immigate_rate: f64,
     mut rng: impl Rng,
-) -> (Vec<Pride<'a>>, HashSet<&Lion>) {
-    let mut new_nomads: HashSet<&Lion> = HashSet::new();
+) -> (Vec<Pride>, HashSet<Lion>) {
+    let mut new_nomads: HashSet<Lion> = HashSet::new();
     for pride in prides.iter_mut() {
         let max_females = (sex_rate * pride.population.len() as f64) as usize;
         let females: Vec<_> = pride
@@ -445,9 +446,9 @@ fn migration<'a>(
         let surplus = females.len() - max_females;
         let females_to_migrate = (immigate_rate * max_females as f64) as usize;
         let total_migrate = surplus + females_to_migrate;
-        let migrated_females = seq::sample_iter(&mut rng, &females, total_migrate).unwrap();
-        for female in migrated_females {
-            pride.population.remove(female);
+        let migrated_females = seq::sample_iter(&mut rng, females, total_migrate).unwrap();
+        for female in migrated_females.into_iter() {
+            pride.population.remove(&female);
             new_nomads.insert(female);
         }
     }
@@ -455,12 +456,12 @@ fn migration<'a>(
 }
 
 fn assign_to_prides<'a>(
-    prides: Vec<Pride<'a>>,
-    mut nomad_females: Vec<&'a Lion>,
+    prides: Vec<Pride>,
+    mut nomad_females: Vec<Lion>,
     sex_rate: f64,
     immigate_rate: f64,
     mut rng: impl Rng,
-) -> Vec<Pride<'a>> {
+) -> Vec<Pride> {
     let mut nomad_female_index = 0;
     prides
         .into_iter()
@@ -469,20 +470,20 @@ fn assign_to_prides<'a>(
             let missing_females = (immigate_rate * max_females as f64) as usize;
             for _ in 0..missing_females {
                 let i = rng.gen_range(0, nomad_females.len());
-                pride.population.insert(nomad_females[i]);
-                nomad_females.remove(i);
+                let nomad_female = nomad_females.remove(i);
+                pride.population.insert(nomad_female);
             }
             pride
         })
-        .collect::<Vec<Pride<'a>>>()
+        .collect::<Vec<Pride>>()
 }
 
-fn equilibrium<'a>(
-    prides: Vec<Pride<'a>>,
-    nomad: Nomad<'a>,
+fn equilibrium(
+    prides: Vec<Pride>,
+    nomad: Nomad,
     config: &Config,
     mut rng: impl Rng,
-) -> (Vec<Pride<'a>>, Nomad<'a>) {
+) -> (Vec<Pride>, Nomad) {
     let mut sorted_nomads = nomad.population.into_iter().collect();
     sort_lions(&mut sorted_nomads);
     let (sorted_females, sorted_males) = sorted_nomads.into_iter().fold(
@@ -512,9 +513,9 @@ fn equilibrium<'a>(
         (config.population as f64 * config.nomad_percent * config.sex_rate) as usize;
     let nomad_females_count =
         (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate)) as usize;
-    let mut population = sorted_males[..nomad_males_count].to_vec();
+    let mut population: Vec<Lion> = sorted_males[..nomad_males_count].to_vec();
     population.extend(
-        sorted_females[females_for_prides..females_for_prides + nomad_females_count].iter(),
+        sorted_females[females_for_prides..females_for_prides + nomad_females_count].to_vec(),
     );
     (
         prides,
@@ -591,10 +592,10 @@ mod tests {
     #[test]
     fn partitions_into_nomad_and_prides() {
         let config = create_config();
-        let mut population = create_population();
+        let population = create_population();
         let mut rng = create_rng();
 
-        let (nomad, prides) = partition_lions(&config, &mut population, &mut rng);
+        let (nomad, prides) = partition_lions(&config, population, &mut rng);
 
         assert_eq!(nomad.population.len(), 2);
         assert_eq!(prides.len(), 4);
@@ -661,7 +662,7 @@ mod tests {
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
         let pride = Pride {
-            population: HashSet::from_iter(&population),
+            population: population.iter().cloned().collect(),
         };
         let mut rng = create_rng();
 
@@ -677,7 +678,7 @@ mod tests {
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
         let pride = Pride {
-            population: HashSet::from_iter(&population),
+            population: population.into_iter().collect(),
         };
         let mut rng = create_rng();
 
@@ -698,13 +699,13 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population[..2]),
+                population: population[..2].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[2..4]),
+                population: population[2..4].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[4..6]),
+                population: population[4..6].iter().cloned().collect(),
             },
         ];
         let rng = create_rng();
@@ -886,7 +887,7 @@ mod tests {
             create_lion_with_sex(vec![3.0, 5.0, 2.1], 1.5, Sex::Male),
         ];
         let pride = Pride {
-            population: HashSet::from_iter(&population),
+            population: population.into_iter().collect(),
         };
         let mut rng = create_rng();
         let sampler = create_sampler();
@@ -943,13 +944,13 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population[..2]),
+                population: population[..2].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[2..4]),
+                population: population[2..4].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[4..6]),
+                population: population[4..6].iter().cloned().collect(),
             },
         ];
         let nomad_males = vec![
@@ -957,11 +958,11 @@ mod tests {
             create_lion_with_sex(vec![2.5, 1.3], 1.4, Sex::Male),
             create_lion_with_sex(vec![10.0, 10.0], 10.0, Sex::Male),
         ];
+        let worst_nomad = nomad_males[2].clone();
         let nomad = Nomad {
-            population: HashSet::from_iter(&nomad_males),
+            population: nomad_males.into_iter().collect(),
         };
         let rng = create_rng();
-        let worst_nomad = nomad_males[2].clone();
 
         let (prides, nomad) = defense_against_nomad_male(prides, nomad, rng);
 
@@ -989,10 +990,10 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population[..3]),
+                population: population[..3].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[3..6]),
+                population: population[3..6].iter().cloned().collect(),
             },
         ];
         let rng = create_rng();
@@ -1016,7 +1017,7 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population),
+                population: population.into_iter().collect(),
             },
         ];
         let rng = create_rng();
@@ -1043,10 +1044,10 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population[..5]),
+                population: population[..5].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[5..]),
+                population: population[5..].iter().cloned().collect(),
             },
         ];
         let nomads = vec![
@@ -1059,7 +1060,7 @@ mod tests {
         ];
         let rng = create_rng();
 
-        let prides = assign_to_prides(prides, nomads.iter().collect(), 0.8, 0.5, rng);
+        let prides = assign_to_prides(prides, nomads.iter().cloned().collect(), 0.8, 0.5, rng);
 
         assert_eq!(prides.len(), 2);
         assert_eq!(prides[0].population.len(), 7);
@@ -1082,13 +1083,13 @@ mod tests {
         ];
         let prides = vec![
             Pride {
-                population: HashSet::from_iter(&population[..5]),
+                population: population[..5].iter().cloned().collect(),
             },
             Pride {
-                population: HashSet::from_iter(&population[5..]),
+                population: population[5..].iter().cloned().collect(),
             },
         ];
-        let nomads = vec![
+        let nomads = [
             create_lion_with_sex(vec![0.1, 0.3], 0.1, Sex::Female),
             create_lion_with_sex(vec![0.2, 0.3], 0.2, Sex::Male),
             create_lion_with_sex(vec![0.2, 0.3], 0.3, Sex::Male),
@@ -1099,7 +1100,7 @@ mod tests {
             create_lion_with_sex(vec![0.2, 0.3], 0.8, Sex::Female),
         ];
         let nomad = Nomad {
-            population: HashSet::from_iter(&nomads),
+            population: nomads.iter().cloned().collect(),
         };
 
         let config = Config {
