@@ -9,6 +9,9 @@ pub enum Objective {
 pub struct Solutions {
     pub solutions: Vec<SolutionJSON>,
     pub test_function: String,
+    pub plot_bounds: bool,
+    pub upper_bound: f64,
+    pub lower_bound: f64,
 }
 
 #[derive(Serialize, Clone)]
