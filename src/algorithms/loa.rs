@@ -316,7 +316,7 @@ fn roam_pride(
 }
 
 fn min_value(val1: f64, val2: f64) -> f64 {
-    if val1 > val2 {
+    if val1 < val2 {
         val1
     } else {
         val2
@@ -576,6 +576,13 @@ mod tests {
         let mut lion = Lion::new(position, fitness);
         lion.sex = sex;
         lion
+    }
+
+    #[test]
+    fn min_value_returns_min() {
+        let val = min_value(0.2, 0.3);
+
+        assert_eq!(val, 0.2);
     }
 
     #[test]
