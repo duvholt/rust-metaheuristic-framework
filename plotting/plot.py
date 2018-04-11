@@ -23,8 +23,13 @@ def plot_json_solutions(json_solutions):
                        float(s['fitness'][0])], json_solutions['solutions'])
     ))
 
-    max_x, max_y, _ = solutions.max(axis=0)
-    min_x, min_y, _ = solutions.min(axis=0)
+    if json_solutions['plot_bounds']:
+        max_x = max_y = json_solutions['upper_bound']
+        min_x = min_y = json_solutions['lower_bound']
+    else:
+        max_x, max_y, _ = solutions.max(axis=0)
+        min_x, min_y, _ = solutions.min(axis=0)
+
     padding = (max_y - min_y) * 0.1
     linspace_size = 50
     X = np.linspace(min_x - padding, max_x + padding, linspace_size)

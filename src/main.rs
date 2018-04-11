@@ -32,12 +32,22 @@ enum AlgorithmType {
     Multi(AlgorithmRun<Vec<f64>>),
 }
 
-fn write_solutions(filename: &str, solutions: Vec<SolutionJSON>, test_function: String) {
+fn write_solutions(
+    filename: &str,
+    solutions: Vec<SolutionJSON>,
+    test_function: String,
+    plot_bounds: bool,
+    upper_bound: f64,
+    lower_bound: f64,
+) {
     println!("Writing solutions to {}", filename);
     let mut file = File::create(filename).unwrap();
     let solutions_struct = Solutions {
         solutions,
         test_function,
+        plot_bounds,
+        upper_bound,
+        lower_bound,
     };
     let json_solutions = serde_json::to_string(&solutions_struct).unwrap();
     file.write_all(json_solutions.as_bytes()).unwrap();
@@ -141,6 +151,11 @@ fn arguments(
                 .help("Number of samples")
                 .default_value("30")
                 .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("plot-bounds")
+                .long("plot-bounds")
+                .help("Extends the plot to include the upper and lower bounds"),
         )
         .arg(
             Arg::with_name("verbose")
@@ -354,7 +369,14 @@ fn start_algorithm() -> Result<(), &'static str> {
             );
         }
     }
-    write_solutions("solutions.json", solutions, test_function_name);
+    write_solutions(
+        "solutions.json",
+        solutions,
+        test_function_name,
+        matches.is_present("plot-bounds"),
+        common.upper_bound,
+        common.lower_bound,
+    );
     Ok(())
 }
 
