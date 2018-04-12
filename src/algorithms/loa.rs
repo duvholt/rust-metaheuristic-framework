@@ -1,5 +1,7 @@
+use crossover::uniform;
 use fitness_evaluation::FitnessEvaluator;
 use position::{euclidean_distance, perpendicular_position, random_position};
+use rand::distributions::{IndependentSample, Normal};
 use rand::{seq, thread_rng, Rng};
 use selection::tournament_selection;
 use solution::Solution;
@@ -289,8 +291,8 @@ fn hunt(
 }
 
 fn calculate_tournament_size(lions: &[Lion]) -> usize {
-    let Kj: usize = lions.iter().map(|lion| lion.has_improved() as usize).sum();
-    max(2, (Kj as f64 / 2.0).ceil() as usize)
+    let kj: usize = lions.iter().map(|lion| lion.has_improved() as usize).sum();
+    max(2, (kj as f64 / 2.0).ceil() as usize)
 }
 
 fn move_towards_safe_place(lion: &Lion, selected_lion: &Lion, mut rng: impl Rng) -> Vec<f64> {
@@ -386,6 +388,24 @@ fn mutate_random(
             }
         })
         .collect()
+}
+
+fn mate(
+    female: &Lion,
+    males: &[Lion],
+    fitness_evaluator: &FitnessEvaluator<f64>,
+    mut rng: impl Rng,
+) -> (Lion, Lion) {
+    let normal = Normal::new(0.5, 0.1);
+    let beta = normal.ind_sample(&mut rng);
+    let males = vec![&rng.choose(males).unwrap().position];
+    let (offspring1, offspring2) = uniform(&female.position, &males, beta);
+    let fitness1 = fitness_evaluator.calculate_fitness(&offspring1);
+    let fitness2 = fitness_evaluator.calculate_fitness(&offspring2);
+    (
+        Lion::new(offspring1, fitness1),
+        Lion::new(offspring2, fitness2),
+    )
 }
 
 // TODO: Replace with generic sort
@@ -591,8 +611,16 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
                     let fitness = fitness_evaluator.calculate_fitness(&position);
                     lion.update_position(position, fitness);
                 }
+                let mut new_lions = females
+                    .iter()
+                    .flat_map(|female| {
+                        let (lion1, lion2) = mate(&female, &males, &fitness_evaluator, &mut rng);
+                        vec![lion1, lion2]
+                    })
+                    .collect();
                 let mut population = males;
                 population.append(&mut females);
+                population.append(&mut new_lions);
                 Pride {
                     population: population.into_iter().collect(),
                 }
@@ -1201,5 +1229,28 @@ mod tests {
         assert_eq!(prides[0].population.len(), 6);
         assert_eq!(prides[1].population.len(), 6);
         assert_eq!(nomad.population.len(), 2);
+    }
+
+    #[test]
+    fn test_mate() {
+        let female = create_lion_with_sex(vec![0.5, 0.8], 1.0, Sex::Female);
+        let males = vec![
+            create_lion_with_sex(vec![1.5, 1.8], 2.0, Sex::Male),
+            // create_lion_with_sex(vec![2.5, 2.8], 3.0),
+        ];
+        let sampler = create_sampler();
+        let evaluator = create_evaluator(&sampler);
+        let rng = create_rng();
+
+        let (offspring1, offspring2) = mate(&female, &males, &evaluator, rng);
+
+        assert_eq!(
+            offspring1.position,
+            vec![0.8038002274057862, 1.1038002274057863]
+        );
+        assert_eq!(
+            offspring2.position,
+            vec![1.1961997725942137, 1.4961997725942138]
+        );
     }
 }
