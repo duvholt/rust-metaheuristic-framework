@@ -25,7 +25,7 @@ pub fn perpendicular_position(position: &Vec<f64>, mut rng: impl Rng) -> Vec<f64
 
         let pos_d = position[d];
         let perp_d = perpendicular[d];
-        let dot_d = (pos_d * perp_d);
+        let dot_d = pos_d * perp_d;
 
         // Calculate new value
         let mut new_perp_d = -(dot - dot_d) / (pos_d);

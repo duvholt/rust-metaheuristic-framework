@@ -6,10 +6,8 @@ use solution::Solution;
 use std::cmp::Ordering;
 use std::cmp::max;
 use std::collections::HashSet;
-use std::collections::hash_set::Iter;
 use std::f64::consts::PI;
 use std::hash;
-use std::iter::{Filter, FromIterator};
 use std::mem;
 
 struct Config {
@@ -270,7 +268,7 @@ fn hunt(
     let mut prey =
         calculate_prey_position(&hunters.iter().map(|(_, lion)| lion).collect(), dimensions);
     let mut new_hunters = Vec::with_capacity(hunters.len());
-    let mut groups = group_hunters(hunters, &mut rng);
+    let groups = group_hunters(hunters, &mut rng);
     let center_group_index = find_center_group(&groups);
     for (i, group) in groups.into_iter().enumerate() {
         for (j, mut hunter) in group.into_iter() {
@@ -313,13 +311,13 @@ fn move_towards_safe_place(lion: &Lion, selected_lion: &Lion, mut rng: impl Rng)
 
 fn roam_pride(
     lion: &mut Lion,
-    pride: &Pride,
+    pride: &Vec<Lion>,
     roaming_percent: f64,
     fitness_evaluator: &FitnessEvaluator<f64>,
     mut rng: impl Rng,
 ) {
-    let roaming_count = (roaming_percent * pride.population.len() as f64) as usize;
-    let selected = seq::sample_iter(&mut rng, &pride.population, roaming_count).unwrap();
+    let roaming_count = (roaming_percent * pride.len() as f64) as usize;
+    let selected = seq::sample_iter(&mut rng, pride.iter(), roaming_count).unwrap();
     let roam_positions: Vec<_> = selected
         .into_iter()
         .map(|lion| &lion.best_position)
@@ -484,7 +482,6 @@ fn assign_to_prides<'a>(
     immigate_rate: f64,
     mut rng: impl Rng,
 ) -> Vec<Pride> {
-    let mut nomad_female_index = 0;
     prides
         .into_iter()
         .map(|mut pride| {
@@ -547,29 +544,60 @@ fn equilibrium(
     )
 }
 
+fn partition_on_sex(lions: Vec<Lion>) -> (Vec<Lion>, Vec<Lion>) {
+    let mut males = vec![];
+    let mut females = vec![];
+    for lion in lions {
+        match lion.sex {
+            Sex::Male => males.push(lion),
+            Sex::Female => females.push(lion),
+            Sex::None => panic!("Tried to partiton lion with None as sex"),
+        }
+    }
+    (males, females)
+}
+
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let mut rng = thread_rng();
     let population = random_population(&config, &fitness_evaluator);
-    let (nomad, mut prides) = partition_lions(&config, population, &mut rng);
+    let (_nomad, mut prides) = partition_lions(&config, population, &mut rng);
 
-    for i in 0..config.iterations {
+    for _ in 0..config.iterations {
         let hunters = find_hunters(&mut prides, &mut rng);
         let hunters = hunt(hunters, config.dimension, &mut rng, &fitness_evaluator);
-        for pride in prides.iter_mut() {
-            let mut lions: Vec<Lion> = pride.population.iter().cloned().collect();
-            let tournament_size = calculate_tournament_size(&lions);
-            let (_, selected) = tournament_selection(&lions, tournament_size, &mut rng);
-            let lion_positons = lions.iter().map(|lion| {
-                let position = move_towards_safe_place(&lion, &selected, &mut rng);
-                (lion, position)
-            });
-            for (lion, position) in lion_positons {
-                let mut lion = pride.population.take(lion).unwrap();
-                let fitness = fitness_evaluator.calculate_fitness(&position);
-                lion.update_position(position, fitness);
-                pride.population.insert(lion);
-            }
-        }
+        // TODO: Recreate pride for each iter
+        prides = prides
+            .into_iter()
+            .map(|pride| {
+                let lions: Vec<Lion> = pride.population.into_iter().collect();
+                let (mut males, mut females) = partition_on_sex(lions.clone());
+                for mut male in males.iter_mut() {
+                    // TODO: Should roam entire pride?
+                    roam_pride(
+                        &mut male,
+                        &lions,
+                        config.roaming_percent,
+                        &fitness_evaluator,
+                        &mut rng,
+                    );
+                }
+                let selected = {
+                    let tournament_size = calculate_tournament_size(&females);
+                    let (_, selected) = tournament_selection(&females, tournament_size, &mut rng);
+                    selected.clone()
+                };
+                for lion in females.iter_mut() {
+                    let position = move_towards_safe_place(&lion, &selected, &mut rng);
+                    let fitness = fitness_evaluator.calculate_fitness(&position);
+                    lion.update_position(position, fitness);
+                }
+                let mut population = males;
+                population.append(&mut females);
+                Pride {
+                    population: population.into_iter().collect(),
+                }
+            })
+            .collect();
         for (pride_index, hunter) in hunters {
             prides[pride_index].population.insert(hunter);
         }
@@ -710,12 +738,12 @@ mod tests {
 
     #[test]
     fn finds_female_in_pride() {
-        let mut population = vec![
+        let population = vec![
             create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
             create_lion_with_sex(vec![2.0, 2.0], 2.0, Sex::Female),
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
-        let mut pride = Pride {
+        let pride = Pride {
             population: population.iter().cloned().collect(),
         };
         let mut rng = create_rng();
@@ -727,11 +755,11 @@ mod tests {
 
     #[test]
     fn does_not_find_female_in_pride() {
-        let mut population = vec![
+        let population = vec![
             create_lion_with_sex(vec![1.0, 1.0], 1.0, Sex::Male),
             create_lion_with_sex(vec![3.0, 3.0], 3.0, Sex::Male),
         ];
-        let mut pride = Pride {
+        let pride = Pride {
             population: population.into_iter().collect(),
         };
         let mut rng = create_rng();
@@ -778,7 +806,7 @@ mod tests {
 
     #[test]
     fn calculates_prey_position_correctly() {
-        let mut population = vec![
+        let population = vec![
             create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
             create_lion_with_sex(vec![7.0, 2.0], 3.0, Sex::Female),
         ];
@@ -791,7 +819,7 @@ mod tests {
 
     #[test]
     fn partitions_hunters_randomly() {
-        let mut population = vec![
+        let population = vec![
             create_lion_with_sex(vec![2.0, 3.0], 3.0, Sex::Female),
             create_lion_with_sex(vec![7.0, 1.0], 2.0, Sex::Female),
             create_lion_with_sex(vec![3.0, 6.0], 7.0, Sex::Female),
@@ -890,7 +918,7 @@ mod tests {
     fn moves_lion() {
         let mut lion = Lion::new(vec![2.0, 3.0, 4.0], 2.0);
         let selected_lion = Lion::new(vec![1.0, 6.0, 2.0], 1.0);
-        let mut rng = create_rng();
+        let rng = create_rng();
 
         let position = move_towards_safe_place(&mut lion, &selected_lion, rng);
 
@@ -904,7 +932,7 @@ mod tests {
     #[test]
     fn counts_improved_lions() {
         let mut lion1 = Lion::new(vec![0.1, 0.2, 0.31], 0.31);
-        let mut lion2 = Lion::new(vec![0.1, 0.2, 0.32], 0.32);
+        let lion2 = Lion::new(vec![0.1, 0.2, 0.32], 0.32);
         let mut lion3 = Lion::new(vec![0.1, 0.2, 0.33], 0.33);
         lion1.update_position(vec![0.1, 0.2, 0.21], 0.21);
         lion3.update_position(vec![0.1, 0.2, 0.23], 0.23);
@@ -920,7 +948,7 @@ mod tests {
         let best = create_lion_with_sex(vec![0.2, 0.1, 0.0], 0.1, Sex::Male);
         let mut rng = create_rng();
         let sampler = create_sampler();
-        let mut fitness_evaluator = create_evaluator(&sampler);
+        let fitness_evaluator = create_evaluator(&sampler);
 
         let original_position = lion.position.clone();
         roam_nomad(&mut lion, &best, -10.0, 10.0, &fitness_evaluator, &mut rng);
@@ -938,15 +966,12 @@ mod tests {
             create_lion_with_sex(vec![4.0, 1.0, 0.1], 2.4, Sex::Male),
             create_lion_with_sex(vec![3.0, 5.0, 2.1], 1.5, Sex::Male),
         ];
-        let pride = Pride {
-            population: population.into_iter().collect(),
-        };
         let mut rng = create_rng();
         let sampler = create_sampler();
-        let mut fitness_evaluator = create_evaluator(&sampler);
+        let fitness_evaluator = create_evaluator(&sampler);
 
         let original_position = lion.position.clone();
-        roam_pride(&mut lion, &pride, 0.4, &fitness_evaluator, &mut rng);
+        roam_pride(&mut lion, &population, 0.4, &fitness_evaluator, &mut rng);
 
         assert!(lion.position != original_position);
     }
