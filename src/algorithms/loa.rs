@@ -12,6 +12,7 @@ use std::f64::consts::PI;
 use std::hash;
 use std::mem;
 
+#[derive(Debug)]
 struct Config {
     iterations: i64,
     population: usize,
@@ -393,18 +394,33 @@ fn mutate_random(
 fn mate(
     female: &Lion,
     males: &[Lion],
+    config: &Config,
     fitness_evaluator: &FitnessEvaluator<f64>,
     mut rng: impl Rng,
 ) -> (Lion, Lion) {
     let normal = Normal::new(0.5, 0.1);
     let beta = normal.ind_sample(&mut rng);
     let males = vec![&rng.choose(males).unwrap().position];
-    let (offspring1, offspring2) = uniform(&female.position, &males, beta);
-    let fitness1 = fitness_evaluator.calculate_fitness(&offspring1);
-    let fitness2 = fitness_evaluator.calculate_fitness(&offspring2);
+    let (position1, position2) = uniform(&female.position, &males, beta);
+    let position1 = mutate_random(
+        &position1,
+        config.mutation_probability,
+        config.lower_bound,
+        config.upper_bound,
+        &mut rng,
+    );
+    let position2 = mutate_random(
+        &position2,
+        config.mutation_probability,
+        config.lower_bound,
+        config.upper_bound,
+        &mut rng,
+    );
+    let fitness1 = fitness_evaluator.calculate_fitness(&position1);
+    let fitness2 = fitness_evaluator.calculate_fitness(&position2);
     (
-        Lion::new(offspring1, fitness1),
-        Lion::new(offspring2, fitness2),
+        Lion::new(position1, fitness1),
+        Lion::new(position2, fitness2),
     )
 }
 
@@ -614,8 +630,13 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
                 let mut new_lions = females
                     .iter()
                     .flat_map(|female| {
-                        let (lion1, lion2) = mate(&female, &males, &fitness_evaluator, &mut rng);
-                        vec![lion1, lion2]
+                        let (lion1, lion2) =
+                            mate(&female, &males, &config, &fitness_evaluator, &mut rng);
+                        let mut lions = vec![lion1, lion2];
+                        rng.shuffle(&mut lions);
+                        lions[0].sex = Sex::Female;
+                        lions[1].sex = Sex::Male;
+                        lions
                     })
                     .collect();
                 let mut population = males;
@@ -1238,15 +1259,16 @@ mod tests {
             create_lion_with_sex(vec![1.5, 1.8], 2.0, Sex::Male),
             // create_lion_with_sex(vec![2.5, 2.8], 3.0),
         ];
+        let config = create_config();
         let sampler = create_sampler();
         let evaluator = create_evaluator(&sampler);
         let rng = create_rng();
 
-        let (offspring1, offspring2) = mate(&female, &males, &evaluator, rng);
+        let (offspring1, offspring2) = mate(&female, &males, &config, &evaluator, rng);
 
         assert_eq!(
             offspring1.position,
-            vec![0.8038002274057862, 1.1038002274057863]
+            vec![0.8038002274057862, 0.09380622409375228]
         );
         assert_eq!(
             offspring2.position,
