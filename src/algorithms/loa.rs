@@ -766,13 +766,18 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 let mut new_lions = females
                     .iter()
                     .flat_map(|female| {
-                        let (lion1, lion2) =
-                            mate(&female, &males, &config, &fitness_evaluator, &mut rng);
-                        let mut lions = vec![lion1, lion2];
-                        rng.shuffle(&mut lions);
-                        lions[0].sex = Sex::Female;
-                        lions[1].sex = Sex::Male;
-                        lions
+                        let r: f64 = rng.gen();
+                        if r < config.mating_probability {
+                            let (lion1, lion2) =
+                                mate(&female, &males, &config, &fitness_evaluator, &mut rng);
+                            let mut lions = vec![lion1, lion2];
+                            rng.shuffle(&mut lions);
+                            lions[0].sex = Sex::Female;
+                            lions[1].sex = Sex::Male;
+                            lions
+                        } else {
+                            vec![]
+                        }
                     })
                     .collect();
                 let (mut new_males, mut new_females) = partition_on_sex(new_lions);
