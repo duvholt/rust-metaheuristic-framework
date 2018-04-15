@@ -436,14 +436,11 @@ fn sort_lions(population: &mut Vec<Lion>) {
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
 
-fn defense_resident_male<'a>(
-    old_males: Vec<&'a mut Lion>,
-    mut new_males: Vec<&'a mut Lion>,
-) -> (Vec<&'a mut Lion>, Vec<&'a mut Lion>) {
+fn defense_resident_male(old_males: Vec<Lion>, mut new_males: Vec<Lion>) -> (Vec<Lion>, Vec<Lion>) {
     let old_males_size = old_males.len();
     let mut males = old_males;
     males.append(&mut new_males);
-    sort_lions_mut(&mut males);
+    sort_lions(&mut males);
     let nomads = males.split_off(old_males_size);
     (males, nomads)
 }
@@ -596,19 +593,17 @@ fn partition_on_sex(lions: Vec<Lion>) -> (Vec<Lion>, Vec<Lion>) {
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
     let mut rng = thread_rng();
     let population = random_population(&config, &fitness_evaluator);
-    let (_nomad, mut prides) = partition_lions(&config, population, &mut rng);
+    let (mut nomad, mut prides) = partition_lions(&config, population, &mut rng);
 
     for _ in 0..config.iterations {
         let hunters = find_hunters(&mut prides, &mut rng);
         let hunters = hunt(hunters, config.dimension, &mut rng, &fitness_evaluator);
-        // TODO: Recreate pride for each iter
         prides = prides
             .into_iter()
             .map(|pride| {
                 let lions: Vec<Lion> = pride.population.into_iter().collect();
                 let (mut males, mut females) = partition_on_sex(lions.clone());
                 for mut male in males.iter_mut() {
-                    // TODO: Should roam entire pride?
                     roam_pride(
                         &mut male,
                         &lions,
@@ -639,9 +634,12 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
                         lions
                     })
                     .collect();
+                let (mut new_males, mut new_females) = partition_on_sex(new_lions);
+                let (males, new_nomad) = defense_resident_male(males, new_males);
                 let mut population = males;
                 population.append(&mut females);
-                population.append(&mut new_lions);
+                population.append(&mut new_females);
+                nomad.population.extend(new_nomad);
                 Pride {
                     population: population.into_iter().collect(),
                 }
@@ -650,6 +648,32 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
         for (pride_index, hunter) in hunters {
             prides[pride_index].population.insert(hunter);
         }
+        let best = nomad
+            .population
+            .iter()
+            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
+            .unwrap()
+            .clone();
+        nomad = Nomad {
+            population: nomad
+                .population
+                .into_iter()
+                .map(|mut nomad_lion| {
+                    roam_nomad(
+                        &mut nomad_lion,
+                        &best,
+                        config.lower_bound,
+                        config.upper_bound,
+                        &fitness_evaluator,
+                        &mut rng,
+                    );
+                    nomad_lion
+                })
+                .collect(),
+        };
+        let (new_prides, new_nomad) = defense_against_nomad_male(prides, nomad, &mut rng);
+        prides = new_prides;
+        nomad = new_nomad;
     }
 }
 
@@ -1037,17 +1061,16 @@ mod tests {
 
     #[test]
     fn defends_against_resident_males() {
-        let mut population = vec![
+        let old_males = vec![
             create_lion_with_sex(vec![0.5, 0.5], 0.5, Sex::Male),
             create_lion_with_sex(vec![0.3, 0.3], 0.3, Sex::Male),
             create_lion_with_sex(vec![0.2, 0.2], 0.2, Sex::Male),
+        ];
+        let new_males = vec![
             create_lion_with_sex(vec![0.4, 0.4], 0.4, Sex::Male),
             create_lion_with_sex(vec![0.6, 0.6], 0.6, Sex::Male),
             create_lion_with_sex(vec![0.1, 0.1], 0.1, Sex::Male),
         ];
-        let (old_males, new_males) = population.split_at_mut(3);
-        let old_males: Vec<&mut Lion> = old_males.iter_mut().map(|lion| lion).collect();
-        let new_males: Vec<&mut Lion> = new_males.iter_mut().map(|lion| lion).collect();
 
         let (pride_males, nomads) = defense_resident_male(old_males, new_males);
 
