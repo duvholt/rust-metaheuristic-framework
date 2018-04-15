@@ -9,6 +9,7 @@ use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
 use rustoa::algorithms::ewa;
+use rustoa::algorithms::loa;
 use rustoa::algorithms::mopso;
 use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
@@ -175,6 +176,10 @@ fn start_algorithm() -> Result<(), &'static str> {
     algorithms.insert(
         "sa",
         (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
+    );
+    algorithms.insert(
+        "loa",
+        (loa::subcommand, AlgorithmType::Single(loa::run_subcommand)),
     );
     algorithms.insert(
         "mopso",

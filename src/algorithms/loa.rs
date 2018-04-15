@@ -1,16 +1,110 @@
+use clap::{App, Arg, ArgMatches, SubCommand};
+use config::CommonConfig;
 use crossover::uniform;
 use fitness_evaluation::FitnessEvaluator;
-use position::{euclidean_distance, perpendicular_position, random_position};
+use position::{euclidean_distance, limit_position, perpendicular_position, random_position};
 use rand::distributions::{IndependentSample, Normal};
 use rand::{seq, thread_rng, Rng};
 use selection::tournament_selection;
-use solution::Solution;
+use solution::{Solution, SolutionJSON};
 use std::cmp::Ordering;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::f64::consts::PI;
 use std::hash;
 use std::mem;
+
+pub fn subcommand(name: &str) -> App<'static, 'static> {
+    SubCommand::with_name(name)
+        .about("lion optimization algorithm")
+        .arg(
+            Arg::with_name("prides")
+                .long("prides")
+                .value_name("prides")
+                .help("prides constant")
+                .default_value("4")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("nomad_percent")
+                .long("nomad_percent")
+                .value_name("nomad_percent")
+                .help("nomad_percent constant")
+                .default_value("0.2")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("roaming_percent")
+                .long("roaming_percent")
+                .value_name("roaming_percent")
+                .help("roaming_percent constant")
+                .default_value("0.2")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("mutation")
+                .long("mutation")
+                .value_name("mutation")
+                .help("mutation constant")
+                .default_value("0.2")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("sex_rate")
+                .long("sex_rate")
+                .value_name("sex_rate")
+                .help("sex_rate constant")
+                .default_value("0.8")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("mating")
+                .long("mating")
+                .value_name("mating")
+                .help("mating constant")
+                .default_value("0.3")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("immigrate_rate")
+                .long("immigrate_rate")
+                .value_name("immigrate_rate")
+                .help("immigrate_rate constant")
+                .default_value("0.4")
+                .takes_value(true),
+        )
+}
+
+pub fn run_subcommand(
+    common: &CommonConfig,
+    function_evaluator: &FitnessEvaluator<f64>,
+    sub_m: &ArgMatches,
+) -> Vec<SolutionJSON> {
+    let prides = value_t_or_exit!(sub_m, "prides", usize);
+    let nomad_percent = value_t_or_exit!(sub_m, "nomad_percent", f64);
+    let roaming_percent = value_t_or_exit!(sub_m, "roaming_percent", f64);
+    let mutation = value_t_or_exit!(sub_m, "mutation", f64);
+    let sex_rate = value_t_or_exit!(sub_m, "sex_rate", f64);
+    let mating = value_t_or_exit!(sub_m, "mating", f64);
+    let immigrate_rate = value_t_or_exit!(sub_m, "immigrate_rate", f64);
+
+    let config = Config {
+        upper_bound: common.upper_bound,
+        lower_bound: common.lower_bound,
+        dimension: common.dimension,
+        iterations: common.iterations,
+        population: common.population,
+        prides,
+        nomad_percent,
+        roaming_percent,
+        mutation_probability: mutation,
+        sex_rate,
+        mating_probability: mating,
+        immigate_rate: immigrate_rate,
+    };
+    println!("Running LOA with {:?}", config);
+    run(config, &function_evaluator)
+}
 
 #[derive(Debug)]
 struct Config {
@@ -158,7 +252,7 @@ fn partition_lions(
     let last_nomad_index = (population.len() as f64 * config.nomad_percent) as usize;
     for (i, lion) in population.iter_mut().enumerate() {
         let r: f64 = rng.gen();
-        lion.sex = find_sex(r, config.sex_rate, i > last_nomad_index);
+        lion.sex = find_sex(r, config.sex_rate, i <= last_nomad_index);
     }
     let pride_lions = population.split_off(last_nomad_index);
     let nomad = Nomad {
@@ -246,7 +340,9 @@ fn hunting_position_center(hunter: &Vec<f64>, prey: &Vec<f64>, mut rng: impl Rng
         .iter()
         .zip(prey)
         .map(|(hunter_i, prey_i)| {
-            if *hunter_i < *prey_i {
+            if *hunter_i == *prey_i {
+                *hunter_i
+            } else if *hunter_i < *prey_i {
                 rng.gen_range(*hunter_i, *prey_i)
             } else {
                 rng.gen_range(*prey_i, *hunter_i)
@@ -316,6 +412,8 @@ fn roam_pride(
     lion: &mut Lion,
     pride: &Vec<Lion>,
     roaming_percent: f64,
+    lower_bound: f64,
+    upper_bound: f64,
     fitness_evaluator: &FitnessEvaluator<f64>,
     mut rng: impl Rng,
 ) {
@@ -327,12 +425,17 @@ fn roam_pride(
         .collect();
     for roam_position in roam_positions {
         let distance = euclidean_distance(&lion.position, &roam_position);
-        let x = rng.gen_range(0.0, 2.0 * distance);
+        let x = if distance != 0.0 {
+            rng.gen_range(0.0, 2.0 * distance)
+        } else {
+            0.0
+        };
         let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
-        let position: Vec<_> = lion.position
+        let mut position: Vec<_> = lion.position
             .iter()
             .map(|p_i| p_i + x * theta.tan())
             .collect();
+        limit_position(&mut position, lower_bound, upper_bound);
         let fitness = fitness_evaluator.calculate_fitness(&position);
         lion.update_position(position, fitness);
     }
@@ -590,38 +693,65 @@ fn partition_on_sex(lions: Vec<Lion>) -> (Vec<Lion>, Vec<Lion>) {
     (males, females)
 }
 
-fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
+fn combine_population(prides: &Vec<Pride>, nomad: &Nomad) -> Vec<Lion> {
+    let mut population = vec![];
+    population.extend(nomad.population.iter().cloned());
+    for pride in prides {
+        population.extend(pride.population.iter().cloned());
+    }
+    population
+}
+
+fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut rng = thread_rng();
     let population = random_population(&config, &fitness_evaluator);
     let (mut nomad, mut prides) = partition_lions(&config, population, &mut rng);
 
-    for _ in 0..config.iterations {
+    for i in 0..config.iterations {
+        println!(
+            "New iter {} {} {}",
+            i,
+            nomad.population.len(),
+            prides[0].population.len()
+        );
         let hunters = find_hunters(&mut prides, &mut rng);
         let hunters = hunt(hunters, config.dimension, &mut rng, &fitness_evaluator);
+        for (pride_index, hunter) in hunters {
+            prides[pride_index].population.insert(hunter);
+        }
         prides = prides
             .into_iter()
             .map(|pride| {
                 let lions: Vec<Lion> = pride.population.into_iter().collect();
+                println!("Partion");
                 let (mut males, mut females) = partition_on_sex(lions.clone());
+                println!("Females {} Males {}", females.len(), males.len());
+                println!("Roam");
                 for mut male in males.iter_mut() {
                     roam_pride(
                         &mut male,
                         &lions,
                         config.roaming_percent,
+                        config.lower_bound,
+                        config.upper_bound,
                         &fitness_evaluator,
                         &mut rng,
                     );
                 }
+                println!("Select");
                 let selected = {
                     let tournament_size = calculate_tournament_size(&females);
                     let (_, selected) = tournament_selection(&females, tournament_size, &mut rng);
                     selected.clone()
                 };
+                println!("Move safe");
                 for lion in females.iter_mut() {
-                    let position = move_towards_safe_place(&lion, &selected, &mut rng);
+                    let mut position = move_towards_safe_place(&lion, &selected, &mut rng);
+                    limit_position(&mut position, config.lower_bound, config.upper_bound);
                     let fitness = fitness_evaluator.calculate_fitness(&position);
                     lion.update_position(position, fitness);
                 }
+                println!("Mate");
                 let mut new_lions = females
                     .iter()
                     .flat_map(|female| {
@@ -636,6 +766,7 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
                     .collect();
                 let (mut new_males, mut new_females) = partition_on_sex(new_lions);
                 let (males, new_nomad) = defense_resident_male(males, new_males);
+                println!("Add");
                 let mut population = males;
                 population.append(&mut females);
                 population.append(&mut new_females);
@@ -645,9 +776,6 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
                 }
             })
             .collect();
-        for (pride_index, hunter) in hunters {
-            prides[pride_index].population.insert(hunter);
-        }
         let best = nomad
             .population
             .iter()
@@ -674,7 +802,14 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) {
         let (new_prides, new_nomad) = defense_against_nomad_male(prides, nomad, &mut rng);
         prides = new_prides;
         nomad = new_nomad;
+        fitness_evaluator
+            .sampler
+            .population_sample_single(i, &combine_population(&prides, &nomad));
     }
+    fitness_evaluator
+        .sampler
+        .population_sample_single(config.iterations, &combine_population(&prides, &nomad));
+    vec![]
 }
 
 #[cfg(test)]
@@ -1044,7 +1179,15 @@ mod tests {
         let fitness_evaluator = create_evaluator(&sampler);
 
         let original_position = lion.position.clone();
-        roam_pride(&mut lion, &population, 0.4, &fitness_evaluator, &mut rng);
+        roam_pride(
+            &mut lion,
+            &population,
+            0.4,
+            -10.0,
+            10.0,
+            &fitness_evaluator,
+            &mut rng,
+        );
 
         assert!(lion.position != original_position);
     }
