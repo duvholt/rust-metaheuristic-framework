@@ -13,12 +13,17 @@ fn dot_product(vec1: &Vec<f64>, vec2: &Vec<f64>) -> f64 {
     vec1.iter().zip(vec2).map(|(v1, v2)| v1 * v2).sum()
 }
 
+fn approx_zero(value: f64) -> bool {
+    let eps = 0.000001;
+    (value >= 0.0 && value < eps) || (value < 0.0 && value > -eps)
+}
+
 // Creates perpendicular vector with euclidean norm of 1
 pub fn perpendicular_position(position: &Vec<f64>, mut rng: impl Rng) -> Vec<f64> {
     // Create random vector with values -1.0 to 1.0
     let mut perpendicular = position.iter().map(|_| rng.gen_range(-1.0, 1.0)).collect();
     // Loop until dot product is 0 (vector is perpendicular)
-    while dot_product(&position, &perpendicular) != 0.0 {
+    while !approx_zero(dot_product(&position, &perpendicular)) {
         let dot = dot_product(&position, &perpendicular);
         // Random dimension
         let d = rng.gen_range(0, position.len());
@@ -50,6 +55,16 @@ pub fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
         .map(|(a1, b1)| (b1 - a1).powi(2))
         .sum::<f64>()
         .sqrt()
+}
+
+pub fn limit_position(position: &mut Vec<f64>, lower_bound: f64, upper_bound: f64) {
+    for value in position {
+        if *value > upper_bound {
+            *value = upper_bound;
+        } else if *value < lower_bound {
+            *value = lower_bound;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -120,6 +135,15 @@ mod tests {
 
         assert_approx_eq!(dot_product(&position, &perpendicular), 0.0);
         assert_approx_eq!(perpendicular.iter().map(|a| a.powi(2)).sum::<f64>(), 1.0);
+    }
+
+    #[test]
+    fn test_limit_position() {
+        let mut position = vec![0.5, 1.0, 10.0, -5.0, -3.0, 4.0, -10.0];
+
+        limit_position(&mut position, -4.0, 4.0);
+
+        assert_eq!(position, vec![0.5, 1.0, 4.0, -4.0, -3.0, 4.0, -4.0]);
     }
 
     #[bench]
