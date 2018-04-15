@@ -9,7 +9,7 @@ use selection::tournament_selection;
 use solution::{Solution, SolutionJSON};
 use std::cmp::Ordering;
 use std::cmp::max;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::f64::consts::PI;
 use std::hash;
 use std::mem;
@@ -197,15 +197,27 @@ impl hash::Hash for Lion {
 
 impl PartialEq for Lion {
     fn eq(&self, other: &Lion) -> bool {
-        self.key() == other.key()
+        self.position == other.position
     }
 }
 
 impl Eq for Lion {}
 
+impl PartialOrd for Lion {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.fitness.partial_cmp(&other.fitness)
+    }
+}
+
+impl Ord for Lion {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(&other).unwrap_or(Ordering::Equal)
+    }
+}
+
 #[derive(Clone, Debug)]
 struct Pride {
-    population: HashSet<Lion>,
+    population: BTreeSet<Lion>,
 }
 
 impl Pride {
@@ -221,7 +233,7 @@ impl Pride {
 
 #[derive(Debug)]
 struct Nomad {
-    population: HashSet<Lion>,
+    population: BTreeSet<Lion>,
 }
 
 fn random_population(config: &Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Lion> {
@@ -260,7 +272,7 @@ fn partition_lions(
     };
     let mut prides = vec![
         Pride {
-            population: HashSet::new()
+            population: BTreeSet::new()
         };
         config.prides
     ];
@@ -553,7 +565,7 @@ fn defense_against_nomad_male<'a>(
     nomad: Nomad,
     mut rng: impl Rng,
 ) -> (Vec<Pride>, Nomad) {
-    let nomad: HashSet<Lion> = nomad
+    let nomad: BTreeSet<Lion> = nomad
         .population
         .into_iter()
         .map(|nomad| {
@@ -562,18 +574,17 @@ fn defense_against_nomad_male<'a>(
                     continue;
                 }
                 let mut swapped: Option<Lion> = None;
-                pride.population.retain(|lion| {
+                for lion in pride.population.iter() {
                     if lion.sex != Sex::Male {
-                        return true;
+                        continue;
                     }
-                    if swapped.is_none() && lion.fitness > nomad.fitness {
+                    if lion.fitness > nomad.fitness {
                         swapped = Some(lion.clone());
-                        false
-                    } else {
-                        true
+                        break;
                     }
-                });
+                }
                 if let Some(male) = swapped {
+                    pride.population.remove(&male);
                     pride.population.insert(nomad);
                     return male;
                 }
@@ -589,8 +600,8 @@ fn migration<'a>(
     sex_rate: f64,
     immigate_rate: f64,
     mut rng: impl Rng,
-) -> (Vec<Pride>, HashSet<Lion>) {
-    let mut new_nomads: HashSet<Lion> = HashSet::new();
+) -> (Vec<Pride>, BTreeSet<Lion>) {
+    let mut new_nomads: BTreeSet<Lion> = BTreeSet::new();
     for pride in prides.iter_mut() {
         let max_females = (sex_rate * pride.population.len() as f64) as usize;
         let females: Vec<_> = pride
@@ -1259,10 +1270,10 @@ mod tests {
         let (prides, nomad) = defense_against_nomad_male(prides, nomad, rng);
 
         assert_eq!(nomad.population.len(), 3);
-        let pride_population: HashSet<_> =
+        let pride_population: BTreeSet<_> =
             prides.iter().flat_map(|pride| &pride.population).collect();
         assert_eq!(pride_population.len(), 6);
-        let females: HashSet<_> = pride_population
+        let females: BTreeSet<_> = pride_population
             .iter()
             .filter(|lion| lion.sex == Sex::Female)
             .collect();
