@@ -99,7 +99,11 @@ impl<'a> Worms<'a> {
     }
 
     fn random_position(&self) -> Vec<f64> {
-        random_position(-self.config.space, self.config.space, self.config.dimensions)
+        random_position(
+            -self.config.space,
+            self.config.space,
+            self.config.dimensions,
+        )
     }
 
     fn create_worm(&self, position: Vec<f64>) -> Worm {
