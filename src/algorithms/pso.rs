@@ -106,7 +106,11 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        random_position(-self.config.space, self.config.space, self.config.dimensions)
+        random_position(
+            -self.config.space,
+            self.config.space,
+            self.config.dimensions,
+        )
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
