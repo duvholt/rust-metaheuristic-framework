@@ -75,7 +75,7 @@ pub fn run_subcommand(
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         verbose: common.verbose,
@@ -96,7 +96,7 @@ type Velocity = Position;
 pub struct Config {
     pub upper_bound: f64,
     pub lower_bound: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
     pub iterations: i64,
     pub population: usize,
     pub c1: f64,
@@ -147,7 +147,7 @@ impl<'a> Swarm<'a> {
         random_position(
             self.config.lower_bound,
             self.config.upper_bound,
-            self.config.dimension,
+            self.config.dimensions,
         )
     }
 
@@ -159,7 +159,7 @@ impl<'a> Swarm<'a> {
         (0..size)
             .map(|_| {
                 let position = self.random_position();
-                let velocity = vec![0.0; self.config.dimension];
+                let velocity = vec![0.0; self.config.dimensions];
                 let fitness = self.calculate_fitness(&position);
                 Particle {
                     position: position.to_vec(),
@@ -179,7 +179,7 @@ impl<'a> Swarm<'a> {
     fn mutate(&self, position: &Vec<f64>, pm: f64) -> Vec<f64> {
         let diff_position = pm * (self.config.upper_bound - self.config.lower_bound);
         let mut rng = thread_rng();
-        let j: usize = rng.gen_range(0, self.config.dimension);
+        let j: usize = rng.gen_range(0, self.config.dimensions);
 
         let mut lb = position[j] - diff_position;
         if lb < self.config.lower_bound {
@@ -199,7 +199,7 @@ impl<'a> Swarm<'a> {
         let mut rng = thread_rng();
         let mut velocity = vec![];
         let mut position = vec![];
-        for i in 0..self.config.dimension {
+        for i in 0..self.config.dimensions {
             let r1 = rng.next_f64();
             let r2 = rng.next_f64();
             let v = particle.velocity[i];
@@ -320,7 +320,7 @@ mod tests {
         Config {
             upper_bound: 4.0,
             lower_bound: -4.0,
-            dimension: 2,
+            dimensions: 2,
             iterations: 20,
             population: 50,
             archive_size: 50,
