@@ -461,16 +461,14 @@ fn roam_pride(
         .map(|lion| &lion.best_position)
         .collect();
     for roam_position in roam_positions {
-        let distance = euclidean_distance(&lion.position, &roam_position);
-        let x = if distance != 0.0 {
-            rng.gen_range(0.0, 2.0 * distance)
-        } else {
-            0.0
-        };
-        let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
         let mut position: Vec<_> = lion.position
             .iter()
-            .map(|p_i| p_i + x * theta.tan())
+            .zip(roam_position)
+            .map(|(p_i, r_i)| {
+                let x = r_i - p_i;
+                let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
+                p_i + x * theta.tan()
+            })
             .collect();
         limit_position(&mut position, lower_bound, upper_bound);
         let fitness = fitness_evaluator.calculate_fitness(&position);
