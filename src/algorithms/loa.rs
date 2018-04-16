@@ -129,6 +129,10 @@ impl Config {
     fn males_in_pride(&self) -> usize {
         ((self.population as f64 * (1.0 - self.nomad_percent) * (1.0 - self.sex_rate)) / self.prides as f64).round() as usize
     }
+
+    fn pride_size(&self) -> usize {
+        (self.population as f64 * (1.0 - self.nomad_percent) / self.prides as f64) as usize
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -262,12 +266,24 @@ fn find_sex(r: f64, sex_rate: f64, nomad: bool) -> Sex {
 fn partition_lions(
     config: &Config,
     mut population: Vec<Lion>,
-    rng: &mut impl Rng,
 ) -> (Nomad, Vec<Pride>) {
     let last_nomad_index = (population.len() as f64 * config.nomad_percent) as usize;
     for (i, lion) in population.iter_mut().enumerate() {
-        let r: f64 = rng.gen();
-        lion.sex = find_sex(r, config.sex_rate, i <= last_nomad_index);
+        let sex = if i > last_nomad_index {
+            if (i - last_nomad_index) % config.pride_size() < config.females_in_pride() {
+                Sex::Female
+            } else {
+                Sex::Male
+            }
+        } else {
+            let females_in_nomad = (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate as f64)).round() as usize;
+            if i < females_in_nomad {
+                Sex::Female
+            } else {
+                Sex::Male
+            }
+        };
+        lion.sex = sex;
     }
     let pride_lions = population.split_off(last_nomad_index);
     let nomad = Nomad {
@@ -279,9 +295,9 @@ fn partition_lions(
         };
         config.prides
     ];
-    for lion in pride_lions.into_iter() {
-        let pride_index = rng.gen_range(0, config.prides);
-        prides[pride_index].population.push(lion);
+    let pride_size = config.pride_size();
+    for (pride_index, mut lions) in pride_lions.chunks(pride_size).into_iter().enumerate() {
+        prides[pride_index].population.append(&mut lions.into_iter().cloned().collect());
     }
     (nomad, prides)
 }
@@ -744,7 +760,7 @@ fn print_info(prides: &Vec<Pride>, nomad: &Nomad) {
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut rng = thread_rng();
     let population = random_population(&config, &fitness_evaluator);
-    let (mut nomad, mut prides) = partition_lions(&config, population, &mut rng);
+    let (mut nomad, mut prides) = partition_lions(&config, population);
 
     println!("Males in pride {}", config.males_in_pride());
     println!("Females in pride {}", config.females_in_pride());
@@ -972,9 +988,8 @@ mod tests {
     fn partitions_into_nomad_and_prides() {
         let config = create_config();
         let population = create_population();
-        let mut rng = create_rng();
 
-        let (nomad, prides) = partition_lions(&config, population, &mut rng);
+        let (nomad, prides) = partition_lions(&config, population);
 
         assert_eq!(nomad.population.len(), 2);
         assert_eq!(prides.len(), 4);
@@ -1441,7 +1456,7 @@ mod tests {
         ];
         let rng = create_rng();
 
-        let prides = assign_to_prides(prides, nomads.iter().cloned().collect(), 0.8, 0.5, rng);
+        let prides = assign_to_prides(prides, nomads.iter().cloned().collect(), 5, 0.5, rng);
 
         assert_eq!(prides.len(), 2);
         assert_eq!(prides[0].population.len(), 7);
