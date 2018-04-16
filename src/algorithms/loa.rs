@@ -395,6 +395,8 @@ fn update_prey(hunter: &Vec<f64>, prey: &Vec<f64>, pi: f64, mut rng: impl Rng) -
 fn hunt(
     hunters: Vec<(usize, Lion)>,
     dimensions: usize,
+    lower_bound: f64,
+    upper_bound: f64,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
 ) -> Vec<(usize, Lion)> {
@@ -405,15 +407,16 @@ fn hunt(
     let center_group_index = find_center_group(&groups);
     for (i, group) in groups.into_iter().enumerate() {
         for (j, mut hunter) in group.into_iter() {
-            let position = if i == center_group_index {
+            let mut position = if i == center_group_index {
                 hunting_position_center(&hunter.position, &prey, &mut rng)
             } else {
                 hunting_position_wing(&hunter.position, &prey, &mut rng)
             };
+            limit_position(&mut position, lower_bound, upper_bound);
             let fitness = fitness_evaluator.calculate_fitness(&position);
             if fitness < hunter.fitness {
-                hunter.update_position(position, fitness);
                 prey = update_prey(&hunter.position, &prey, hunter.fitness - fitness, &mut rng);
+                hunter.update_position(position, fitness);
             }
             new_hunters.push((j, hunter));
         }
@@ -772,7 +775,7 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         );
         print_info(&prides, &nomad);
         let hunters = find_hunters(&mut prides, &mut rng);
-        let hunters = hunt(hunters, config.dimension, &mut rng, &fitness_evaluator);
+        let hunters = hunt(hunters, config.dimension, config.lower_bound, config.upper_bound, &mut rng, &fitness_evaluator);
         for (pride_index, hunter) in hunters {
             prides[pride_index].population.push(hunter);
         }
