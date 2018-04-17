@@ -1,5 +1,7 @@
-use rand::{thread_rng, Rng};
+use rand::{seq, thread_rng, Rng};
 use solution::Solution;
+use std::cmp::Ordering;
+use std::fmt::Debug;
 
 pub fn roulette_wheel<S>(population: &[S]) -> (usize, &S)
 where
@@ -18,9 +20,31 @@ where
     (population.len() - 1, population.last().unwrap())
 }
 
+pub fn tournament_selection<S>(
+    population: &[S],
+    tournament_size: usize,
+    mut rng: impl Rng,
+) -> (usize, &S)
+where
+    S: Solution<f64> + Debug,
+{
+    let selected =
+        seq::sample_iter(&mut rng, population.iter().enumerate(), tournament_size).unwrap();
+    selected
+        .iter()
+        .cloned()
+        .min_by(|(_, s1): &(usize, &S), (_, s2): &(usize, &S)| {
+            s1.fitness()
+                .partial_cmp(&s2.fitness())
+                .unwrap_or(Ordering::Equal)
+        })
+        .unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{SeedableRng, StdRng};
 
     #[derive(Debug, Clone)]
     struct TestFitness {
@@ -53,6 +77,11 @@ mod tests {
         }
     }
 
+    fn create_rng() -> StdRng {
+        let seed: &[_] = &[1, 2, 3, 4];
+        SeedableRng::from_seed(seed)
+    }
+
     #[test]
     fn roulette_wheel_selects_largest() {
         let fitness1 = TestFitness::new(0.0);
@@ -75,5 +104,37 @@ mod tests {
         let (index, selected) = roulette_wheel(&population).clone();
         assert_eq!(index, 1);
         assert_eq!(selected, &fitness2);
+    }
+
+    #[test]
+    fn tournament_selection_selects_global_best() {
+        let mut rng = create_rng();
+        let population = vec![
+            TestFitness::new(0.4),
+            TestFitness::new(0.1),
+            TestFitness::new(0.3),
+            TestFitness::new(0.2),
+        ];
+
+        let (index, selected) = tournament_selection(&population, 4, &mut rng);
+
+        assert_eq!(index, 1);
+        assert_eq!(selected, &population[1]);
+    }
+
+    #[test]
+    fn tournament_selection_selects_local_best() {
+        let mut rng = create_rng();
+        let population = vec![
+            TestFitness::new(0.4),
+            TestFitness::new(0.1),
+            TestFitness::new(0.3),
+            TestFitness::new(0.2),
+        ];
+
+        let (index, selected) = tournament_selection(&population, 2, &mut rng);
+
+        assert_eq!(index, 3);
+        assert_eq!(selected, &population[3]);
     }
 }
