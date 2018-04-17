@@ -38,14 +38,23 @@ pub fn crowding_distance(solutions: &[impl Solution<Vec<f64>>]) -> Vec<f64> {
     distances
 }
 
-#[derive(Debug)]
-struct DominatedSort<S>
-where
-    S: Solution<Vec<f64>> + Debug,
-{
-    solution: S,
-    rank: usize,
-    distance: f64,
+fn crowding_comparison(
+    (distance1, rank1): (f64, usize),
+    (distance2, rank2): (f64, usize),
+) -> Ordering {
+    if rank1 < rank2 {
+        Ordering::Less
+    } else if rank1 == rank2 {
+        if distance1 > distance2 {
+            Ordering::Less
+        } else if distance1 == distance2 {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    } else {
+        Ordering::Greater
+    }
 }
 
 pub fn sort<S>(solutions: Vec<S>) -> Vec<S>
@@ -55,35 +64,12 @@ where
     let distances = crowding_distance(&solutions);
     let ranks = calculate_ranks(&solutions);
 
-    let mut dominated_sort: Vec<_> = solutions
-        .into_iter()
-        .zip(distances)
-        .zip(ranks)
-        .map(|((solution, distance), rank)| DominatedSort {
-            solution,
-            rank,
-            distance,
+    izip!(solutions, distances, ranks)
+        .sorted_by(|(_, distance1, rank1), (_, distance2, rank2)| {
+            crowding_comparison((*distance1, *rank1), (*distance2, *rank2))
         })
-        .collect();
-    println!("{:?}", dominated_sort);
-    dominated_sort.sort_unstable_by(|d1, d2| {
-        if d1.rank < d2.rank {
-            Ordering::Less
-        } else if d1.rank == d2.rank {
-            if d1.distance > d2.distance {
-                Ordering::Less
-            } else if d1.distance == d2.distance {
-                Ordering::Equal
-            } else {
-                Ordering::Greater
-            }
-        } else {
-            Ordering::Greater
-        }
-    });
-    dominated_sort
         .into_iter()
-        .map(|d| d.solution.clone())
+        .map(|(solution, _, _)| solution)
         .collect()
 }
 
