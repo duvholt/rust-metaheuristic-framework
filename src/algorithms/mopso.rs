@@ -3,9 +3,11 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use domination::dominates;
 use fitness_evaluation::FitnessEvaluator;
+use ordered_float::NotNaN;
 use position::random_position;
 use rand::{thread_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
+use std::hash;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -116,6 +118,27 @@ struct Particle {
     velocity: Velocity,
 }
 
+impl hash::Hash for Particle {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: hash::Hasher,
+    {
+        position_to_notnan(&self.position).hash(state)
+    }
+}
+
+fn position_to_notnan(vector: &Vec<f64>) -> Vec<NotNaN<f64>> {
+    (0..vector.len()).map(|i| NotNaN::from(vector[i])).collect()
+}
+
+impl PartialEq for Particle {
+    fn eq(&self, other: &Particle) -> bool {
+        self.position == other.position
+    }
+}
+
+impl Eq for Particle {}
+
 impl Solution<Vec<f64>> for Particle {
     fn fitness(&self) -> &Vec<f64> {
         &self.fitness
@@ -172,7 +195,7 @@ impl<'a> Swarm<'a> {
     }
 
     pub fn solutions(&self) -> Vec<SolutionJSON> {
-        let solutions = self.archive.population.to_vec();
+        let solutions = self.archive.get_population();
         multi_solutions_to_json(solutions)
     }
 
@@ -291,14 +314,14 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
             println!(
                 "Iteration {} Archive size {}",
                 i,
-                swarm.archive.population.len()
+                swarm.archive.get_population().len()
             );
         }
         swarm.archive.update(&swarm.population);
         swarm.update_positions(i);
         fitness_evaluator
             .sampler
-            .population_sample_multi(i, &swarm.archive.population);
+            .population_sample_multi(i, &swarm.archive.get_population());
         if fitness_evaluator.end_criteria() {
             break;
         }
@@ -306,7 +329,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
     }
     fitness_evaluator
         .sampler
-        .population_sample_multi(config.iterations, &swarm.archive.population);
+        .population_sample_multi(config.iterations, &swarm.archive.get_population());
     swarm.solutions()
 }
 

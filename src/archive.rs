@@ -5,18 +5,22 @@ use solution::Solution;
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
 use std::fmt::Debug;
+use std::hash;
 
-#[derive(Debug, PartialEq, Clone)]
-struct Hypercube {
-    set: HashSet<usize>,
+#[derive(Debug, Clone)]
+struct Hypercube<M>
+where
+    M: Solution<Vec<f64>> + Eq + hash::Hash,
+{
+    set: HashSet<M>,
     // TODO: Consider splitting Solution trait into
     // Solution and Position to get rid of this useless field
     position: Vec<f64>,
     fitness: f64,
 }
 
-impl Hypercube {
-    fn new(set: HashSet<usize>) -> Hypercube {
+impl<M: Solution<Vec<f64>> + Eq + hash::Hash + Clone> Hypercube<M> {
+    fn new(set: HashSet<M>) -> Hypercube<M> {
         let fitness = Hypercube::calculate_fitness(&set);
         Hypercube {
             set,
@@ -25,28 +29,28 @@ impl Hypercube {
         }
     }
 
-    fn calculate_fitness(set: &HashSet<usize>) -> f64 {
+    fn calculate_fitness(set: &HashSet<M>) -> f64 {
         10.0 / set.len() as f64
     }
 
-    fn insert(&mut self, value: usize) {
+    fn insert(&mut self, value: M) {
         self.set.insert(value);
         self.fitness = Hypercube::calculate_fitness(&self.set);
     }
 
-    fn remove(&mut self, value: &usize) {
+    fn remove(&mut self, value: &M) {
         self.set.remove(value);
         self.fitness = Hypercube::calculate_fitness(&self.set);
     }
 
-    fn random(&self) -> usize {
+    fn random(&self) -> M {
         let mut rng = thread_rng();
-        let hypercube_vec: Vec<usize> = self.set.iter().cloned().collect();
-        *rng.choose(&hypercube_vec).unwrap()
+        let hypercube_vec: Vec<M> = self.set.iter().cloned().collect();
+        rng.choose(&hypercube_vec).unwrap().clone()
     }
 }
 
-impl Solution<f64> for Hypercube {
+impl<M: Solution<Vec<f64>> + Eq + hash::Hash> Solution<f64> for Hypercube<M> {
     fn fitness(&self) -> &f64 {
         &self.fitness
     }
@@ -56,23 +60,29 @@ impl Solution<f64> for Hypercube {
     }
 }
 
+impl<M: Solution<Vec<f64>> + Eq + hash::Hash> PartialEq for Hypercube<M> {
+    fn eq(&self, other: &Hypercube<M>) -> bool {
+        self.position == other.position
+    }
+}
+
+impl<M: Solution<Vec<f64>> + Eq + hash::Hash> Eq for Hypercube<M> {}
+
 pub struct Archive<M>
 where
-    M: Solution<Vec<f64>>,
+    M: Solution<Vec<f64>> + Eq + hash::Hash,
 {
-    pub population: Vec<M>,
-    hypercube_map: HashMap<Vec<usize>, Hypercube>,
+    hypercube_map: HashMap<Vec<usize>, Hypercube<M>>,
     population_size: usize,
     divisions: usize,
 }
 
 impl<M> Archive<M>
 where
-    M: Solution<Vec<f64>> + Clone + Debug,
+    M: Solution<Vec<f64>> + Clone + Debug + Eq + hash::Hash,
 {
     pub fn new(population_size: usize, divisions: usize) -> Archive<M> {
         Archive {
-            population: vec![],
             hypercube_map: HashMap::new(),
             population_size,
             divisions,
@@ -90,10 +100,11 @@ where
         }
     }
 
-    fn update_hypercube(&mut self) {
-        let mut min = vec![INFINITY; self.population[0].fitness().len()];
-        let mut max = vec![-INFINITY; self.population[0].fitness().len()];
-        for solution in &self.population {
+    fn update_hypercube(&mut self, population: &[M]) {
+        let objectives = population[0].fitness().len();
+        let mut min = vec![INFINITY; objectives];
+        let mut max = vec![-INFINITY; objectives];
+        for solution in population {
             for (f_i, &fitness) in solution.fitness().iter().enumerate() {
                 if min[f_i] > fitness {
                     min[f_i] = fitness;
@@ -104,7 +115,7 @@ where
             }
         }
         self.hypercube_map.clear();
-        for (s_i, solution) in self.population.iter().enumerate() {
+        for solution in population.iter() {
             let hyper_indices: Vec<usize> = solution
                 .fitness()
                 .iter()
@@ -114,139 +125,141 @@ where
             let hypercube = self.hypercube_map
                 .entry(hyper_indices)
                 .or_insert(Hypercube::new(HashSet::new()));
-            hypercube.insert(s_i);
+            hypercube.insert(solution.clone());
         }
     }
 
     fn prune_population(&mut self) {
-        while self.population.len() > self.population_size {
-            let hypercube: &mut Hypercube = self.hypercube_map
-                .values_mut()
-                .max_by(|ref h1, ref h2| h1.set.len().cmp(&h2.set.len()))
-                .unwrap();
-            let solution_index = hypercube.random();
-            self.population.remove(solution_index);
-            hypercube.remove(&solution_index);
+        while self.get_population().len() > self.population_size {
+            let index = {
+                let (index, hypercube) = self.hypercube_map
+                    .iter_mut()
+                    .max_by(|(_, ref h1), (_, ref h2)| h1.set.len().cmp(&h2.set.len()))
+                    .unwrap();
+                let solution = hypercube.random();
+                hypercube.remove(&solution);
+                index.clone()
+            };
+
+            if self.hypercube_map.get(&index).unwrap().set.len() == 0 {
+                self.hypercube_map.remove(&index);
+            }
         }
     }
 
     pub fn update(&mut self, population: &[M]) {
         let mut super_population = population.to_vec();
-        super_population.append(&mut self.population);
-        thread_rng().shuffle(&mut super_population);
-        self.population = find_non_dominated(&super_population)
+        super_population.append(&mut self.get_population());
+        let non_dominated_population: Vec<M> = find_non_dominated(&super_population)
             .iter()
             .map(|p_i| super_population[*p_i].clone())
             .collect();
+        self.update_hypercube(&non_dominated_population);
         self.prune_population();
-        self.update_hypercube();
     }
 
-    pub fn select_leader(&self) -> &M {
-        let hypercubes: Vec<Hypercube> = self.hypercube_map.values().cloned().collect();
+    pub fn select_leader(&self) -> M {
+        let hypercubes: Vec<Hypercube<M>> = self.hypercube_map.values().cloned().collect();
         let (_, hypercube) = roulette_wheel(&hypercubes[..]);
-        let leader_index = hypercube.random();
-        &self.population[leader_index]
+        hypercube.random()
+    }
+    pub fn get_population(&self) -> Vec<M> {
+        self.hypercube_map
+            .values()
+            .flat_map(|hypercube| hypercube.set.clone())
+            .collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use solution::MultiTestSolution;
 
-    #[derive(Clone, PartialEq, Debug)]
-    struct TestSolution {
-        fitness: Vec<f64>,
-    }
-
-    impl Solution<Vec<f64>> for TestSolution {
-        fn position(&self) -> &Vec<f64> {
-            &self.fitness
-        }
-
-        fn fitness(&self) -> &Vec<f64> {
-            &self.fitness
-        }
-    }
-
-    fn find_archive_index(archive: &Archive<TestSolution>, solution: &TestSolution) -> usize {
-        archive
-            .population
-            .iter()
-            .position(|ref s| s == &solution)
-            .unwrap()
-    }
-
-    fn hashmap_value(value: Vec<usize>, indices: &Vec<usize>) -> Hypercube {
-        Hypercube::new(value.iter().map(|&v| indices[v]).collect())
+    fn hashmap_value(
+        value: Vec<usize>,
+        population: &Vec<MultiTestSolution>,
+    ) -> Hypercube<MultiTestSolution> {
+        Hypercube::new(value.iter().map(|&v| population[v].clone()).collect())
     }
 
     #[test]
     fn initializes_correctly() {
-        let mut archive: Archive<TestSolution> = Archive::new(7, 5);
+        let mut archive: Archive<MultiTestSolution> = Archive::new(7, 5);
         let population = vec![
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![0.0, 5.0],
+                position: vec![1.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![1.5, 3.9],
+                position: vec![2.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![1.8, 3.5],
+                position: vec![3.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![2.2, 2.8],
+                position: vec![4.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![2.8, 2.2],
+                position: vec![5.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![3.5, 1.5],
+                position: vec![6.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![5.0, 0.0],
+                position: vec![7.0, 2.0],
             },
         ];
 
         archive.update(&population);
 
         let mut map = HashMap::new();
-        let indices: Vec<_> = population
-            .iter()
-            .map(|ref solution| find_archive_index(&archive, &solution))
-            .collect();
-        map.insert(vec![0, 4], hashmap_value(vec![0], &indices));
-        map.insert(vec![1, 3], hashmap_value(vec![1, 2], &indices));
-        map.insert(vec![2, 2], hashmap_value(vec![3, 4], &indices));
-        map.insert(vec![3, 1], hashmap_value(vec![5], &indices));
-        map.insert(vec![4, 0], hashmap_value(vec![6], &indices));
+
+        map.insert(vec![0, 4], hashmap_value(vec![0], &population));
+        map.insert(vec![1, 3], hashmap_value(vec![1, 2], &population));
+        map.insert(vec![2, 2], hashmap_value(vec![3, 4], &population));
+        map.insert(vec![3, 1], hashmap_value(vec![5], &population));
+        map.insert(vec![4, 0], hashmap_value(vec![6], &population));
         assert_eq!(archive.hypercube_map, map);
     }
 
     #[test]
     fn updates_correctly() {
-        let mut archive: Archive<TestSolution> = Archive::new(7, 5);
+        let mut archive: Archive<MultiTestSolution> = Archive::new(7, 5);
         let population = vec![
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![0.0, 5.0],
+                position: vec![1.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![1.5, 3.9],
+                position: vec![2.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![1.8, 3.5],
+                position: vec![3.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![2.2, 2.8],
+                position: vec![4.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![2.8, 2.2],
+                position: vec![5.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![3.5, 1.5],
+                position: vec![6.0, 2.0],
             },
-            TestSolution {
+            MultiTestSolution {
                 fitness: vec![5.0, 0.0],
+                position: vec![7.0, 2.0],
             },
         ];
 
@@ -254,15 +267,12 @@ mod tests {
         archive.update(&population[3..]);
 
         let mut map = HashMap::new();
-        let indices: Vec<_> = population
-            .iter()
-            .map(|ref solution| find_archive_index(&archive, &solution))
-            .collect();
-        map.insert(vec![0, 4], hashmap_value(vec![0], &indices));
-        map.insert(vec![1, 3], hashmap_value(vec![1, 2], &indices));
-        map.insert(vec![2, 2], hashmap_value(vec![3, 4], &indices));
-        map.insert(vec![3, 1], hashmap_value(vec![5], &indices));
-        map.insert(vec![4, 0], hashmap_value(vec![6], &indices));
+
+        map.insert(vec![0, 4], hashmap_value(vec![0], &population));
+        map.insert(vec![1, 3], hashmap_value(vec![1, 2], &population));
+        map.insert(vec![2, 2], hashmap_value(vec![3, 4], &population));
+        map.insert(vec![3, 1], hashmap_value(vec![5], &population));
+        map.insert(vec![4, 0], hashmap_value(vec![6], &population));
         assert_eq!(archive.hypercube_map, map);
     }
 }
