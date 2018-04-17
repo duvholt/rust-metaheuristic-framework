@@ -44,7 +44,7 @@ pub fn run_subcommand(
         cooldown,
         common.iterations,
         common.upper_bound,
-        common.dimension,
+        common.dimensions,
     );
 
     run(config, &function_evaluator)
@@ -55,7 +55,7 @@ pub struct Config {
     pub cooldown: f64,
     pub iterations: i64,
     pub space: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
 }
 
 impl Config {
@@ -64,14 +64,14 @@ impl Config {
         cooldown: f64,
         iterations: i64,
         space: f64,
-        dimension: usize,
+        dimensions: usize,
     ) -> Config {
         return Config {
             start_t,
             cooldown,
             iterations,
             space,
-            dimension,
+            dimensions,
         };
     }
 }
@@ -126,7 +126,7 @@ impl<'a> Neighbourhood<'a> {
         self.fitness_evaluator.calculate_fitness(x)
     }
 
-    fn single_dimension_neighbour(&mut self, x: &f64) -> f64 {
+    fn single_dimensions_neighbour(&mut self, x: &f64) -> f64 {
         let neighbour_space = 0.01;
         let between = Range::new(
             x - self.space * neighbour_space,
@@ -139,7 +139,7 @@ impl<'a> Neighbourhood<'a> {
         let x = solution
             .x
             .iter()
-            .map(|x| self.single_dimension_neighbour(x))
+            .map(|x| self.single_dimensions_neighbour(x))
             .collect();
         let fitness = self.calculate_fitness(&x);
         SASolution { x, fitness }
@@ -148,7 +148,7 @@ impl<'a> Neighbourhood<'a> {
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let mut t = config.start_t;
-    let mut neighbourhood = Neighbourhood::new(config.dimension, config.space, &fitness_evaluator);
+    let mut neighbourhood = Neighbourhood::new(config.dimensions, config.space, &fitness_evaluator);
     let mut current = neighbourhood.random_solution();
     let mut i = 0;
     let mut rng = thread_rng();

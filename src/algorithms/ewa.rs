@@ -38,7 +38,7 @@ pub fn run_subcommand(
 
     let config = Config {
         space: common.upper_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         beta,
@@ -50,7 +50,7 @@ pub fn run_subcommand(
 #[derive(Debug)]
 pub struct Config {
     pub space: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
     pub iterations: i64,
     pub population: usize,
     pub beta: f64,
@@ -99,7 +99,11 @@ impl<'a> Worms<'a> {
     }
 
     fn random_position(&self) -> Vec<f64> {
-        random_position(-self.config.space, self.config.space, self.config.dimension)
+        random_position(
+            -self.config.space,
+            self.config.space,
+            self.config.dimensions,
+        )
     }
 
     fn create_worm(&self, position: Vec<f64>) -> Worm {
@@ -122,7 +126,7 @@ impl<'a> Worms<'a> {
         let minmax = -self.config.space + self.config.space;
         let alpha = self.config.similarity;
         let mut new_position = vec![];
-        for j in 0..self.config.dimension {
+        for j in 0..self.config.dimensions {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
@@ -141,7 +145,7 @@ impl<'a> Worms<'a> {
         let mut pos1 = vec![];
         let mut pos2 = vec![];
         let mut rng = thread_rng();
-        for j in 0..self.config.dimension {
+        for j in 0..self.config.dimensions {
             let r = rng.next_f64();
             let p1j = parent1.position[j];
             let p2j = parent2.position[j];
@@ -161,7 +165,7 @@ impl<'a> Worms<'a> {
         let w2 = f1 / (f1 + f2);
 
         let mut position = vec![];
-        for j in 0..self.config.dimension {
+        for j in 0..self.config.dimensions {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
         let fitness = self.calculate_fitness(&position);
@@ -170,7 +174,7 @@ impl<'a> Worms<'a> {
 
     fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
-        let new_position = (0..self.config.dimension)
+        let new_position = (0..self.config.dimensions)
             .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
             .collect();
         let fitness = self.calculate_fitness(&new_position);
@@ -264,7 +268,7 @@ mod tests {
     fn create_config() -> Config {
         Config {
             space: 4.0,
-            dimension: 2,
+            dimensions: 2,
             iterations: 50,
             population: 50,
             beta: 1.0,
@@ -278,11 +282,11 @@ mod tests {
         let sampler = create_sampler();
         let evaluator = create_evaluator(&sampler);
         let mut worms = Worms::new(&config, &evaluator);
-        let dimension = config.dimension;
-        let worm1 = worms.create_worm(vec![0.3; dimension]);
-        let worm2 = worms.create_worm(vec![0.2; dimension]);
-        let worm3 = worms.create_worm(vec![0.02; dimension]);
-        let worm4 = worms.create_worm(vec![0.4; dimension]);
+        let dimensions = config.dimensions;
+        let worm1 = worms.create_worm(vec![0.3; dimensions]);
+        let worm2 = worms.create_worm(vec![0.2; dimensions]);
+        let worm3 = worms.create_worm(vec![0.02; dimensions]);
+        let worm4 = worms.create_worm(vec![0.4; dimensions]);
         worms.population = vec![worm1.clone(), worm2.clone(), worm3.clone(), worm4.clone()];
 
         worms.sort_population();
@@ -296,14 +300,14 @@ mod tests {
         let sampler = create_sampler();
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
-        let dimension = config.dimension;
-        let worm1 = worms.create_worm(vec![0.3; dimension]);
+        let dimensions = config.dimensions;
+        let worm1 = worms.create_worm(vec![0.3; dimensions]);
 
         let offspring = worms.reproduction1(&worm1);
 
         assert_eq!(
             offspring.position,
-            vec![-0.3 * config.similarity; dimension]
+            vec![-0.3 * config.similarity; dimensions]
         );
     }
 
@@ -313,13 +317,13 @@ mod tests {
         let sampler = create_sampler();
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
-        let dimension = config.dimension;
-        let worm1 = worms.create_worm(vec![1.0; dimension]);
-        let worm2 = worms.create_worm(vec![2.0; dimension]);
+        let dimensions = config.dimensions;
+        let worm1 = worms.create_worm(vec![1.0; dimensions]);
+        let worm2 = worms.create_worm(vec![2.0; dimensions]);
 
         let combined = worms.combine_worms(&worm1, &worm2, 0);
 
-        assert_eq!(combined.position, vec![1.0; dimension]);
+        assert_eq!(combined.position, vec![1.0; dimensions]);
     }
 
     #[test]
@@ -328,13 +332,13 @@ mod tests {
         let sampler = create_sampler();
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
-        let dimension = config.dimension;
-        let worm1 = worms.create_worm(vec![1.0; dimension]);
-        let worm2 = worms.create_worm(vec![2.0; dimension]);
+        let dimensions = config.dimensions;
+        let worm1 = worms.create_worm(vec![1.0; dimensions]);
+        let worm2 = worms.create_worm(vec![2.0; dimensions]);
 
         let combined = worms.combine_worms(&worm1, &worm2, 2);
 
-        assert_eq!(combined.position, vec![1.19; dimension]);
+        assert_eq!(combined.position, vec![1.19; dimensions]);
     }
 
     #[test]

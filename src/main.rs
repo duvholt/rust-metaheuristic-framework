@@ -118,11 +118,11 @@ fn arguments(
                 .takes_value(true),
         )
         .arg(
-            Arg::with_name("dimension")
+            Arg::with_name("dimensions")
                 .short("d")
-                .long("dimension")
-                .value_name("dimension")
-                .help("Solution dimension size")
+                .long("dimensions")
+                .value_name("dimensions")
+                .help("Solution dimensions size")
                 .default_value("2")
                 .takes_value(true),
         )
@@ -280,7 +280,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         iterations: value_t_or_exit!(matches, "iterations", i64),
         upper_bound,
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
-        dimension: value_t_or_exit!(matches, "dimension", usize),
+        dimensions: value_t_or_exit!(matches, "dimensions", usize),
         population: value_t_or_exit!(matches, "population", usize),
     };
 
@@ -319,7 +319,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         Green.paint(test_function_name.to_owned()),
         Green.paint(common.upper_bound.to_string()),
         Green.paint(common.lower_bound.to_string()),
-        Green.paint(common.dimension.to_string()),
+        Green.paint(common.dimensions.to_string()),
     );
 
     println!(
