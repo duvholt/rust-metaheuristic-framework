@@ -32,7 +32,7 @@ pub fn run_subcommand(
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         radius,
@@ -46,7 +46,7 @@ pub struct Config {
     pub population: usize,
     pub upper_bound: f64,
     pub lower_bound: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
     pub radius: i64,
 }
 
@@ -85,7 +85,7 @@ fn animal_migration(
             let mut moved_position = vec![];
             let mut out_of_bounds = false;
             let StandardNormal(gaussian) = rng.gen();
-            for d in 0..config.dimension {
+            for d in 0..config.dimensions {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 let index = get_random_neighbor_index(index_offset, population.len());
@@ -101,7 +101,7 @@ fn animal_migration(
             }
             if out_of_bounds {
                 moved_position =
-                    random_position(config.lower_bound, config.upper_bound, config.dimension);
+                    random_position(config.lower_bound, config.upper_bound, config.dimensions);
             }
             Animal {
                 fitness: fitness_evaluator.calculate_fitness(&moved_position),
@@ -127,7 +127,7 @@ fn animal_replacement(
             let mut fitness = current_animal.fitness;
             let mut changed = false;
             let mut out_of_bounds = false;
-            for d in 0..config.dimension {
+            for d in 0..config.dimensions {
                 let r = get_two_unique_numbers(population.len(), population.len(), &mut rng);
                 if rng.next_f64() > (population.len() - i) as f64 / population.len() as f64 {
                     changed = true;
@@ -149,7 +149,7 @@ fn animal_replacement(
             if changed {
                 if out_of_bounds {
                     new_position =
-                        random_position(config.lower_bound, config.upper_bound, config.dimension);
+                        random_position(config.lower_bound, config.upper_bound, config.dimensions);
                 }
                 fitness = fitness_evaluator.calculate_fitness(&new_position);
             }
@@ -211,7 +211,7 @@ fn generate_random_population(
 }
 
 fn generate_random_animal(fitness_evaluator: &FitnessEvaluator<f64>, config: &Config) -> Animal {
-    let position = random_position(config.lower_bound, config.upper_bound, config.dimension);
+    let position = random_position(config.lower_bound, config.upper_bound, config.dimensions);
     Animal {
         fitness: fitness_evaluator.calculate_fitness(&position),
         position,
@@ -264,7 +264,7 @@ mod tests {
         Config {
             upper_bound: 4.0,
             lower_bound: -4.0,
-            dimension: 2,
+            dimensions: 2,
             iterations: 100,
             population: 50,
             radius: 2,

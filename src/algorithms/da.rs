@@ -60,7 +60,7 @@ pub fn run_subcommand(
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         r,
@@ -77,7 +77,7 @@ pub struct Config {
     pub population: usize,
     pub upper_bound: f64,
     pub lower_bound: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
     pub r: f64,
     pub e: f64,
     pub normal_seeds: i64,
@@ -126,7 +126,7 @@ impl<'a> Swarm<'a> {
     fn generate_random_dandelion(&self) -> Dandelion {
         let between = Range::new(self.config.lower_bound, self.config.upper_bound);
         let mut rng = thread_rng();
-        let position = (0..self.config.dimension)
+        let position = (0..self.config.dimensions)
             .map(|_| between.ind_sample(&mut rng))
             .collect();
         Dandelion {
@@ -156,7 +156,7 @@ impl<'a> Swarm<'a> {
                     let mut position = self.population[i].core_dandelion.position.clone();
                     let radius = self.population[i].radius;
                     let distance = rng.gen_range(-radius, radius);
-                    let index = (self.config.dimension as f64 * rng.next_f64()) as usize;
+                    let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
                     if position[index] + distance > self.config.upper_bound
                         || (position[index] + distance) < self.config.lower_bound
                     {
@@ -179,7 +179,7 @@ impl<'a> Swarm<'a> {
             let mut seeds: Vec<Seed> = (0..self.config.self_learning_seeds)
                 .map(|_| {
                     let mut position = self.population[i].core_dandelion.position.clone();
-                    let index = (self.config.dimension as f64 * rng.next_f64()) as usize;
+                    let index = (self.config.dimensions as f64 * rng.next_f64()) as usize;
                     let distance = position[index] - average_position[index];
                     if position[index] + distance > self.config.upper_bound
                         || position[index] + distance < self.config.lower_bound
@@ -201,9 +201,9 @@ impl<'a> Swarm<'a> {
     }
 
     fn find_average_seed_position(&self, dandelion: &Dandelion) -> Vec<f64> {
-        let mut position = vec![0.0; self.config.dimension];
+        let mut position = vec![0.0; self.config.dimensions];
         for seed in &dandelion.seeds {
-            for j in 0..self.config.dimension {
+            for j in 0..self.config.dimensions {
                 position[j] += seed.position[j];
             }
         }
@@ -295,7 +295,7 @@ mod tests {
         Config {
             upper_bound: 4.0,
             lower_bound: -4.0,
-            dimension: 2,
+            dimensions: 2,
             iterations: 100,
             population: 1,
             r: 0.95,

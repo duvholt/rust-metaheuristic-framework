@@ -47,7 +47,7 @@ pub fn run_subcommand(
 
     let config = Config {
         space: common.upper_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         c1,
@@ -62,7 +62,7 @@ type Velocity = Position;
 
 pub struct Config {
     pub space: f64,
-    pub dimension: usize,
+    pub dimensions: usize,
     pub iterations: i64,
     pub population: usize,
     pub c1: f64,
@@ -106,7 +106,11 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        random_position(-self.config.space, self.config.space, self.config.dimension)
+        random_position(
+            -self.config.space,
+            self.config.space,
+            self.config.dimensions,
+        )
     }
 
     fn calculate_fitness(&self, x: &Vec<f64>) -> f64 {
@@ -147,7 +151,7 @@ impl<'a> Swarm<'a> {
         let mut velocity = vec![];
         let mut position = vec![];
         let inertia = self.config.inertia * 0.99_f64.powi(iteration as i32);
-        for i in 0..self.config.dimension {
+        for i in 0..self.config.dimensions {
             let r1 = rng.next_f64();
             let r2 = rng.next_f64();
             let v = particle.velocity[i];
@@ -248,7 +252,7 @@ mod tests {
     fn create_config() -> Config {
         Config {
             space: 4.0,
-            dimension: 2,
+            dimensions: 2,
             iterations: 20,
             population: 100,
             c1: 2.0,

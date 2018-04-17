@@ -90,7 +90,7 @@ pub fn run_subcommand(
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
-        dimension: common.dimension,
+        dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
         prides,
@@ -111,7 +111,7 @@ struct Config {
     population: usize,
     upper_bound: f64,
     lower_bound: f64,
-    dimension: usize,
+    dimensions: usize,
     prides: usize,
     nomad_percent: f64,
     roaming_percent: f64,
@@ -250,7 +250,7 @@ fn random_population(config: &Config, fitness_evaluator: &FitnessEvaluator<f64>)
     (0..config.population)
         .map(|_| {
             let position =
-                random_position(config.lower_bound, config.upper_bound, config.dimension);
+                random_position(config.lower_bound, config.upper_bound, config.dimensions);
             let fitness = fitness_evaluator.calculate_fitness(&position);
             Lion::new(position, fitness)
         })
@@ -817,7 +817,7 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         let hunters = find_hunters(&mut prides, &mut rng);
         let hunters = hunt(
             hunters,
-            config.dimension,
+            config.dimensions,
             config.lower_bound,
             config.upper_bound,
             &mut rng,
@@ -1011,7 +1011,7 @@ mod tests {
             population: 10,
             upper_bound: 1.0,
             lower_bound: -1.0,
-            dimension: 2,
+            dimensions: 2,
             prides: 4,
             nomad_percent: 0.2,
             roaming_percent: 0.2,
@@ -1541,7 +1541,7 @@ mod tests {
             population: 15,
             upper_bound: 1.0,
             lower_bound: -1.0,
-            dimension: 2,
+            dimensions: 2,
             prides: 2,
             nomad_percent: 0.2,
             roaming_percent: 0.2,
