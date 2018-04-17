@@ -430,17 +430,18 @@ fn calculate_tournament_size(lions: &[Lion]) -> usize {
 }
 
 fn move_towards_safe_place(lion: &Lion, selected_lion: &Lion, mut rng: impl Rng) -> Vec<f64> {
-    let distance = euclidean_distance(&lion.position, &selected_lion.position);
-    let r1 = lion.diff_position(&selected_lion.position);
+    // let distance = euclidean_distance(&lion.position, &selected_lion.best_position);
+    let r1 = lion.diff_position(&selected_lion.best_position);
     let r2 = perpendicular_position(&r1, &mut rng);
-    let r: f64 = rng.gen();
-    let u = rng.gen_range(-1.0, 1.0);
-    let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
     (0..lion.position.len())
         .map(|i| {
+            let u = rng.gen_range(-1.0, 1.0);
+            let theta = rng.gen_range(-PI / 6.0, PI / 6.0);
+            let r: f64 = rng.gen();
             let r1_i = r1[i];
             let r2_i = r2[i];
-            lion.position[i] + 2.0 * distance * r * r1_i + u * theta.tan() * distance * r2_i
+            let s_i = selected_lion.best_position[i] - lion.position[i];
+            lion.position[i] + 2.0 * s_i * r * r1_i + u * theta.tan() * s_i * r2_i
         })
         .collect()
 }
@@ -797,19 +798,18 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                         &mut rng,
                     );
                 }
-                println!("Select");
-                let selected = {
-                    let tournament_size = calculate_tournament_size(&females);
-                    let (_, selected) = tournament_selection(&females, tournament_size, &mut rng);
-                    selected.clone()
-                };
                 println!("Move safe");
-                for lion in females.iter_mut() {
+                females = females.iter().cloned().map(|mut lion| {
+                    let selected = {
+                        let tournament_size = calculate_tournament_size(&females);
+                        let (_, selected) = tournament_selection(&females, tournament_size, &mut rng);
+                        selected.clone()
+                    };
                     let mut position = move_towards_safe_place(&lion, &selected, &mut rng);
                     limit_position(&mut position, config.lower_bound, config.upper_bound);
                     let fitness = fitness_evaluator.calculate_fitness(&position);
-                    lion.update_position(position, fitness);
-                }
+                    lion
+                }).collect();
                 println!("Mate");
                 let new_lions = females
                     .iter()
