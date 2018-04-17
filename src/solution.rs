@@ -1,4 +1,6 @@
+use ordered_float::NotNaN;
 use std::cmp::Ordering;
+use std::hash;
 
 pub enum Objective {
     Single,
@@ -113,8 +115,8 @@ impl Solution<f64> for SingleTestSolution {
 
 #[derive(Clone, Debug)]
 pub struct MultiTestSolution {
-    fitness: Vec<f64>,
-    position: Vec<f64>,
+    pub fitness: Vec<f64>,
+    pub position: Vec<f64>,
 }
 
 impl MultiTestSolution {
@@ -124,6 +126,27 @@ impl MultiTestSolution {
             fitness,
         }
     }
+}
+
+impl PartialEq for MultiTestSolution {
+    fn eq(&self, other: &MultiTestSolution) -> bool {
+        self.position == other.position
+    }
+}
+
+impl Eq for MultiTestSolution {}
+
+impl hash::Hash for MultiTestSolution {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: hash::Hasher,
+    {
+        position_to_notnan(&self.position).hash(state)
+    }
+}
+
+fn position_to_notnan(vector: &Vec<f64>) -> Vec<NotNaN<f64>> {
+    (0..vector.len()).map(|i| NotNaN::from(vector[i])).collect()
 }
 
 impl Solution<Vec<f64>> for MultiTestSolution {
