@@ -123,11 +123,14 @@ struct Config {
 
 impl Config {
     fn females_in_pride(&self) -> usize {
-        ((self.population as f64 * (1.0 - self.nomad_percent) * self.sex_rate) / self.prides as f64) as usize
+        ((self.population as f64 * (1.0 - self.nomad_percent) * self.sex_rate) / self.prides as f64)
+            as usize
     }
 
     fn males_in_pride(&self) -> usize {
-        ((self.population as f64 * (1.0 - self.nomad_percent) * (1.0 - self.sex_rate)) / self.prides as f64).round() as usize
+        ((self.population as f64 * (1.0 - self.nomad_percent) * (1.0 - self.sex_rate))
+            / self.prides as f64)
+            .round() as usize
     }
 
     fn pride_size(&self) -> usize {
@@ -263,10 +266,7 @@ fn find_sex(r: f64, sex_rate: f64, nomad: bool) -> Sex {
     }
 }
 
-fn partition_lions(
-    config: &Config,
-    mut population: Vec<Lion>,
-) -> (Nomad, Vec<Pride>) {
+fn partition_lions(config: &Config, mut population: Vec<Lion>) -> (Nomad, Vec<Pride>) {
     let last_nomad_index = (population.len() as f64 * config.nomad_percent) as usize;
     for (i, lion) in population.iter_mut().enumerate() {
         let sex = if i > last_nomad_index {
@@ -276,7 +276,9 @@ fn partition_lions(
                 Sex::Male
             }
         } else {
-            let females_in_nomad = (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate as f64)).round() as usize;
+            let females_in_nomad = (config.population as f64 * config.nomad_percent
+                * (1.0 - config.sex_rate as f64))
+                .round() as usize;
             if i < females_in_nomad {
                 Sex::Female
             } else {
@@ -297,7 +299,9 @@ fn partition_lions(
     ];
     let pride_size = config.pride_size();
     for (pride_index, mut lions) in pride_lions.chunks(pride_size).into_iter().enumerate() {
-        prides[pride_index].population.append(&mut lions.into_iter().cloned().collect());
+        prides[pride_index]
+            .population
+            .append(&mut lions.into_iter().cloned().collect());
     }
     (nomad, prides)
 }
@@ -308,7 +312,11 @@ fn find_hunters(prides: &mut Vec<Pride>, mut rng: impl Rng) -> Vec<(usize, Lion)
         .enumerate()
         .filter_map(|(i, pride)| {
             let random_female = pride.random_female(&mut rng)?.clone();
-            let index = pride.population.iter().position(|l| l == &random_female).unwrap();
+            let index = pride
+                .population
+                .iter()
+                .position(|l| l == &random_female)
+                .unwrap();
             Some((i, pride.population.remove(index)))
         })
         .collect()
@@ -569,12 +577,20 @@ fn sort_lions(population: &mut Vec<Lion>) {
         .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
 }
 
-fn defense_resident_male(old_males: Vec<Lion>, mut new_males: Vec<Lion>, mut males_in_pride: usize) -> (Vec<Lion>, Vec<Lion>) {
+fn defense_resident_male(
+    old_males: Vec<Lion>,
+    mut new_males: Vec<Lion>,
+    mut males_in_pride: usize,
+) -> (Vec<Lion>, Vec<Lion>) {
     let mut males = old_males;
     males.append(&mut new_males);
     sort_lions(&mut males);
     if males_in_pride >= males.len() {
-        println!("Limiting nomads. Wanted {}, but max was {}", males_in_pride, males.len());
+        println!(
+            "Limiting nomads. Wanted {}, but max was {}",
+            males_in_pride,
+            males.len()
+        );
         males_in_pride = males.len();
     }
     let nomads = males.split_off(males_in_pride);
@@ -605,7 +621,11 @@ fn defense_against_nomad_male<'a>(
                     }
                 }
                 if let Some(male) = swapped {
-                    let index = pride.population.iter().position(|lion| lion == &male).unwrap();
+                    let index = pride
+                        .population
+                        .iter()
+                        .position(|lion| lion == &male)
+                        .unwrap();
                     pride.population.remove(index);
                     pride.population.push(nomad);
                     return male;
@@ -640,10 +660,17 @@ fn migration(
             females_to_migrate = 0;
         }
         let total_migrate = surplus + females_to_migrate;
-        println!("Total females migrating: {}. Surplus: {}. Immigrate: {}", total_migrate, surplus, females_to_migrate);
+        println!(
+            "Total females migrating: {}. Surplus: {}. Immigrate: {}",
+            total_migrate, surplus, females_to_migrate
+        );
         let migrated_females = seq::sample_iter(&mut rng, females, total_migrate as usize).unwrap();
         for female in migrated_females.into_iter() {
-            let index = pride.population.iter().position(|lion| lion == &female).unwrap();
+            let index = pride
+                .population
+                .iter()
+                .position(|lion| lion == &female)
+                .unwrap();
             pride.population.remove(index);
             new_nomads.push(female);
         }
@@ -662,7 +689,12 @@ fn assign_to_prides<'a>(
         .into_iter()
         .map(|mut pride| {
             let missing_females = (immigate_rate * females_in_pride as f64) as usize;
-            println!("Max {} Missing {} nomad_left {}", females_in_pride, missing_females, nomad_females.len());
+            println!(
+                "Max {} Missing {} nomad_left {}",
+                females_in_pride,
+                missing_females,
+                nomad_females.len()
+            );
             for _ in 0..missing_females {
                 let i = rng.gen_range(0, nomad_females.len());
                 let nomad_female = nomad_females.remove(i);
@@ -696,10 +728,18 @@ fn equilibrium(
     let mut females_for_prides = (config.population as f64 * (1.0 - config.nomad_percent)
         * config.sex_rate * config.immigate_rate) as usize;
     if females_for_prides >= sorted_females.len() {
-        println!("Too few female lions {}/{}", females_for_prides, sorted_females.len());
+        println!(
+            "Too few female lions {}/{}",
+            females_for_prides,
+            sorted_females.len()
+        );
         females_for_prides = sorted_females.len() - 1;
     }
-    println!("ffp {}, sorted_females {}", females_for_prides, sorted_females.len());
+    println!(
+        "ffp {}, sorted_females {}",
+        females_for_prides,
+        sorted_females.len()
+    );
     let prides = assign_to_prides(
         prides,
         sorted_females[..females_for_prides].to_vec(),
@@ -713,7 +753,12 @@ fn equilibrium(
     let nomad_females_count =
         (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate)) as usize;
     let mut population: Vec<Lion> = sorted_males[..nomad_males_count].to_vec();
-    println!("ffp {} nfc {} sf {}", females_for_prides, nomad_females_count, sorted_females.len());
+    println!(
+        "ffp {} nfc {} sf {}",
+        females_for_prides,
+        nomad_females_count,
+        sorted_females.len()
+    );
     population.extend(
         sorted_females[females_for_prides..females_for_prides + nomad_females_count].to_vec(),
     );
@@ -752,7 +797,12 @@ fn print_info(prides: &Vec<Pride>, nomad: &Nomad) {
     for (i, pride) in prides.iter().enumerate() {
         println!("Size before partition {}", pride.population.len());
         let (males, females) = partition_on_sex(pride.population.iter().cloned().collect());
-        println!("Pride [{}] Males {}, Females {}", i, males.len(), females.len());
+        println!(
+            "Pride [{}] Males {}, Females {}",
+            i,
+            males.len(),
+            females.len()
+        );
     }
     let (males, females) = partition_on_sex(nomad.population.iter().cloned().collect());
     println!("Nomad Males {} Females {}", males.len(), females.len());
@@ -774,7 +824,14 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         );
         print_info(&prides, &nomad);
         let hunters = find_hunters(&mut prides, &mut rng);
-        let hunters = hunt(hunters, config.dimension, config.lower_bound, config.upper_bound, &mut rng, &fitness_evaluator);
+        let hunters = hunt(
+            hunters,
+            config.dimension,
+            config.lower_bound,
+            config.upper_bound,
+            &mut rng,
+            &fitness_evaluator,
+        );
         for (pride_index, hunter) in hunters {
             prides[pride_index].population.push(hunter);
         }
@@ -799,17 +856,22 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                     );
                 }
                 println!("Move safe");
-                females = females.iter().cloned().map(|mut lion| {
-                    let selected = {
-                        let tournament_size = calculate_tournament_size(&females);
-                        let (_, selected) = tournament_selection(&females, tournament_size, &mut rng);
-                        selected.clone()
-                    };
-                    let mut position = move_towards_safe_place(&lion, &selected, &mut rng);
-                    limit_position(&mut position, config.lower_bound, config.upper_bound);
-                    let fitness = fitness_evaluator.calculate_fitness(&position);
-                    lion
-                }).collect();
+                females = females
+                    .iter()
+                    .cloned()
+                    .map(|mut lion| {
+                        let selected = {
+                            let tournament_size = calculate_tournament_size(&females);
+                            let (_, selected) =
+                                tournament_selection(&females, tournament_size, &mut rng);
+                            selected.clone()
+                        };
+                        let mut position = move_towards_safe_place(&lion, &selected, &mut rng);
+                        limit_position(&mut position, config.lower_bound, config.upper_bound);
+                        let fitness = fitness_evaluator.calculate_fitness(&position);
+                        lion
+                    })
+                    .collect();
                 println!("Mate");
                 let new_lions = females
                     .iter()
@@ -829,15 +891,28 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                     })
                     .collect();
                 let (new_males, mut new_females) = partition_on_sex(new_lions);
-                let (males, new_nomad) = defense_resident_male(males, new_males, config.males_in_pride());
+                let (males, new_nomad) =
+                    defense_resident_male(males, new_males, config.males_in_pride());
                 println!("Add");
                 println!("Males added: {}", males.len());
                 let mut population = males;
-                println!("Old females added: {}, size: {}", females.len(), population.len());
+                println!(
+                    "Old females added: {}, size: {}",
+                    females.len(),
+                    population.len()
+                );
                 population.append(&mut females);
-                println!("New females added: {}, size: {}", new_females.len(), population.len());
+                println!(
+                    "New females added: {}, size: {}",
+                    new_females.len(),
+                    population.len()
+                );
                 population.append(&mut new_females);
-                println!("New monads: {}, size: {}", new_nomad.len(), population.len());
+                println!(
+                    "New monads: {}, size: {}",
+                    new_nomad.len(),
+                    population.len()
+                );
                 nomad.population.extend(new_nomad);
                 Pride {
                     population: population.into_iter().collect(),
@@ -869,7 +944,11 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 .collect(),
         };
         let (mut males, mut females) = partition_on_sex(nomad.population.into_iter().collect());
-        println!("Nomad males: {}. Nomad females: {}", males.len(), females.len());
+        println!(
+            "Nomad males: {}. Nomad females: {}",
+            males.len(),
+            females.len()
+        );
         nomad.population = females
             .iter()
             .flat_map(|female| {
@@ -885,9 +964,14 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 } else {
                     vec![]
                 }
-            }).collect();
+            })
+            .collect();
         println!("New nomad from mating: {}", nomad.population.len());
-        println!("Males added: {}, Females added: {}", males.len(), females.len());
+        println!(
+            "Males added: {}, Females added: {}",
+            males.len(),
+            females.len()
+        );
         nomad.population.extend(males);
         nomad.population.extend(females);
         println!("Pre defense {}", nomad.population.len());
@@ -898,7 +982,12 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         print_info(&prides, &nomad);
 
         println!("Migration");
-        let (new_prides, new_nomad) = migration(prides, config.females_in_pride(), config.immigate_rate, &mut rng);
+        let (new_prides, new_nomad) = migration(
+            prides,
+            config.females_in_pride(),
+            config.immigate_rate,
+            &mut rng,
+        );
         println!("New nomad after migration {}", new_nomad.len());
         nomad.population.extend(new_nomad);
         prides = new_prides;
@@ -1364,8 +1453,7 @@ mod tests {
         let (prides, nomad) = defense_against_nomad_male(prides, nomad, rng);
 
         assert_eq!(nomad.population.len(), 3);
-        let pride_population: Vec<_> =
-            prides.iter().flat_map(|pride| &pride.population).collect();
+        let pride_population: Vec<_> = prides.iter().flat_map(|pride| &pride.population).collect();
         assert_eq!(pride_population.len(), 6);
         let females: Vec<_> = pride_population
             .iter()
