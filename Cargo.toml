@@ -4,7 +4,7 @@ name = "rustoa"
 version = "0.0.1"
 
 [dependencies]
-rand = "0.3.18"
+rand = "0.4.2"
 clap = "2.30.0"
 serde_json = "1.0.9"
 serde = "1.0"
