@@ -21,6 +21,7 @@ pub mod crossover;
 pub mod distribution;
 pub mod domination;
 pub mod fitness_evaluation;
+pub mod multiobjective;
 pub mod position;
 pub mod selection;
 pub mod solution;
