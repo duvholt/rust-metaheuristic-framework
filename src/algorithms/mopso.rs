@@ -3,7 +3,6 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use domination::dominates;
 use fitness_evaluation::FitnessEvaluator;
-use ordered_float::NotNaN;
 use position::random_position;
 use rand::{thread_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
@@ -123,12 +122,8 @@ impl hash::Hash for Particle {
     where
         H: hash::Hasher,
     {
-        position_to_notnan(&self.position).hash(state)
+        self.position_to_notnan().hash(state)
     }
-}
-
-fn position_to_notnan(vector: &Vec<f64>) -> Vec<NotNaN<f64>> {
-    (0..vector.len()).map(|i| NotNaN::from(vector[i])).collect()
 }
 
 impl PartialEq for Particle {

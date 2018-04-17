@@ -45,6 +45,12 @@ impl SolutionJSON {
 pub trait Solution<F> {
     fn position(&self) -> &Vec<f64>;
     fn fitness(&self) -> &F;
+    fn position_to_notnan(&self) -> Vec<NotNaN<f64>> {
+        self.position()
+            .iter()
+            .map(|value| NotNaN::from(*value))
+            .collect()
+    }
 }
 
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
@@ -141,12 +147,8 @@ impl hash::Hash for MultiTestSolution {
     where
         H: hash::Hasher,
     {
-        position_to_notnan(&self.position).hash(state)
+        self.position_to_notnan().hash(state)
     }
-}
-
-fn position_to_notnan(vector: &Vec<f64>) -> Vec<NotNaN<f64>> {
-    (0..vector.len()).map(|i| NotNaN::from(vector[i])).collect()
 }
 
 impl Solution<Vec<f64>> for MultiTestSolution {
