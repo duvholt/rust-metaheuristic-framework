@@ -8,6 +8,7 @@ extern crate rand;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate itertools;
 extern crate ordered_float;
 extern crate serde_json;
