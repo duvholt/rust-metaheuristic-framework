@@ -58,11 +58,12 @@ pub fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
 }
 
 pub fn limit_position(position: &mut Vec<f64>, lower_bound: f64, upper_bound: f64) {
-    for value in position {
-        if *value > upper_bound {
-            *value = upper_bound;
-        } else if *value < lower_bound {
-            *value = lower_bound;
+    for i in 0..position.len() {
+        let value = position[i];
+        if value > upper_bound {
+            position[i] = upper_bound.clone();
+        } else if value < lower_bound {
+            position[i] = lower_bound.clone();
         }
     }
 }
