@@ -170,7 +170,7 @@ impl Sampler {
             .iter()
             .map(|solution| solution.fitness.clone())
             .collect();
-        let igd_value = igd(&self.pareto_front.clone().unwrap(), &front);
+        let igd_value = igd(&front, &self.pareto_front.clone().unwrap());
         write!(&mut writer, "IGD: {}\n", igd_value).unwrap();
     }
 
@@ -474,7 +474,7 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: Evolution with 10 samples\n[ 0] IGD: 0.06123724356957946\n"
+            "Mode: Evolution with 10 samples\n[ 0] IGD: 0.0408248290463863\n"
         );
     }
 
@@ -518,7 +518,7 @@ mod tests {
         sampler.print_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
-        assert_eq!(output, "Mode: Last Generation\nIGD: 0.06123724356957946\n");
+        assert_eq!(output, "Mode: Last Generation\nIGD: 0.0408248290463863\n");
     }
 
     #[test]
