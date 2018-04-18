@@ -1,24 +1,20 @@
 use domination::dominates;
 use solution::Solution;
+use std::cell::Cell;
 use std::collections::HashSet;
 use std::hash::Hash;
 
 #[derive(Clone)]
-struct Domination<'a, S: 'a>
-where
-    S: Solution<Vec<f64>> + Eq + Hash,
-{
+pub struct Domination {
     dominates: HashSet<(usize)>,
-    solution: &'a S,
-    dominated_by: usize,
+    dominated_by: Cell<usize>,
 }
 
-impl<'a, S: Solution<Vec<f64>> + Eq + Hash> Domination<'a, S> {
-    fn new(solution: &'a S) -> Domination<'a, S> {
+impl Domination {
+    fn new() -> Domination {
         Domination {
             dominates: HashSet::new(),
-            solution,
-            dominated_by: 0,
+            dominated_by: Cell::new(0),
         }
     }
 
@@ -27,22 +23,23 @@ impl<'a, S: Solution<Vec<f64>> + Eq + Hash> Domination<'a, S> {
     }
 
     fn increment(&mut self) {
-        self.dominated_by += 1;
+        self.dominated_by.set(self.dominated_by.get() + 1);
     }
 
-    fn decrement(&mut self) {
-        self.dominated_by -= 1;
+    fn decrement(&self) {
+        self.dominated_by.set(self.dominated_by.get() - 1);
+    }
+
+    fn dominated_by(&self) -> usize {
+        self.dominated_by.get()
     }
 }
 
-fn calculate_domation_count<'a, S>(solutions: &'a [S]) -> Vec<Domination<'a, S>>
+fn calculate_domation_count<S>(solutions: &[S]) -> Vec<Domination>
 where
     S: Solution<Vec<f64>> + Eq + Hash,
 {
-    let mut dominations: Vec<_> = solutions
-        .iter()
-        .map(|solution| Domination::new(solution))
-        .collect();
+    let mut dominations: Vec<_> = solutions.iter().map(|_| Domination::new()).collect();
     for (i, solution1) in solutions.iter().enumerate() {
         for (j, solution2) in solutions.iter().enumerate() {
             if i == j {
@@ -57,54 +54,54 @@ where
     dominations
 }
 
-pub fn calculate_ranks<'a, S>(solutions: &'a [S]) -> Vec<usize>
+pub fn calculate_fronts_and_ranks<'a, S>(solutions: &'a [S]) -> (Vec<Vec<usize>>, Vec<usize>)
 where
-    S: Solution<Vec<f64>> + Eq + Hash + Clone,
+    S: Solution<Vec<f64>> + Eq + Hash,
 {
-    let mut dominations = calculate_domation_count(&solutions);
+    let dominations = calculate_domation_count(&solutions);
     let mut ranks = vec![13123; solutions.len()];
-    let mut front = vec![];
+    let mut current_front = vec![];
     for (i, domination) in dominations.iter().enumerate() {
-        if domination.dominated_by == 0 {
-            front.push(domination.clone());
+        if domination.dominated_by() == 0 {
+            current_front.push((i, domination));
             ranks[i] = 0;
         }
     }
     let mut front_count = 1;
-    while front.len() > 0 {
+    let mut fronts = vec![];
+    while current_front.len() > 0 {
         let mut new_front = vec![];
-        for domination in front {
-            for j in domination.dominates {
+        fronts.push(current_front.iter().map(|(i, _)| *i).collect());
+        for (_, domination) in current_front {
+            for j in domination.dominates.iter().cloned() {
                 dominations[j].decrement();
-                if dominations[j].dominated_by == 0 {
+                if dominations[j].dominated_by() == 0 {
                     let other = &dominations[j];
-                    new_front.push(other.clone());
+                    new_front.push((j, other));
                     ranks[j] = front_count;
                 }
             }
         }
         front_count += 1;
-        front = new_front;
+        current_front = new_front;
     }
-    ranks
+    (fronts, ranks)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use solution::MultiTestSolution;
     use testing::solution::vec_to_multi_solution;
 
     #[test]
     fn test_increment_decrement_rank() {
-        let solution = MultiTestSolution::new(vec![0.5]);
-        let mut domination = Domination::new(&solution);
+        let mut domination = Domination::new();
 
-        assert_eq!(domination.dominated_by, 0);
+        assert_eq!(domination.dominated_by(), 0);
         domination.increment();
-        assert_eq!(domination.dominated_by, 1);
+        assert_eq!(domination.dominated_by(), 1);
         domination.decrement();
-        assert_eq!(domination.dominated_by, 0);
+        assert_eq!(domination.dominated_by(), 0);
     }
 
     #[test]
@@ -128,7 +125,7 @@ mod tests {
 
         let domination_count: Vec<_> = dominations
             .iter()
-            .map(|domination| domination.dominated_by)
+            .map(|domination| domination.dominated_by())
             .collect();
         assert_eq!(domination_count, vec![0, 3, 6, 5, 2, 4, 2, 1, 2, 0, 0, 0]);
     }
@@ -150,7 +147,7 @@ mod tests {
             vec![2.0, 4.0],  // 12, rank 0
         ]);
 
-        let ranks = calculate_ranks(&solutions);
+        let (_, ranks) = calculate_fronts_and_ranks(&solutions);
 
         assert_eq!(ranks, vec![0, 1, 2, 2, 1, 2, 1, 1, 1, 0, 0, 0]);
     }

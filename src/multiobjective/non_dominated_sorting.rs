@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use multiobjective::rank::calculate_ranks;
+use multiobjective::rank::calculate_fronts_and_ranks;
 use solution::Solution;
 use std::cmp::Ordering;
 use std::f64::INFINITY;
@@ -61,8 +61,15 @@ pub fn sort<S>(solutions: Vec<S>) -> Vec<S>
 where
     S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
 {
-    let distances = crowding_distance(&solutions);
-    let ranks = calculate_ranks(&solutions);
+    let mut distances = vec![0.0; solutions.len()];
+    let (fronts, ranks) = calculate_fronts_and_ranks(&solutions);
+    for front in fronts {
+        let front_solutions: Vec<_> = front.iter().map(|i| solutions[*i].clone()).collect();
+        let front_distances = crowding_distance(&front_solutions);
+        for (i, distance) in front.into_iter().zip(front_distances) {
+            distances[i] = distance;
+        }
+    }
 
     izip!(solutions, distances, ranks)
         .sorted_by(|(_, distance1, rank1), (_, distance2, rank2)| {
@@ -153,7 +160,7 @@ mod tests {
             .iter()
             .map(|solution| clone_solutions.iter().position(|s| solution == s).unwrap())
             .collect();
-        assert_eq!(indices, vec![0, 9, 10, 11, 7, 8, 1, 4, 6, 2, 3, 5]);
+        assert_eq!(indices, vec![0, 9, 10, 11, 7, 8, 4, 6, 1, 2, 5, 3]);
     }
 
     #[ignore]
