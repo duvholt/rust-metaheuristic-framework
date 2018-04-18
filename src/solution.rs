@@ -1,4 +1,6 @@
+use ordered_float::NotNaN;
 use std::cmp::Ordering;
+use std::hash;
 
 pub enum Objective {
     Single,
@@ -43,6 +45,12 @@ impl SolutionJSON {
 pub trait Solution<F> {
     fn position(&self) -> &Vec<f64>;
     fn fitness(&self) -> &F;
+    fn position_to_notnan(&self) -> Vec<NotNaN<f64>> {
+        self.position()
+            .iter()
+            .map(|value| NotNaN::from(*value))
+            .collect()
+    }
 }
 
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
@@ -113,8 +121,8 @@ impl Solution<f64> for SingleTestSolution {
 
 #[derive(Clone, Debug)]
 pub struct MultiTestSolution {
-    fitness: Vec<f64>,
-    position: Vec<f64>,
+    pub fitness: Vec<f64>,
+    pub position: Vec<f64>,
 }
 
 impl MultiTestSolution {
@@ -123,6 +131,23 @@ impl MultiTestSolution {
             position: fitness.to_vec(),
             fitness,
         }
+    }
+}
+
+impl PartialEq for MultiTestSolution {
+    fn eq(&self, other: &MultiTestSolution) -> bool {
+        self.position == other.position
+    }
+}
+
+impl Eq for MultiTestSolution {}
+
+impl hash::Hash for MultiTestSolution {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: hash::Hasher,
+    {
+        self.position_to_notnan().hash(state)
     }
 }
 
