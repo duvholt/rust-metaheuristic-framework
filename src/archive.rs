@@ -92,11 +92,11 @@ where
         }
     }
 
-    fn update_hypercube(&mut self, population: &[M]) {
+    fn update_hypercube(&mut self, population: Vec<M>) {
         let objectives = population[0].fitness().len();
         let mut min = vec![INFINITY; objectives];
         let mut max = vec![-INFINITY; objectives];
-        for solution in population {
+        for solution in &population {
             for (f_i, &fitness) in solution.fitness().iter().enumerate() {
                 if min[f_i] > fitness {
                     min[f_i] = fitness;
@@ -107,7 +107,7 @@ where
             }
         }
         self.hypercube_map.clear();
-        for solution in population.iter() {
+        for solution in population.into_iter() {
             let hyper_indices: Vec<usize> = solution
                 .fitness()
                 .iter()
@@ -117,7 +117,7 @@ where
             let hypercube = self.hypercube_map
                 .entry(hyper_indices)
                 .or_insert(Hypercube::new(HashSet::new()));
-            hypercube.insert(solution.clone());
+            hypercube.insert(solution);
         }
     }
 
@@ -146,7 +146,7 @@ where
             .iter()
             .map(|p_i| super_population[*p_i].clone())
             .collect();
-        self.update_hypercube(&non_dominated_population);
+        self.update_hypercube(non_dominated_population);
         self.prune_population();
     }
 
