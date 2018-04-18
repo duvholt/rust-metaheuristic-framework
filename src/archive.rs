@@ -43,14 +43,14 @@ impl<M: Solution<Vec<f64>> + Eq + Hash + Clone> Hypercube<M> {
         self.fitness = Hypercube::calculate_fitness(&self.set);
     }
 
-    fn random(&self) -> M {
+    fn random(&self) -> &M {
         let mut rng = thread_rng();
-        let hypercube_vec: Vec<M> = self.set.iter().cloned().collect();
+        let hypercube_vec: Vec<&M> = self.set.iter().collect();
         rng.choose(&hypercube_vec).unwrap().clone()
     }
 }
 
-impl<M: Solution<Vec<f64>> + Eq + Hash> Solution<f64> for Hypercube<M> {
+impl<'a, M: Solution<Vec<f64>> + Eq + Hash> Solution<f64> for &'a Hypercube<M> {
     fn fitness(&self) -> &f64 {
         &self.fitness
     }
@@ -128,8 +128,8 @@ where
                     .iter_mut()
                     .max_by(|(_, ref h1), (_, ref h2)| h1.set.len().cmp(&h2.set.len()))
                     .unwrap();
-                let solution = hypercube.random();
-                hypercube.remove(&solution);
+                let selected = { hypercube.random().clone() };
+                hypercube.remove(&selected);
                 index.clone()
             };
 
@@ -150,8 +150,8 @@ where
         self.prune_population();
     }
 
-    pub fn select_leader(&self) -> M {
-        let hypercubes: Vec<Hypercube<M>> = self.hypercube_map.values().cloned().collect();
+    pub fn select_leader(&self) -> &M {
+        let hypercubes: Vec<&Hypercube<M>> = self.hypercube_map.values().collect();
         let (_, hypercube) = roulette_wheel(&hypercubes[..]);
         hypercube.random()
     }
