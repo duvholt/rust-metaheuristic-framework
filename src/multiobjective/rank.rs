@@ -54,20 +54,17 @@ where
     dominations
 }
 
-pub fn calculate_fronts_and_ranks<'a, S>(solutions: &'a [S]) -> (Vec<Vec<usize>>, Vec<usize>)
+pub fn calculate_fronts<'a, S>(solutions: &'a [S]) -> Vec<Vec<usize>>
 where
     S: Solution<Vec<f64>> + Eq + Hash,
 {
     let dominations = calculate_domation_count(&solutions);
-    let mut ranks = vec![13123; solutions.len()];
     let mut current_front = vec![];
     for (i, domination) in dominations.iter().enumerate() {
         if domination.dominated_by() == 0 {
             current_front.push((i, domination));
-            ranks[i] = 0;
         }
     }
-    let mut front_count = 1;
     let mut fronts = vec![];
     while current_front.len() > 0 {
         let mut new_front = vec![];
@@ -78,14 +75,12 @@ where
                 if dominations[j].dominated_by() == 0 {
                     let other = &dominations[j];
                     new_front.push((j, other));
-                    ranks[j] = front_count;
                 }
             }
         }
-        front_count += 1;
         current_front = new_front;
     }
-    (fronts, ranks)
+    fronts
 }
 
 #[cfg(test)]
@@ -147,8 +142,19 @@ mod tests {
             vec![2.0, 4.0],  // 12, rank 0
         ]);
 
-        let (_, ranks) = calculate_fronts_and_ranks(&solutions);
+        let fronts = calculate_fronts(&solutions);
 
-        assert_eq!(ranks, vec![0, 1, 2, 2, 1, 2, 1, 1, 1, 0, 0, 0]);
+        let fronts_hashset = fronts
+            .into_iter()
+            .map(|front| front.into_iter().collect())
+            .collect::<Vec<HashSet<_>>>();
+        assert_eq!(
+            fronts_hashset,
+            vec![
+                vec![0, 9, 10, 11].into_iter().collect(),
+                vec![7, 8, 6, 1, 4].into_iter().collect(),
+                vec![2, 5, 3].into_iter().collect(),
+            ]
+        );
     }
 }
