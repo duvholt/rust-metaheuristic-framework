@@ -317,8 +317,8 @@ fn start_algorithm() -> Result<(), &'static str> {
         "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
         Green.paint(algorithm_name.to_owned()),
         Green.paint(test_function_name.to_owned()),
-        Green.paint(common.upper_bound.to_string()),
         Green.paint(common.lower_bound.to_string()),
+        Green.paint(common.upper_bound.to_string()),
         Green.paint(common.dimensions.to_string()),
     );
 
