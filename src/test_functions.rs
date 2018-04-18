@@ -88,15 +88,92 @@ pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
             + (k..x.len())
                 .map(|i| (x[i] - 0.5).powi(2) - (20.0 * consts::PI * (x[i] - 0.5)).cos())
                 .sum::<f64>());
-    //f1
+    //f_1
     result.push((1.0 + g) * 0.5 * (0..m - 1).map(|i| x[i]).product::<f64>());
-    //f2 to fm-1
+    //f_2 to f_m-1
     for i in 1..m - 1 {
-        let prod: f64 = (0..m - (i + 1)).map(|j| x[j]).product();
-        result.push((1.0 + g) * 0.5 * prod * (1.0 - x[m - (i + 1)]));
+        let product: f64 = (0..m - (i + 1)).map(|j| x[j]).product();
+        result.push((1.0 + g) * 0.5 * product * (1.0 - x[m - (i + 1)]));
     }
-    //fm
+    //f_m
     result.push((1.0 + g) * 0.5 * (1.0 - x[0]));
+    result
+}
+
+pub fn dtlz2(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let k = x.len() - m + 1;
+    let g: f64 = (k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum();
+    //f_1
+    result.push(
+        (1.0 + g)
+            * (0..m - 1)
+                .map(|i| (x[i] * consts::PI / 2.0).cos())
+                .product::<f64>(),
+    );
+    //f_2 to f_m-1
+    for i in 1..m - 1 {
+        let product: f64 = (0..m - (i + 1))
+            .map(|j| (x[j] * consts::PI / 2.0).cos())
+            .product();
+        result.push((1.0 + g) * product * (x[m - (i + 1)] * consts::PI / 2.0).sin());
+    }
+    //f_m
+    result.push((1.0 + g) * (x[0] * consts::PI / 2.0).sin());
+    result
+}
+
+pub fn dtlz3(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let k = x.len() - m + 1;
+    let g: f64 = 100.0
+        * ((x.len() - k) as f64
+            + (k..x.len())
+                .map(|i| (x[i] - 0.5).powi(2) - (20.0 * consts::PI * (x[i] - 0.5)).cos())
+                .sum::<f64>());
+    //f_1
+    result.push(
+        (1.0 + g)
+            * (0..m - 1)
+                .map(|i| (x[i] * consts::PI / 2.0).cos())
+                .product::<f64>(),
+    );
+    //f_2 to f_m-1
+    for i in 1..m - 1 {
+        let product: f64 = (0..m - (i + 1))
+            .map(|j| (x[j] * consts::PI / 2.0).cos())
+            .product();
+        result.push((1.0 + g) * product * (x[m - (i + 1)] * consts::PI / 2.0).sin());
+    }
+    //f_m
+    result.push((1.0 + g) * (x[0] * consts::PI / 2.0).sin());
+    result
+}
+
+pub fn dtlz4(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let a = 100;
+    let k = x.len() - m + 1;
+    let g: f64 = (k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum();
+    //f_1
+    result.push(
+        (1.0 + g)
+            * (0..m - 1)
+                .map(|i| (x[i].powi(a) * consts::PI / 2.0).cos())
+                .product::<f64>(),
+    );
+    //f_2 to f_m-1
+    for i in 1..m - 1 {
+        let product: f64 = (0..m - (i + 1))
+            .map(|j| (x[j].powi(a) * consts::PI / 2.0).cos())
+            .product();
+        result.push((1.0 + g) * product * (x[m - (i + 1)].powi(a) * consts::PI / 2.0).sin());
+    }
+    //f_m
+    result.push((1.0 + g) * (x[0].powi(a) * consts::PI / 2.0).sin());
     result
 }
 
