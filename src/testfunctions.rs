@@ -202,6 +202,15 @@ pub fn rastrigin(x: &Vec<f64>) -> f64 {
     a * x.len() as f64 + sum
 }
 
+// High Conditioned Elliptic function
+pub fn high_elliptic(x: &Vec<f64>) -> f64 {
+    let d = x.len();
+    x.iter()
+        .enumerate()
+        .map(|(i, x_i)| (10.0f64.powi(6)).powf(i as f64 / (d - 1) as f64) * x_i.powi(2))
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -300,6 +309,18 @@ mod tests {
 
     #[test]
     fn ackley_not_optimum() {
+        assert_ne!(0.0, ackley(&vec![2.0, -1.3]));
+    }
+
+    #[test]
+    fn high_elliptic_optimum() {
+        assert_approx_eq!(0.0, high_elliptic(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, high_elliptic(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, high_elliptic(&vec![0.0, 0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn high_elliptic_not_optimum() {
         assert_ne!(0.0, ackley(&vec![2.0, -1.3]));
     }
 

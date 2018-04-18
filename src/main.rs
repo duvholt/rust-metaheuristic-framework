@@ -234,6 +234,10 @@ fn start_algorithm() -> Result<(), &'static str> {
         "moved-hyper-ellipsoid",
         TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
     );
+    test_functions_map.insert(
+        "high-elliptic",
+        TestFunctionVar::Single(testfunctions::high_elliptic),
+    );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
