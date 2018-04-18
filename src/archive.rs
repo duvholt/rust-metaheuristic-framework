@@ -5,12 +5,12 @@ use solution::Solution;
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;
 use std::fmt::Debug;
-use std::hash;
+use std::hash::Hash;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 struct Hypercube<M>
 where
-    M: Solution<Vec<f64>> + Eq + hash::Hash,
+    M: Solution<Vec<f64>> + Eq + Hash,
 {
     set: HashSet<M>,
     // TODO: Consider splitting Solution trait into
@@ -19,7 +19,7 @@ where
     fitness: f64,
 }
 
-impl<M: Solution<Vec<f64>> + Eq + hash::Hash + Clone> Hypercube<M> {
+impl<M: Solution<Vec<f64>> + Eq + Hash + Clone> Hypercube<M> {
     fn new(set: HashSet<M>) -> Hypercube<M> {
         let fitness = Hypercube::calculate_fitness(&set);
         Hypercube {
@@ -50,7 +50,7 @@ impl<M: Solution<Vec<f64>> + Eq + hash::Hash + Clone> Hypercube<M> {
     }
 }
 
-impl<M: Solution<Vec<f64>> + Eq + hash::Hash> Solution<f64> for Hypercube<M> {
+impl<M: Solution<Vec<f64>> + Eq + Hash> Solution<f64> for Hypercube<M> {
     fn fitness(&self) -> &f64 {
         &self.fitness
     }
@@ -60,17 +60,9 @@ impl<M: Solution<Vec<f64>> + Eq + hash::Hash> Solution<f64> for Hypercube<M> {
     }
 }
 
-impl<M: Solution<Vec<f64>> + Eq + hash::Hash> PartialEq for Hypercube<M> {
-    fn eq(&self, other: &Hypercube<M>) -> bool {
-        self.position == other.position
-    }
-}
-
-impl<M: Solution<Vec<f64>> + Eq + hash::Hash> Eq for Hypercube<M> {}
-
 pub struct Archive<M>
 where
-    M: Solution<Vec<f64>> + Eq + hash::Hash,
+    M: Solution<Vec<f64>> + Eq + Hash,
 {
     hypercube_map: HashMap<Vec<usize>, Hypercube<M>>,
     population_size: usize,
@@ -79,7 +71,7 @@ where
 
 impl<M> Archive<M>
 where
-    M: Solution<Vec<f64>> + Clone + Debug + Eq + hash::Hash,
+    M: Solution<Vec<f64>> + Clone + Debug + Eq + Hash,
 {
     pub fn new(population_size: usize, divisions: usize) -> Archive<M> {
         Archive {
