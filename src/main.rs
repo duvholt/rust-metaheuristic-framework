@@ -238,6 +238,10 @@ fn start_algorithm() -> Result<(), &'static str> {
         "high-elliptic",
         TestFunctionVar::Single(testfunctions::high_elliptic),
     );
+    test_functions_map.insert(
+        "bent-cigar",
+        TestFunctionVar::Single(testfunctions::bent_cigar),
+    );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",

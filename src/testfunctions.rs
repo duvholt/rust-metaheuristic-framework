@@ -202,13 +202,17 @@ pub fn rastrigin(x: &Vec<f64>) -> f64 {
     a * x.len() as f64 + sum
 }
 
-// High Conditioned Elliptic function
+// High Conditioned Elliptic
 pub fn high_elliptic(x: &Vec<f64>) -> f64 {
     let d = x.len();
     x.iter()
         .enumerate()
         .map(|(i, x_i)| (10.0f64.powi(6)).powf(i as f64 / (d - 1) as f64) * x_i.powi(2))
         .sum()
+}
+
+pub fn bent_cigar(x: &Vec<f64>) -> f64 {
+    x[0].powi(2) + 10f64.powi(6) * x.iter().skip(1).map(|x_i| x_i.powi(2)).sum::<f64>()
 }
 
 #[cfg(test)]
@@ -321,7 +325,19 @@ mod tests {
 
     #[test]
     fn high_elliptic_not_optimum() {
-        assert_ne!(0.0, ackley(&vec![2.0, -1.3]));
+        assert_ne!(0.0, high_elliptic(&vec![2.0, -1.3]));
+    }
+
+    #[test]
+    fn bent_cigar_optimum() {
+        assert_approx_eq!(0.0, bent_cigar(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, bent_cigar(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, bent_cigar(&vec![0.0, 0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn bent_cigar_not_optimum() {
+        assert_ne!(0.0, bent_cigar(&vec![2.0, -1.3]));
     }
 
     #[test]
