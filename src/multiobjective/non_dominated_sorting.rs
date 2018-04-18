@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use multiobjective::rank::calculate_fronts_and_ranks;
+use multiobjective::rank::calculate_fronts;
 use solution::Solution;
 use std::cmp::Ordering;
 use std::f64::INFINITY;
@@ -62,12 +62,14 @@ where
     S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
 {
     let mut distances = vec![0.0; solutions.len()];
-    let (fronts, ranks) = calculate_fronts_and_ranks(&solutions);
-    for front in fronts {
+    let mut ranks = vec![0; solutions.len()];
+    let fronts = calculate_fronts(&solutions);
+    for (rank, front) in fronts.into_iter().enumerate() {
         let front_solutions: Vec<_> = front.iter().map(|i| solutions[*i].clone()).collect();
         let front_distances = crowding_distance(&front_solutions);
         for (i, distance) in front.into_iter().zip(front_distances) {
             distances[i] = distance;
+            ranks[i] = rank;
         }
     }
 
