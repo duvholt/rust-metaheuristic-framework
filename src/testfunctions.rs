@@ -278,6 +278,12 @@ pub fn weierstrass(x: &Vec<f64>) -> f64 {
             .sum::<f64>()
 }
 
+pub fn happycat(x: &Vec<f64>) -> f64 {
+    let d = x.len() as f64;
+    let pow_sum = x.iter().map(|x_i| x_i.powi(2)).sum::<f64>();
+    (pow_sum - d).powi(2).powf(1.0 / 8.0) + (0.5 * pow_sum + x.iter().sum::<f64>()) / d + 0.5
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -449,6 +455,18 @@ mod tests {
     #[test]
     fn weierstrass_not_optimum() {
         assert_ne!(0.0, weierstrass(&vec![2.0, -1.3, 5.0]));
+    }
+
+    #[test]
+    fn happycat_optimum() {
+        assert_approx_eq!(0.0, happycat(&vec![-1.0, -1.0]));
+        assert_approx_eq!(0.0, happycat(&vec![-1.0, -1.0, -1.0]));
+        assert_approx_eq!(0.0, happycat(&vec![-1.0, -1.0, -1.0, -1.0]));
+    }
+
+    #[test]
+    fn happycat_not_optimum() {
+        assert_ne!(0.0, happycat(&vec![2.0, -1.3, 5.0]));
     }
 
     #[test]

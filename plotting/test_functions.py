@@ -115,3 +115,14 @@ def weierstrass(X, Y):
             sum2 += a ** j * np.cos(2*np.pi * b ** j * 0.5)
         f += sum1
     return f - 2 * sum2
+
+
+def happycat(X, Y):
+    d = 2
+
+    r2 = 0
+    sum_z = 0
+    for x in [X, Y]:
+        r2 += x**2
+        sum_z += x
+    return np.abs(r2 - d) ** (2 * (1.0 / 8.0)) + (0.5*r2 + sum_z) / 2 + 0.5

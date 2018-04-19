@@ -72,6 +72,8 @@ def plot_json_solutions(json_solutions):
         test_function = tf.schwefel
     elif test_function_name == 'weierstrass':
         test_function = tf.weierstrass
+    elif test_function_name == 'happycat':
+        test_function = tf.happycat
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
