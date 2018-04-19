@@ -100,3 +100,18 @@ def schwefel(X, Y):
     for x in [X, Y]:
         s += np.array([[schwefel_helper(x_ij, z) for x_ij in x_i] for x_i in x])
     return 418.9829 * d - s
+
+
+def weierstrass(X, Y):
+    a = 0.5
+    b = 3.0
+    k_max = 20
+    f = 0
+    for x in [X, Y]:
+        sum1 = 0
+        sum2 = 0
+        for j in range(k_max + 1):
+            sum1 += a ** j * np.cos(2*np.pi * b ** j * (x + 0.5))
+            sum2 += a ** j * np.cos(2*np.pi * b ** j * 0.5)
+        f += sum1
+    return f - 2 * sum2

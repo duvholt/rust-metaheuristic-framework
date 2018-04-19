@@ -70,6 +70,8 @@ def plot_json_solutions(json_solutions):
         test_function = tf.griewank
     elif test_function_name == 'schwefel':
         test_function = tf.schwefel
+    elif test_function_name == 'weierstrass':
+        test_function = tf.weierstrass
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
