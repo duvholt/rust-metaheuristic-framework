@@ -7,8 +7,8 @@ use rand::distributions::{IndependentSample, Normal};
 use rand::{seq, thread_rng, Rng};
 use selection::tournament_selection;
 use solution::{Solution, SolutionJSON};
-use std::cmp::Ordering;
 use std::cmp::max;
+use std::cmp::Ordering;
 use std::f64::consts::PI;
 use std::hash;
 use std::mem;
@@ -1448,11 +1448,9 @@ mod tests {
             create_lion_with_sex(vec![5.0, 5.0], 5.0, Sex::Male),
             create_lion_with_sex(vec![6.0, 6.0], 6.0, Sex::Female),
         ];
-        let prides = vec![
-            Pride {
-                population: population.into_iter().collect(),
-            },
-        ];
+        let prides = vec![Pride {
+            population: population.into_iter().collect(),
+        }];
         let rng = create_rng();
 
         let (prides, new_nomads) = migration(prides, 1, 0.5, rng);
