@@ -1,5 +1,5 @@
 import numpy as np
-
+from math import floor, pow
 
 def ackley(X, Y):
     x = np.array([X, Y])
@@ -46,3 +46,18 @@ def sphere(X, Y):
 def rastrigin(X, Y):
     a = 10.0
     return a * 2 + (X**2 - a * np.cos(2 * np.pi * X)) + (Y**2 - a * np.cos(2 * np.pi * Y))
+
+def katsuura(X, Y):
+    nx = 2
+    x = [X, Y]
+    tmp3 = pow(1.0 * nx, 1.2)
+    f = 1.0
+    for i in range(nx):
+        temp = 0.0
+        for j in range(1, 33):
+            tmp1 = 2.0 ** j
+            tmp2 = tmp1 * x[i]
+            temp += np.abs(tmp2 - np.floor(tmp2 + 0.5)) / tmp1
+        f *= (1.0 + (i + 1.0) * temp) ** (10.0 / tmp3)
+    tmp1 = 10.0 / nx / nx
+    return f * tmp1 - tmp1

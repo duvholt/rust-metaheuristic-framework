@@ -60,6 +60,8 @@ def plot_json_solutions(json_solutions):
         test_function = tf.sphere
     elif test_function_name == 'rastrigin':
         test_function = tf.rastrigin
+    elif test_function_name == 'katsuura':
+        test_function = tf.katsuura
 
     Z = test_function(X, Y)
     ax.plot_surface(

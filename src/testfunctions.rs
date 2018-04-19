@@ -245,7 +245,7 @@ pub fn schwefel(x: &Vec<f64>) -> f64 {
 
 pub fn katsuura(x: &Vec<f64>) -> f64 {
     let d = x.len() as f64;
-    (10.0 / d.powi(2))
+    (10.0 / d / d)
         * x.iter()
             .enumerate()
             .map(|(i, x_i)| {
@@ -253,12 +253,12 @@ pub fn katsuura(x: &Vec<f64>) -> f64 {
                     * (1..33)
                         .map(|j| {
                             let p = 2f64.powi(j) * x_i;
-                            ((p - (p).floor()).abs()) / 2f64.powi(j)
+                            (p - (p + 0.5).floor()).abs() / 2f64.powi(j)
                         })
                         .sum::<f64>())
                     .powf(10.0 / d.powf(1.2))
             })
-            .product::<f64>() - 10.0 / d.powi(2)
+            .product::<f64>() - 10.0 / d / d
 }
 
 pub fn weierstrass(x: &Vec<f64>) -> f64 {
