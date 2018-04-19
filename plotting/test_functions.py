@@ -1,5 +1,5 @@
 import numpy as np
-from math import floor, pow
+from math import floor, pow, sin, sqrt
 
 def ackley(X, Y):
     x = np.array([X, Y])
@@ -73,3 +73,30 @@ def high_elliptic(X, Y):
 
 def bent_cigar(X, Y):
     return X ** 2 + (10 ** 6) * Y**2
+
+
+def griewank(X, Y):
+    return 1.0 + 1 / 4000 * (X**2 + Y**2) - np.cos(X / np.sqrt(1)) * \
+        np.cos(Y / np.sqrt(2))
+
+
+def schwefel_helper(x, z):
+    z_i = x + z
+    d = 2
+    if z_i < -500:
+        return (abs(z_i) % 500.0 - 500.0) * sin(sqrt(abs((abs(z_i) % 500.0 - 500.0))))
+        - (z_i + 500.0) ** 2 / (10_000.0 * d)
+    elif z_i > 500.0:
+        return (500.0 - (z_i % 500.0)) * sin(sqrt(abs(500.0 - z_i % 500.0)))
+        - (z_i - 500.0) ** 2 / (10_000.0 * d)
+    else:
+        return z_i * sin(abs(z_i) ** (1.0 / 2.0))
+
+
+def schwefel(X, Y):
+    z = 4.209687462275036e+002
+    s = 0
+    d = 2
+    for x in [X, Y]:
+        s += np.array([[schwefel_helper(x_ij, z) for x_ij in x_i] for x_i in x])
+    return 418.9829 * d - s

@@ -66,6 +66,10 @@ def plot_json_solutions(json_solutions):
         test_function = tf.high_elliptic
     elif test_function_name == 'bent-cigar':
         test_function = tf.bent_cigar
+    elif test_function_name == 'griewank':
+        test_function = tf.griewank
+    elif test_function_name == 'schwefel':
+        test_function = tf.schwefel
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
