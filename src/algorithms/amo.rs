@@ -4,9 +4,9 @@ use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
 use rand::distributions::normal::StandardNormal;
 use rand::{thread_rng, Rng};
+use solution::sort_solutions_by_fitness;
 use solution::Solution;
 use solution::SolutionJSON;
-use solution::sort_solutions_by_fitness;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
