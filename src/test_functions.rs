@@ -79,15 +79,55 @@ pub fn zdt6(x: &Vec<f64>) -> Vec<f64> {
     vec![f1, f2]
 }
 
-pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
-    let mut result = vec![];
-    let m = 3;
+fn dtlz1g(x: &Vec<f64>, m: usize) -> f64 {
     let k = x.len() - m + 1;
-    let g: f64 = 100.0
+    100.0
         * (k as f64
             + (x.len() - k..x.len())
                 .map(|i| (x[i] - 0.5).powi(2) - (20.0 * consts::PI * (x[i] - 0.5)).cos())
-                .sum::<f64>());
+                .sum::<f64>())
+}
+
+fn dtlz2g(x: &Vec<f64>, m: usize) -> f64 {
+    let k = x.len() - m + 1;
+    (x.len() - k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum()
+}
+
+fn dtlz2y(x: f64) -> f64 {
+    x
+}
+
+fn dtlz4y(x: f64) -> f64 {
+    x.powi(2)
+}
+
+fn dtlz2_6(x: &Vec<f64>, g: &Fn(&Vec<f64>, usize) -> f64, y: &Fn(f64) -> f64) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let g = g(x, m);
+    //f_1
+    result.push(
+        (1.0 + g)
+            * (0..m - 1)
+                .map(|i| (y(x[i]) * consts::PI / 2.0).cos())
+                .product::<f64>(),
+    );
+    //f_2 to f_m-1
+    for i in 1..m - 1 {
+        let product: f64 = (0..m - (i + 1))
+            .map(|j| (y(x[j]) * consts::PI / 2.0).cos())
+            .product();
+        result.push((1.0 + g) * product * (y(x[m - (i + 1)]) * consts::PI / 2.0).sin());
+    }
+    //f_m
+    result.push((1.0 + g) * (y(x[0]) * consts::PI / 2.0).sin());
+    result
+}
+
+pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let g = dtlz1g(x, m);
     //f_1
     result.push((1.0 + g) * 0.5 * (0..m - 1).map(|i| x[i]).product::<f64>());
     //f_2 to f_m-1
@@ -101,80 +141,15 @@ pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
 }
 
 pub fn dtlz2(x: &Vec<f64>) -> Vec<f64> {
-    let mut result = vec![];
-    let m = 3;
-    let k = x.len() - m + 1;
-    let g: f64 = (x.len() - k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum();
-    //f_1
-    result.push(
-        (1.0 + g)
-            * (0..m - 1)
-                .map(|i| (x[i] * consts::PI / 2.0).cos())
-                .product::<f64>(),
-    );
-    //f_2 to f_m-1
-    for i in 1..m - 1 {
-        let product: f64 = (0..m - (i + 1))
-            .map(|j| (x[j] * consts::PI / 2.0).cos())
-            .product();
-        result.push((1.0 + g) * product * (x[m - (i + 1)] * consts::PI / 2.0).sin());
-    }
-    //f_m
-    result.push((1.0 + g) * (x[0] * consts::PI / 2.0).sin());
-    result
+    dtlz2_6(x, &dtlz2g, &dtlz2y)
 }
 
 pub fn dtlz3(x: &Vec<f64>) -> Vec<f64> {
-    let mut result = vec![];
-    let m = 3;
-    let k = x.len() - m + 1;
-    let g: f64 = 100.0
-        * (k as f64
-            + (x.len() - k..x.len())
-                .map(|i| (x[i] - 0.5).powi(2) - (20.0 * consts::PI * (x[i] - 0.5)).cos())
-                .sum::<f64>());
-    //f_1
-    result.push(
-        (1.0 + g)
-            * (0..m - 1)
-                .map(|i| (x[i] * consts::PI / 2.0).cos())
-                .product::<f64>(),
-    );
-    //f_2 to f_m-1
-    for i in 1..m - 1 {
-        let product: f64 = (0..m - (i + 1))
-            .map(|j| (x[j] * consts::PI / 2.0).cos())
-            .product();
-        result.push((1.0 + g) * product * (x[m - (i + 1)] * consts::PI / 2.0).sin());
-    }
-    //f_m
-    result.push((1.0 + g) * (x[0] * consts::PI / 2.0).sin());
-    result
+    dtlz2_6(x, &dtlz1g, &dtlz2y)
 }
 
 pub fn dtlz4(x: &Vec<f64>) -> Vec<f64> {
-    let mut result = vec![];
-    let m = 3;
-    let a = 100;
-    let k = x.len() - m + 1;
-    let g: f64 = (x.len() - k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum();
-    //f_1
-    result.push(
-        (1.0 + g)
-            * (0..m - 1)
-                .map(|i| (x[i].powi(a) * consts::PI / 2.0).cos())
-                .product::<f64>(),
-    );
-    //f_2 to f_m-1
-    for i in 1..m - 1 {
-        let product: f64 = (0..m - (i + 1))
-            .map(|j| (x[j].powi(a) * consts::PI / 2.0).cos())
-            .product();
-        result.push((1.0 + g) * product * (x[m - (i + 1)].powi(a) * consts::PI / 2.0).sin());
-    }
-    //f_m
-    result.push((1.0 + g) * (x[0].powi(a) * consts::PI / 2.0).sin());
-    result
+    dtlz2_6(x, &dtlz2g, &dtlz4y)
 }
 
 pub fn axis_parallel_hyper_ellipsoid(x: &Vec<f64>) -> f64 {
