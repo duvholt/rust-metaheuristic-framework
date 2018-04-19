@@ -40,12 +40,15 @@ def axis_parallel_hyper_ellipsoid_function(X, Y):
 def moved_axis_parallel_hyper_ellipsoid_function(X, Y):
     return (X - 5)**2 + (2 * (Y - 5*2))**2
 
+
 def sphere(X, Y):
     return X**2 + Y**2
+
 
 def rastrigin(X, Y):
     a = 10.0
     return a * 2 + (X**2 - a * np.cos(2 * np.pi * X)) + (Y**2 - a * np.cos(2 * np.pi * Y))
+
 
 def katsuura(X, Y):
     nx = 2
@@ -61,3 +64,12 @@ def katsuura(X, Y):
         f *= (1.0 + (i + 1.0) * temp) ** (10.0 / tmp3)
     tmp1 = 10.0 / nx / nx
     return f * tmp1 - tmp1
+
+
+def high_elliptic(X, Y):
+    d = 2
+    return X ** 2 + (10.0 ** 6) ** (1 / (d - 1)) * Y ** 2
+
+
+def bent_cigar(X, Y):
+    return X ** 2 + (10 ** 6) * Y**2

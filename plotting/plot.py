@@ -62,6 +62,10 @@ def plot_json_solutions(json_solutions):
         test_function = tf.rastrigin
     elif test_function_name == 'katsuura':
         test_function = tf.katsuura
+    elif test_function_name == 'high-elliptic':
+        test_function = tf.high_elliptic
+    elif test_function_name == 'bent-cigar':
+        test_function = tf.bent_cigar
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
