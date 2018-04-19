@@ -284,6 +284,13 @@ pub fn happycat(x: &Vec<f64>) -> f64 {
     (pow_sum - d).powi(2).powf(1.0 / 8.0) + (0.5 * pow_sum + x.iter().sum::<f64>()) / d + 0.5
 }
 
+pub fn hgbat(x: &Vec<f64>) -> f64 {
+    let d = x.len() as f64;
+    let pow_sum = x.iter().map(|x_i| x_i.powi(2)).sum::<f64>();
+    let sum = x.iter().sum::<f64>();
+    (pow_sum.powi(2) - sum.powi(2)).powi(2).powf(1.0 / 4.0) + (0.5 * pow_sum + sum) / d + 0.5
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -467,6 +474,18 @@ mod tests {
     #[test]
     fn happycat_not_optimum() {
         assert_ne!(0.0, happycat(&vec![2.0, -1.3, 5.0]));
+    }
+
+    #[test]
+    fn hgbat_optimum() {
+        assert_approx_eq!(0.0, hgbat(&vec![-1.0, -1.0]));
+        assert_approx_eq!(0.0, hgbat(&vec![-1.0, -1.0, -1.0]));
+        assert_approx_eq!(0.0, hgbat(&vec![-1.0, -1.0, -1.0, -1.0]));
+    }
+
+    #[test]
+    fn hgbat_not_optimum() {
+        assert_ne!(0.0, hgbat(&vec![2.0, -1.3, 5.0]));
     }
 
     #[test]

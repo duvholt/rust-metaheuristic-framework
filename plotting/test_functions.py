@@ -126,3 +126,12 @@ def happycat(X, Y):
         r2 += x**2
         sum_z += x
     return np.abs(r2 - d) ** (2 * (1.0 / 8.0)) + (0.5*r2 + sum_z) / 2 + 0.5
+
+
+def hgbat(X, Y):
+    r2 = 0
+    sum_z = 0
+    for x in [X, Y]:
+        r2 += x**2
+        sum_z += x
+    return np.abs(r2**2 - sum_z**2) ** (1.0 / 2.0) + (0.5*r2 + sum_z) / 2 + 0.5

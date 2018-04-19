@@ -250,6 +250,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         TestFunctionVar::Single(testfunctions::weierstrass),
     );
     test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
+    test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
