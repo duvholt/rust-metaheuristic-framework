@@ -205,8 +205,33 @@ pub fn rastrigin(x: &Vec<f64>) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{thread_rng, Rng};
     use test::Bencher;
 
+    #[test]
+    fn dtlz1_optimum() {
+        let mut rng = thread_rng();
+        let objectives = 3;
+        for i in objectives..31 {
+            let mut vector = vec![0.5; i];
+            let k = i - objectives + 1;
+            for j in 0..i - k {
+                vector[j] = rng.next_f64();
+                let result = dtlz1(&vector);
+                assert_approx_eq!(result.iter().sum::<f64>(), 0.5);
+            }
+        }
+    }
+
+    #[test]
+    fn dtlz1_not_optimum() {
+        let result = dtlz1(&vec![0.5, 0.5, 0.55, 0.5]);
+        assert_ne!(result.iter().sum::<f64>(), 0.5);
+        let result = dtlz1(&vec![0.5, 0.5, 0.5, 0.8]);
+        assert_ne!(result.iter().sum::<f64>(), 0.5);
+        let result = dtlz1(&vec![0.5, 0.5, 0.55, 0.1]);
+        assert_ne!(result.iter().sum::<f64>(), 0.5);
+    }
     #[test]
     fn rastrigin_optimum() {
         assert_eq!(rastrigin(&vec![0.0]), 0.0);
