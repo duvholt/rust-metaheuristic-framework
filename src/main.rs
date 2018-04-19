@@ -243,6 +243,12 @@ fn start_algorithm() -> Result<(), &'static str> {
         TestFunctionVar::Single(testfunctions::bent_cigar),
     );
     test_functions_map.insert("griewank", TestFunctionVar::Single(testfunctions::griewank));
+    test_functions_map.insert("schwefel", TestFunctionVar::Single(testfunctions::schwefel));
+    test_functions_map.insert("katsuura", TestFunctionVar::Single(testfunctions::katsuura));
+    test_functions_map.insert(
+        "weierstrass",
+        TestFunctionVar::Single(testfunctions::weierstrass),
+    );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",

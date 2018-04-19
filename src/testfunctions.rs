@@ -223,6 +223,61 @@ pub fn griewank(x: &Vec<f64>) -> f64 {
             .product::<f64>() + 1.0
 }
 
+pub fn schwefel(x: &Vec<f64>) -> f64 {
+    let z = 4.209687462275036e+002;
+    let d = x.len() as f64;
+    418.9828872724338 * d
+        - x.iter()
+            .map(|x_i| {
+                let z_i = x_i + z;
+                if z_i < -500.0 {
+                    (z_i.abs() % 500.0 - 500.0) * ((z_i.abs() % 500.0 - 500.0).abs()).sqrt().sin()
+                        - (z_i + 500.0).powi(2) / (10_000.0 * d)
+                } else if z_i > 500.0 {
+                    (500.0 - (z_i % 500.0)) * (500.0 - z_i % 500.0).abs().sqrt().sin()
+                        - (z_i - 500.0).powi(2) / (10_000.0 * d)
+                } else {
+                    z_i * (z_i.abs().powf(1.0 / 2.0)).sin()
+                }
+            })
+            .sum::<f64>()
+}
+
+pub fn katsuura(x: &Vec<f64>) -> f64 {
+    let d = x.len() as f64;
+    (10.0 / d.powi(2))
+        * x.iter()
+            .enumerate()
+            .map(|(i, x_i)| {
+                (1.0 + (i as f64 + 1.0)
+                    * (1..33)
+                        .map(|j| {
+                            let p = 2f64.powi(j) * x_i;
+                            ((p - (p).floor()).abs()) / 2f64.powi(j)
+                        })
+                        .sum::<f64>())
+                    .powf(10.0 / d.powf(1.2))
+            })
+            .product::<f64>() - 10.0 / d.powi(2)
+}
+
+pub fn weierstrass(x: &Vec<f64>) -> f64 {
+    let a = 0.5f64;
+    let b = 3.0f64;
+    let kmax = 20;
+    let d = x.len() as f64;
+    x.iter()
+        .map(|x_i| {
+            (0..kmax + 1)
+                .map(|k| a.powi(k) * (2.0 * consts::PI * b.powi(k) * (x_i + 0.5)).cos())
+                .sum::<f64>()
+        })
+        .sum::<f64>()
+        - d * (0..kmax + 1)
+            .map(|k| a.powi(k) * (2.0 * consts::PI * b.powi(k) * 0.5).cos())
+            .sum::<f64>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -358,6 +413,42 @@ mod tests {
     #[test]
     fn griewank_not_optimum() {
         assert_ne!(0.0, griewank(&vec![2.0, -1.3]));
+    }
+
+    #[test]
+    fn schwefel_optimum() {
+        assert_approx_eq!(0.0, schwefel(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, schwefel(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, schwefel(&vec![0.0, 0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn schwefel_not_optimum() {
+        assert_ne!(0.0, schwefel(&vec![2.0, -1.3]));
+    }
+
+    #[test]
+    fn katsuura_optimum() {
+        assert_approx_eq!(0.0, katsuura(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, katsuura(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, katsuura(&vec![0.0, 0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn katsuura_not_optimum() {
+        assert_ne!(0.0, katsuura(&vec![2.0, -1.3, 5.0]));
+    }
+
+    #[test]
+    fn weierstrass_optimum() {
+        assert_approx_eq!(0.0, weierstrass(&vec![0.0, 0.0]));
+        assert_approx_eq!(0.0, weierstrass(&vec![0.0, 0.0, 0.0]));
+        assert_approx_eq!(0.0, weierstrass(&vec![0.0, 0.0, 0.0, 0.0]));
+    }
+
+    #[test]
+    fn weierstrass_not_optimum() {
+        assert_ne!(0.0, weierstrass(&vec![2.0, -1.3, 5.0]));
     }
 
     #[test]
