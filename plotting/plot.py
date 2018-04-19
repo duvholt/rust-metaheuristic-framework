@@ -64,10 +64,14 @@ def plot_json_solutions(json_solutions):
         test_function = tf.katsuura
 
     Z = test_function(X, Y)
+    if Z.min() >= 0:
+        norm = colors.LogNorm(vmin=Z.min(), vmax=Z.max())
+    else:
+        norm = colors.Normalize()
     ax.plot_surface(
         X, Y, Z,
         linewidth=1, edgecolors='#333333',
-        cmap=cm.jet,  norm=colors.LogNorm(vmin=Z.min(), vmax=Z.max())
+        cmap=cm.jet, norm=norm
     )
 
     x, y, z = np.transpose(solutions)
