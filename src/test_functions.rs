@@ -93,34 +93,39 @@ fn dtlz2g(x: &Vec<f64>, m: usize) -> f64 {
     (x.len() - k..x.len()).map(|i| (x[i] - 0.5).powi(2)).sum()
 }
 
-fn dtlz2y(x: f64) -> f64 {
-    x
+fn dtlz4y(x: &Vec<f64>) -> Vec<f64> {
+    x.iter().map(|i| i.powi(2)).collect()
 }
 
-fn dtlz4y(x: f64) -> f64 {
-    x.powi(2)
-}
-
-fn dtlz2_6(x: &Vec<f64>, g: &Fn(&Vec<f64>, usize) -> f64, y: &Fn(f64) -> f64) -> Vec<f64> {
+fn dtlz2_6(x: &Vec<f64>, v: i8) -> Vec<f64> {
     let mut result = vec![];
     let m = 3;
-    let g = g(x, m);
+    let g = match v {
+        2 | 4 => dtlz2g(x, m),
+        3 => dtlz1g(x, m),
+        _ => panic!("Test function does not exist"),
+    };
+    let y = match v {
+        2 | 3 => x.clone(),
+        4 => dtlz4y(x),
+        _ => panic!("Test function does not exist"),
+    };
     //f_1
     result.push(
         (1.0 + g)
             * (0..m - 1)
-                .map(|i| (y(x[i]) * consts::PI / 2.0).cos())
+                .map(|i| (y[i] * consts::PI / 2.0).cos())
                 .product::<f64>(),
     );
     //f_2 to f_m-1
     for i in 1..m - 1 {
         let product: f64 = (0..m - (i + 1))
-            .map(|j| (y(x[j]) * consts::PI / 2.0).cos())
+            .map(|j| (y[j] * consts::PI / 2.0).cos())
             .product();
-        result.push((1.0 + g) * product * (y(x[m - (i + 1)]) * consts::PI / 2.0).sin());
+        result.push((1.0 + g) * product * (y[m - (i + 1)] * consts::PI / 2.0).sin());
     }
     //f_m
-    result.push((1.0 + g) * (y(x[0]) * consts::PI / 2.0).sin());
+    result.push((1.0 + g) * (y[0] * consts::PI / 2.0).sin());
     result
 }
 
@@ -141,15 +146,15 @@ pub fn dtlz1(x: &Vec<f64>) -> Vec<f64> {
 }
 
 pub fn dtlz2(x: &Vec<f64>) -> Vec<f64> {
-    dtlz2_6(x, &dtlz2g, &dtlz2y)
+    dtlz2_6(x, 2)
 }
 
 pub fn dtlz3(x: &Vec<f64>) -> Vec<f64> {
-    dtlz2_6(x, &dtlz1g, &dtlz2y)
+    dtlz2_6(x, 3)
 }
 
 pub fn dtlz4(x: &Vec<f64>) -> Vec<f64> {
-    dtlz2_6(x, &dtlz2g, &dtlz4y)
+    dtlz2_6(x, 4)
 }
 
 pub fn axis_parallel_hyper_ellipsoid(x: &Vec<f64>) -> f64 {
