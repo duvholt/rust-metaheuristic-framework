@@ -261,6 +261,33 @@ mod tests {
     }
 
     #[test]
+    fn dtlz3_optimum() {
+        let mut rng = thread_rng();
+        let objectives = 3;
+        for i in objectives..31 {
+            let mut vector = vec![0.5; i];
+            let k = i - objectives + 1;
+            for j in 0..i - k {
+                vector[j] = rng.next_f64();
+                let result = dtlz3(&vector);
+                assert_approx_eq!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+            }
+        }
+    }
+
+    #[test]
+    fn dtlz3_not_optimum() {
+        let result = dtlz3(&vec![0.5, 0.5, 0.55, 0.5]);
+        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        let result = dtlz3(&vec![0.5, 0.5, 0.5, 0.8]);
+        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        let result = dtlz3(&vec![0.5, 0.5, 0.5, 0.8]);
+        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        let result = dtlz3(&vec![0.5, 0.5, 0.6, 0.6]);
+        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+    }
+
+    #[test]
     fn rastrigin_optimum() {
         assert_eq!(rastrigin(&vec![0.0]), 0.0);
         assert_eq!(rastrigin(&vec![0.0, 0.0]), 0.0);
