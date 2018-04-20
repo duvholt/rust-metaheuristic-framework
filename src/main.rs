@@ -18,7 +18,7 @@ use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
-use rustoa::test_functions;
+use rustoa::testfunctions;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
@@ -213,66 +213,63 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Single-objective
     test_functions_map.insert(
         "rosenbrock",
-        TestFunctionVar::Single(test_functions::rosenbrock),
+        TestFunctionVar::Single(testfunctions::rosenbrock),
     );
-    test_functions_map.insert(
-        "zakharov",
-        TestFunctionVar::Single(test_functions::zakharov),
-    );
-    test_functions_map.insert("ackley", TestFunctionVar::Single(test_functions::ackley));
+    test_functions_map.insert("zakharov", TestFunctionVar::Single(testfunctions::zakharov));
+    test_functions_map.insert("ackley", TestFunctionVar::Single(testfunctions::ackley));
     test_functions_map.insert(
         "himmelblau",
-        TestFunctionVar::Single(test_functions::himmelblau),
+        TestFunctionVar::Single(testfunctions::himmelblau),
     );
-    test_functions_map.insert("sphere", TestFunctionVar::Single(test_functions::sphere));
+    test_functions_map.insert("sphere", TestFunctionVar::Single(testfunctions::sphere));
     test_functions_map.insert(
         "rastrigin",
-        TestFunctionVar::Single(test_functions::rastrigin),
+        TestFunctionVar::Single(testfunctions::rastrigin),
     );
     test_functions_map.insert(
         "hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(testfunctions::axis_parallel_hyper_ellipsoid),
     );
     test_functions_map.insert(
         "moved-hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
     );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
-        TestFunctionVar::Multi(test_functions::schaffer1, "schaffer1-2d"),
+        TestFunctionVar::Multi(testfunctions::schaffer1, "schaffer1-2d"),
     );
     test_functions_map.insert(
         "zdt1",
-        TestFunctionVar::Multi(test_functions::zdt1, "zdt1-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt1, "zdt1-2d"),
     );
     test_functions_map.insert(
         "zdt2",
-        TestFunctionVar::Multi(test_functions::zdt2, "zdt2-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt2, "zdt2-2d"),
     );
     test_functions_map.insert(
         "zdt3",
-        TestFunctionVar::Multi(test_functions::zdt3, "zdt3-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt3, "zdt3-2d"),
     );
     test_functions_map.insert(
         "zdt6",
-        TestFunctionVar::Multi(test_functions::zdt6, "zdt6-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt6, "zdt6-2d"),
     );
     test_functions_map.insert(
         "dtlz1",
-        TestFunctionVar::Multi(test_functions::dtlz1, "dtlz1-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz1, "dtlz1-3d"),
     );
     test_functions_map.insert(
         "dtlz2",
-        TestFunctionVar::Multi(test_functions::dtlz2, "dtlz2-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz2, "dtlz2-3d"),
     );
     test_functions_map.insert(
         "dtlz3",
-        TestFunctionVar::Multi(test_functions::dtlz3, "dtlz3-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz3, "dtlz3-3d"),
     );
     test_functions_map.insert(
         "dtlz4",
-        TestFunctionVar::Multi(test_functions::dtlz4, "dtlz4-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz4, "dtlz4-3d"),
     );
 
     let matches = arguments(&test_functions_map, &algorithms);
