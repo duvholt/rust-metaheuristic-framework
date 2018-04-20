@@ -190,13 +190,10 @@ pub fn dtlz6(x: &Vec<f64>) -> Vec<f64> {
 }
 
 pub fn dtlz7(x: &Vec<f64>) -> Vec<f64> {
-    let mut result = vec![];
     let m = 3;
     let g = dtlz7g(x, m);
     //f_1 to f_m-1
-    for i in 0..m - 1 {
-        result.push(x[i])
-    }
+    let mut result = x[..m - 1].to_vec();
     //f_m
     let sum = (0..m - 1)
         .map(|i| result[i] / (1.0 + g) * (1.0 + (3.0 * consts::PI * result[i]).sin()))
@@ -236,110 +233,97 @@ mod tests {
     use rand::{thread_rng, Rng};
     use test::Bencher;
 
-    #[test]
-    fn dtlz1_optimum() {
+    fn sum(vector: Vec<f64>) -> f64 {
+        vector.iter().sum::<f64>()
+    }
+
+    fn sum_pow(vector: Vec<f64>) -> f64 {
+        vector.iter().map(|i| i.powi(2)).sum::<f64>()
+    }
+
+    fn dtlz_optimum(dtlz: &Fn(&Vec<f64>) -> Vec<f64>, sum: &Fn(Vec<f64>) -> f64, x: f64, f: f64) {
         let mut rng = thread_rng();
         let objectives = 3;
         for i in objectives..31 {
-            let mut vector = vec![0.5; i];
+            let mut vector = vec![x; i];
             let k = i - objectives + 1;
             for j in 0..i - k {
                 vector[j] = rng.next_f64();
-                let result = dtlz1(&vector);
-                assert_approx_eq!(result.iter().sum::<f64>(), 0.5);
+                let result = dtlz(&vector);
+                assert_approx_eq!(sum(result), f);
             }
         }
+    }
+
+    fn dtlz_not_optimum(dtlz: &Fn(&Vec<f64>) -> Vec<f64>, sum: &Fn(Vec<f64>) -> f64, f: f64) {
+        let result = dtlz(&vec![0.5, 0.5, 0.55, 0.5]);
+        assert_ne!(sum(result), f);
+        let result = dtlz(&vec![0.5, 0.5, 0.5, 0.8]);
+        assert_ne!(sum(result), f);
+        let result = dtlz(&vec![0.5, 0.5, 0.55, 0.1]);
+        assert_ne!(sum(result), f);
+        let result = dtlz(&vec![0.5, 0.5, 0.6, 0.6]);
+        assert_ne!(sum(result), f);
+    }
+
+    #[test]
+    fn dtlz1_optimum() {
+        dtlz_optimum(&dtlz1, &sum, 0.5, 0.5);
     }
 
     #[test]
     fn dtlz1_not_optimum() {
-        let result = dtlz1(&vec![0.5, 0.5, 0.55, 0.5]);
-        assert_ne!(result.iter().sum::<f64>(), 0.5);
-        let result = dtlz1(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().sum::<f64>(), 0.5);
-        let result = dtlz1(&vec![0.5, 0.5, 0.55, 0.1]);
-        assert_ne!(result.iter().sum::<f64>(), 0.5);
+        dtlz_not_optimum(&dtlz1, &sum, 0.5);
     }
 
     #[test]
     fn dtlz2_optimum() {
-        let mut rng = thread_rng();
-        let objectives = 3;
-        for i in objectives..31 {
-            let mut vector = vec![0.5; i];
-            let k = i - objectives + 1;
-            for j in 0..i - k {
-                vector[j] = rng.next_f64();
-                let result = dtlz2(&vector);
-                assert_approx_eq!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-            }
-        }
+        dtlz_optimum(&dtlz2, &sum_pow, 0.5, 1.0);
     }
 
     #[test]
     fn dtlz2_not_optimum() {
-        let result = dtlz2(&vec![0.5, 0.5, 0.55, 0.5]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz2(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz2(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz2(&vec![0.5, 0.5, 0.6, 0.6]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        dtlz_not_optimum(&dtlz2, &sum_pow, 1.0);
     }
 
     #[test]
     fn dtlz3_optimum() {
-        let mut rng = thread_rng();
-        let objectives = 3;
-        for i in objectives..31 {
-            let mut vector = vec![0.5; i];
-            let k = i - objectives + 1;
-            for j in 0..i - k {
-                vector[j] = rng.next_f64();
-                let result = dtlz3(&vector);
-                assert_approx_eq!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-            }
-        }
+        dtlz_optimum(&dtlz3, &sum_pow, 0.5, 1.0);
     }
 
     #[test]
     fn dtlz3_not_optimum() {
-        let result = dtlz3(&vec![0.5, 0.5, 0.55, 0.5]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz3(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz3(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz3(&vec![0.5, 0.5, 0.6, 0.6]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        dtlz_not_optimum(&dtlz3, &sum_pow, 1.0);
     }
 
     #[test]
     fn dtlz4_optimum() {
-        let mut rng = thread_rng();
-        let objectives = 3;
-        for i in objectives..31 {
-            let mut vector = vec![0.5; i];
-            let k = i - objectives + 1;
-            for j in 0..i - k {
-                vector[j] = rng.next_f64();
-                let result = dtlz4(&vector);
-                assert_approx_eq!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-            }
-        }
+        dtlz_optimum(&dtlz4, &sum_pow, 0.5, 1.0);
     }
 
     #[test]
     fn dtlz4_not_optimum() {
-        let result = dtlz4(&vec![0.5, 0.5, 0.55, 0.5]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz4(&vec![0.5, 0.5, 0.5, 0.8]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz4(&vec![0.5, 0.5, 0.5, 0.6]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
-        let result = dtlz4(&vec![0.5, 0.5, 0.6, 0.6]);
-        assert_ne!(result.iter().map(|i| i.powi(2)).sum::<f64>(), 1.0);
+        dtlz_not_optimum(&dtlz4, &sum_pow, 1.0);
+    }
+
+    #[test]
+    fn dtlz5_optimum() {
+        dtlz_optimum(&dtlz5, &sum_pow, 0.5, 1.0);
+    }
+
+    #[test]
+    fn dtlz5_not_optimum() {
+        dtlz_not_optimum(&dtlz5, &sum_pow, 1.0);
+    }
+
+    #[test]
+    fn dtlz6_optimum() {
+        dtlz_optimum(&dtlz6, &sum_pow, 0.0, 1.0);
+    }
+
+    #[test]
+    fn dtlz6_not_optimum() {
+        dtlz_not_optimum(&dtlz6, &sum_pow, 1.0);
     }
 
     #[test]
