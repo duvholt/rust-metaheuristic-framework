@@ -83,6 +83,15 @@ fn arguments(
             .takes_value(true),
     )
         .arg(
+            Arg::with_name("runs")
+                .short("r")
+                .long("runs")
+                .value_name("INTEGER")
+                .help("Number of runs to perform")
+                .default_value("1")
+                .takes_value(true),
+        )
+        .arg(
             Arg::with_name("iterations")
                 .short("i")
                 .long("iterations")
@@ -298,6 +307,8 @@ fn start_algorithm() -> Result<(), &'static str> {
         .unwrap()
         .clone();
 
+    let number_of_runs = value_t_or_exit!(matches, "runs", usize);
+
     // Common config for all algorithms
     let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
     let common = CommonConfig {
@@ -355,39 +366,51 @@ fn start_algorithm() -> Result<(), &'static str> {
         Blue.paint(common.evaluations.to_string()),
     );
 
-    // Run algorithm
-    let (_, evaluations) = match run_subcommand {
-        &AlgorithmType::Single(run) => {
-            let single_test_function = get_single(test_function)?;
-            let fitness_evaluator =
-                FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
-            (
-                run(&common, &fitness_evaluator, sub_m.unwrap()),
-                fitness_evaluator.evaluations(),
-            )
-        }
-        &AlgorithmType::Multi(run) => {
-            let (multi_test_function, pareto_filename) = get_multi(test_function)?;
-            sampler.set_pareto_front(read_pareto_front(&format!(
-                "optimal_solutions/{}.json",
-                pareto_filename
-            )));
-            let fitness_evaluator =
-                FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
-            (
-                run(&common, &fitness_evaluator, sub_m.unwrap()),
-                fitness_evaluator.evaluations(),
-            )
-        }
-    };
+    println!(
+        "Running algorithm {} times",
+        Green.paint(number_of_runs.to_string())
+    );
 
-    let solutions = sampler.solutions();
+    for run in 0..number_of_runs {
+        println!("Starting run #{}", Blue.paint(run.to_string()));
+
+        // Run algorithm
+        let (_, evaluations) = match run_subcommand {
+            &AlgorithmType::Single(run) => {
+                let single_test_function = get_single(test_function)?;
+                let fitness_evaluator =
+                    FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m.unwrap()),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+            &AlgorithmType::Multi(run) => {
+                let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+                sampler.set_pareto_front(read_pareto_front(&format!(
+                    "optimal_solutions/{}.json",
+                    pareto_filename
+                )));
+                let fitness_evaluator =
+                    FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m.unwrap()),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+        };
+
+        sampler.print_run_statistics(stdout());
+        println!(
+            "Number of fitness evaluations: {}",
+            Green.paint(evaluations.to_string())
+        );
+        sampler.end_run();
+    }
+
     sampler.print_statistics(stdout());
 
-    println!(
-        "Number of fitness evaluations: {}",
-        Green.paint(evaluations.to_string())
-    );
+    let solutions = sampler.solutions();
     if let Objective::Single = sampler.objective {
         let best_solution = solutions
             .iter()
