@@ -60,12 +60,32 @@ def plot_json_solutions(json_solutions):
         test_function = tf.sphere
     elif test_function_name == 'rastrigin':
         test_function = tf.rastrigin
+    elif test_function_name == 'katsuura':
+        test_function = tf.katsuura
+    elif test_function_name == 'high-elliptic':
+        test_function = tf.high_elliptic
+    elif test_function_name == 'bent-cigar':
+        test_function = tf.bent_cigar
+    elif test_function_name == 'griewank':
+        test_function = tf.griewank
+    elif test_function_name == 'schwefel':
+        test_function = tf.schwefel
+    elif test_function_name == 'weierstrass':
+        test_function = tf.weierstrass
+    elif test_function_name == 'happycat':
+        test_function = tf.happycat
+    elif test_function_name == 'hgbat':
+        test_function = tf.hgbat
 
     Z = test_function(X, Y)
+    if Z.min() >= 0:
+        norm = colors.LogNorm(vmin=Z.min(), vmax=Z.max())
+    else:
+        norm = colors.Normalize()
     ax.plot_surface(
         X, Y, Z,
         linewidth=1, edgecolors='#333333',
-        cmap=cm.jet,  norm=colors.LogNorm(vmin=Z.min(), vmax=Z.max())
+        cmap=cm.jet, norm=norm
     )
 
     x, y, z = np.transpose(solutions)

@@ -234,6 +234,23 @@ fn start_algorithm() -> Result<(), &'static str> {
         "moved-hyper-ellipsoid",
         TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
     );
+    test_functions_map.insert(
+        "high-elliptic",
+        TestFunctionVar::Single(testfunctions::high_elliptic),
+    );
+    test_functions_map.insert(
+        "bent-cigar",
+        TestFunctionVar::Single(testfunctions::bent_cigar),
+    );
+    test_functions_map.insert("griewank", TestFunctionVar::Single(testfunctions::griewank));
+    test_functions_map.insert("schwefel", TestFunctionVar::Single(testfunctions::schwefel));
+    test_functions_map.insert("katsuura", TestFunctionVar::Single(testfunctions::katsuura));
+    test_functions_map.insert(
+        "weierstrass",
+        TestFunctionVar::Single(testfunctions::weierstrass),
+    );
+    test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
+    test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
