@@ -97,17 +97,30 @@ fn dtlz4y(x: &Vec<f64>) -> Vec<f64> {
     x.iter().map(|i| i.powi(2)).collect()
 }
 
+fn dtlz5y(x: &Vec<f64>, m: usize, g: f64) -> Vec<f64> {
+    (0..x.len())
+        .map(|i| {
+            if i > 0 && i < m - 1 {
+                (1.0 + 2.0 * g * x[i]) / (2.0 * (1.0 + g))
+            } else {
+                x[i]
+            }
+        })
+        .collect()
+}
+
 fn dtlz2_6(x: &Vec<f64>, v: i8) -> Vec<f64> {
     let mut result = vec![];
     let m = 3;
     let g = match v {
-        2 | 4 => dtlz2g(x, m),
+        2 | 4 | 5 => dtlz2g(x, m),
         3 => dtlz1g(x, m),
         _ => panic!("Test function does not exist"),
     };
     let y = match v {
         2 | 3 => x.clone(),
         4 => dtlz4y(x),
+        5 => dtlz5y(x, m, g),
         _ => panic!("Test function does not exist"),
     };
     //f_1
@@ -155,6 +168,10 @@ pub fn dtlz3(x: &Vec<f64>) -> Vec<f64> {
 
 pub fn dtlz4(x: &Vec<f64>) -> Vec<f64> {
     dtlz2_6(x, 4)
+}
+
+pub fn dtlz5(x: &Vec<f64>) -> Vec<f64> {
+    dtlz2_6(x, 5)
 }
 
 pub fn axis_parallel_hyper_ellipsoid(x: &Vec<f64>) -> f64 {
