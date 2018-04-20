@@ -98,6 +98,11 @@ fn dtlz6g(x: &Vec<f64>, m: usize) -> f64 {
     (x.len() - k..x.len()).map(|i| x[i].powf(0.1)).sum()
 }
 
+fn dtlz7g(x: &Vec<f64>, m: usize) -> f64 {
+    let k = x.len() - m + 1;
+    1.0 + 9.0 / k as f64 * (x.len() - k..x.len()).map(|i| x[i]).sum::<f64>()
+}
+
 fn dtlz4y(x: &Vec<f64>) -> Vec<f64> {
     x.iter().map(|i| i.powi(2)).collect()
 }
@@ -182,6 +187,22 @@ pub fn dtlz5(x: &Vec<f64>) -> Vec<f64> {
 
 pub fn dtlz6(x: &Vec<f64>) -> Vec<f64> {
     dtlz2_6(x, 6)
+}
+
+pub fn dtlz7(x: &Vec<f64>) -> Vec<f64> {
+    let mut result = vec![];
+    let m = 3;
+    let g = dtlz7g(x, m);
+    //f_1 to f_m-1
+    for i in 0..m - 1 {
+        result.push(x[i])
+    }
+    //f_m
+    let sum = (0..m - 1)
+        .map(|i| result[i] / (1.0 + g) * (1.0 + (3.0 * consts::PI * result[i]).sin()))
+        .sum::<f64>();
+    result.push((1.0 + g) * (m as f64 - sum));
+    result
 }
 
 pub fn axis_parallel_hyper_ellipsoid(x: &Vec<f64>) -> f64 {
