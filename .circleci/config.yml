@@ -32,7 +32,9 @@ jobs:
           command: rustup run nightly cargo test
       - run:
           name: Upload Coverage
-          command: ./.circleci/codecov.sh
+          command: |
+            cargo kcov
+            ./.circleci/codecov.sh
       - save_cache:
           key: v2-project-cache
           paths:

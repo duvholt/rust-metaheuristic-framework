@@ -18,7 +18,7 @@ use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
-use rustoa::test_functions;
+use rustoa::testfunctions;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
@@ -82,6 +82,15 @@ fn arguments(
             .possible_values(&test_function_names)
             .takes_value(true),
     )
+        .arg(
+            Arg::with_name("runs")
+                .short("r")
+                .long("runs")
+                .value_name("INTEGER")
+                .help("Number of runs to perform")
+                .default_value("1")
+                .takes_value(true),
+        )
         .arg(
             Arg::with_name("iterations")
                 .short("i")
@@ -213,66 +222,80 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Single-objective
     test_functions_map.insert(
         "rosenbrock",
-        TestFunctionVar::Single(test_functions::rosenbrock),
+        TestFunctionVar::Single(testfunctions::rosenbrock),
     );
-    test_functions_map.insert(
-        "zakharov",
-        TestFunctionVar::Single(test_functions::zakharov),
-    );
-    test_functions_map.insert("ackley", TestFunctionVar::Single(test_functions::ackley));
+    test_functions_map.insert("zakharov", TestFunctionVar::Single(testfunctions::zakharov));
+    test_functions_map.insert("ackley", TestFunctionVar::Single(testfunctions::ackley));
     test_functions_map.insert(
         "himmelblau",
-        TestFunctionVar::Single(test_functions::himmelblau),
+        TestFunctionVar::Single(testfunctions::himmelblau),
     );
-    test_functions_map.insert("sphere", TestFunctionVar::Single(test_functions::sphere));
+    test_functions_map.insert("sphere", TestFunctionVar::Single(testfunctions::sphere));
     test_functions_map.insert(
         "rastrigin",
-        TestFunctionVar::Single(test_functions::rastrigin),
+        TestFunctionVar::Single(testfunctions::rastrigin),
     );
     test_functions_map.insert(
         "hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(testfunctions::axis_parallel_hyper_ellipsoid),
     );
     test_functions_map.insert(
         "moved-hyper-ellipsoid",
-        TestFunctionVar::Single(test_functions::moved_axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
     );
+    test_functions_map.insert(
+        "high-elliptic",
+        TestFunctionVar::Single(testfunctions::high_elliptic),
+    );
+    test_functions_map.insert(
+        "bent-cigar",
+        TestFunctionVar::Single(testfunctions::bent_cigar),
+    );
+    test_functions_map.insert("griewank", TestFunctionVar::Single(testfunctions::griewank));
+    test_functions_map.insert("schwefel", TestFunctionVar::Single(testfunctions::schwefel));
+    test_functions_map.insert("katsuura", TestFunctionVar::Single(testfunctions::katsuura));
+    test_functions_map.insert(
+        "weierstrass",
+        TestFunctionVar::Single(testfunctions::weierstrass),
+    );
+    test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
+    test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
-        TestFunctionVar::Multi(test_functions::schaffer1, "schaffer1-2d"),
+        TestFunctionVar::Multi(testfunctions::schaffer1, "schaffer1-2d"),
     );
     test_functions_map.insert(
         "zdt1",
-        TestFunctionVar::Multi(test_functions::zdt1, "zdt1-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt1, "zdt1-2d"),
     );
     test_functions_map.insert(
         "zdt2",
-        TestFunctionVar::Multi(test_functions::zdt2, "zdt2-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt2, "zdt2-2d"),
     );
     test_functions_map.insert(
         "zdt3",
-        TestFunctionVar::Multi(test_functions::zdt3, "zdt3-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt3, "zdt3-2d"),
     );
     test_functions_map.insert(
         "zdt6",
-        TestFunctionVar::Multi(test_functions::zdt6, "zdt6-2d"),
+        TestFunctionVar::Multi(testfunctions::zdt6, "zdt6-2d"),
     );
     test_functions_map.insert(
         "dtlz1",
-        TestFunctionVar::Multi(test_functions::dtlz1, "dtlz1-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz1, "dtlz1-3d"),
     );
     test_functions_map.insert(
         "dtlz2",
-        TestFunctionVar::Multi(test_functions::dtlz2, "dtlz2-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz2, "dtlz2-3d"),
     );
     test_functions_map.insert(
         "dtlz3",
-        TestFunctionVar::Multi(test_functions::dtlz3, "dtlz3-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz3, "dtlz3-3d"),
     );
     test_functions_map.insert(
         "dtlz4",
-        TestFunctionVar::Multi(test_functions::dtlz4, "dtlz4-3d"),
+        TestFunctionVar::Multi(testfunctions::dtlz4, "dtlz4-3d"),
     );
     test_functions_map.insert(
         "dtlz5",
@@ -295,6 +318,8 @@ fn start_algorithm() -> Result<(), &'static str> {
         .get(test_function_name.as_str())
         .unwrap()
         .clone();
+
+    let number_of_runs = value_t_or_exit!(matches, "runs", usize);
 
     // Common config for all algorithms
     let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
@@ -353,39 +378,57 @@ fn start_algorithm() -> Result<(), &'static str> {
         Blue.paint(common.evaluations.to_string()),
     );
 
-    // Run algorithm
-    let (_, evaluations) = match run_subcommand {
-        &AlgorithmType::Single(run) => {
-            let single_test_function = get_single(test_function)?;
-            let fitness_evaluator =
-                FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
-            (
-                run(&common, &fitness_evaluator, sub_m.unwrap()),
-                fitness_evaluator.evaluations(),
-            )
-        }
-        &AlgorithmType::Multi(run) => {
-            let (multi_test_function, pareto_filename) = get_multi(test_function)?;
-            sampler.set_pareto_front(read_pareto_front(&format!(
-                "optimal_solutions/{}.json",
-                pareto_filename
-            )));
-            let fitness_evaluator =
-                FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
-            (
-                run(&common, &fitness_evaluator, sub_m.unwrap()),
-                fitness_evaluator.evaluations(),
-            )
-        }
-    };
+    println!(
+        "Running algorithm {} times",
+        Green.paint(number_of_runs.to_string())
+    );
 
-    let solutions = sampler.solutions();
+    for run in 0..number_of_runs {
+        println!("Starting run #{}", Blue.paint(run.to_string()));
+
+        // Run algorithm
+        let (_, evaluations) = match run_subcommand {
+            &AlgorithmType::Single(run) => {
+                let single_test_function = get_single(test_function)?;
+                let fitness_evaluator =
+                    FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m.unwrap()),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+            &AlgorithmType::Multi(run) => {
+                let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+                sampler.set_pareto_front(read_pareto_front(&format!(
+                    "optimal_solutions/{}.json",
+                    pareto_filename
+                )));
+                let fitness_evaluator =
+                    FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m.unwrap()),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+        };
+
+        sampler.print_run_statistics(stdout());
+        println!(
+            "Number of fitness evaluations: {}",
+            Green.paint(evaluations.to_string())
+        );
+
+        sampler.save_run();
+
+        // Keep last run for plotting
+        if run + 1 != number_of_runs {
+            sampler.end_run();
+        }
+    }
+
     sampler.print_statistics(stdout());
 
-    println!(
-        "Number of fitness evaluations: {}",
-        Green.paint(evaluations.to_string())
-    );
+    let solutions = sampler.solutions();
     if let Objective::Single = sampler.objective {
         let best_solution = solutions
             .iter()

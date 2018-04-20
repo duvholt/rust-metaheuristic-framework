@@ -1,3 +1,5 @@
+use itertools::Itertools;
+use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
 use statistics::measure::igd;
@@ -20,6 +22,7 @@ pub struct Sampler {
     solutions: RefCell<Vec<SolutionJSON>>,
     generations: RefCell<Vec<Vec<SolutionJSON>>>,
     pareto_front: Option<Vec<Vec<f64>>>,
+    runs: RefCell<Vec<f64>>,
 }
 
 impl Sampler {
@@ -37,6 +40,7 @@ impl Sampler {
             generations: RefCell::new(vec![]),
             objective,
             pareto_front: None,
+            runs: RefCell::new(vec![]),
         }
     }
 
@@ -239,7 +243,7 @@ impl Sampler {
         Sampler::print_mean_and_stddev(&mut writer, fitness_values);
     }
 
-    pub fn print_statistics(&self, mut writer: impl Write) {
+    pub fn print_run_statistics(&self, mut writer: impl Write) {
         println!("------ Sample Statistics ------");
         match self.mode {
             SamplerMode::Evolution => {
@@ -268,6 +272,46 @@ impl Sampler {
             }
         }
         println!("---- End Sample Statistics ----");
+    }
+
+    fn best_fitness(&self) -> f64 {
+        let solutions = self.solutions();
+        match self.objective {
+            Objective::Single => solutions
+                .iter()
+                .map(|s| s.fitness[0])
+                .min_by(|a, b| a.partial_cmp(&b).unwrap())
+                .unwrap(),
+            Objective::Multi => {
+                let front = solutions
+                    .iter()
+                    .map(|solution| solution.fitness.clone())
+                    .collect();
+                igd(&front, &self.pareto_front.clone().unwrap())
+            }
+        }
+    }
+
+    pub fn save_run(&self) {
+        let best_fitness = self.best_fitness();
+        self.runs.borrow_mut().push(best_fitness);
+    }
+
+    pub fn end_run(&self) {
+        self.solutions.borrow_mut().clear();
+        self.generations.borrow_mut().clear();
+    }
+
+    pub fn print_statistics(&self, mut writer: impl Write) {
+        println!("------ Run Statistics ------");
+        let runs = self.runs.borrow().to_vec();
+        write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
+        Sampler::print_mean_and_stddev(&mut writer, runs.to_vec());
+        let minmax = runs.iter().minmax();
+        if let MinMaxResult::MinMax(min, max) = minmax {
+            write!(&mut writer, "Min: {:10.4e}. Max: {:10.4e}\n", min, max).unwrap();
+        }
+        println!("---- End Run Statistics ----");
     }
 }
 
@@ -455,7 +499,7 @@ mod tests {
 
         sampler.population_sample_single(0, &solutions);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(output, "Mode: Evolution with 10 samples\n[ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n");
@@ -469,7 +513,7 @@ mod tests {
 
         sampler.population_sample_multi(0, &solutions);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
@@ -485,7 +529,7 @@ mod tests {
 
         sampler.population_sample_single(0, &solutions);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
@@ -501,7 +545,7 @@ mod tests {
 
         sampler.population_sample_single(10, &solutions);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(output, "Mode: Last Generation\nBest solution from last generation:  1.0000e-1\nAverage  2.5000e-1 Standard deviation  1.1180e-1\n");
@@ -515,7 +559,7 @@ mod tests {
 
         sampler.population_sample_multi(10, &solutions);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(output, "Mode: Last Generation\nIGD: 0.0408248290463863\n");
@@ -529,7 +573,7 @@ mod tests {
         sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
         sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
@@ -548,12 +592,36 @@ mod tests {
             sampler.sample_fitness_multi(&vec![fitness, fitness], &solution.fitness());
         }
         let mut output = Vec::new();
-        sampler.print_statistics(&mut output);
+        sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
             "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+        );
+    }
+
+    #[test]
+    fn prints_statistics_from_all_runs() {
+        let sampler = Sampler::new(10, 10, SamplerMode::FitnessSearch, Objective::Single);
+
+        sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
+        sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
+        sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
+        sampler.save_run();
+        sampler.end_run();
+        sampler.sample_fitness_single(&2.1, &vec![1.0, 0.1]);
+        sampler.sample_fitness_single(&0.3, &vec![1.1, 0.1]);
+        sampler.sample_fitness_single(&3.2, &vec![1.2, 0.1]);
+        sampler.save_run();
+        sampler.end_run();
+        let mut output = Vec::new();
+        sampler.print_statistics(&mut output);
+
+        let output = String::from_utf8(output).expect("Not UTF-8");
+        assert_eq!(
+            output,
+            "Number of runs: 2\nAverage  6.5000e-1 Standard deviation  3.5000e-1\nMin:  3.0000e-1. Max:   1.0000e0\n"
         );
     }
 }

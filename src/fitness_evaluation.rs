@@ -6,7 +6,7 @@ pub type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
 
 pub type SingleTestFunctionVar = fn(&Vec<f64>) -> f64;
 pub type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum TestFunctionVar {
     Single(SingleTestFunctionVar),
     Multi(MultiTestFunctionVar, &'static str),

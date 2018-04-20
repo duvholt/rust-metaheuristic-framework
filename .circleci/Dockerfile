@@ -37,3 +37,5 @@ RUN bash -l -c 'rustfmt -V'
 RUN bash -l -c 'echo $(rustc --print sysroot)/lib >> /etc/ld.so.conf'
 RUN bash -l -c 'echo /usr/local/lib >> /etc/ld.so.conf'
 RUN ldconfig
+
+RUN cargo install cargo-kcov
