@@ -75,15 +75,6 @@ else
 	exit 1
 fi
 
-printf "${PREFIX} Checking for shasum ... "
-command -v shasum &>/dev/null
-if [ $? == 0 ]; then
-	printf "${SUCCESS}\n"
-else
-	printf "${FAILURE}\n"
-	exit 1
-fi
-
 # Just check that running rustfmt doesn't do anything to the file. I do this instead of
 # modifying the file because I don't want to mess with the developer's index, which may
 # not only contain discrete files.
@@ -108,6 +99,15 @@ elif [ ${FMTRESULT} != 0 ]; then
     echo "$diff" | sed 's/Using rustfmt config file.*$/d/'
 else
 	printf "${SUCCESS}\n"
+fi
+
+printf "${PREFIX} Running tests ... "
+if result=$(cargo test --color always 2>&1); then
+	printf "${SUCCESS}\n"
+else
+	printf "${FAILURE}\n"
+	echo "$result"
+	FAILED=1
 fi
 
 exit ${FAILED}
