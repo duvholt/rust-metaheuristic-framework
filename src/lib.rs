@@ -27,5 +27,5 @@ pub mod position;
 pub mod selection;
 pub mod solution;
 pub mod statistics;
-pub mod test_functions;
+pub mod testfunctions;
 pub mod testing;
