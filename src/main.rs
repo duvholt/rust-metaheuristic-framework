@@ -405,6 +405,10 @@ fn start_algorithm() -> Result<(), &'static str> {
             "Number of fitness evaluations: {}",
             Green.paint(evaluations.to_string())
         );
+
+        sampler.save_run();
+
+        // Keep last run for plotting
         if run + 1 != number_of_runs {
             sampler.end_run();
         }

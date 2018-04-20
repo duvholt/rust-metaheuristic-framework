@@ -292,9 +292,12 @@ impl Sampler {
         }
     }
 
-    pub fn end_run(&self) {
+    pub fn save_run(&self) {
         let best_fitness = self.best_fitness();
         self.runs.borrow_mut().push(best_fitness);
+    }
+
+    pub fn end_run(&self) {
         self.solutions.borrow_mut().clear();
         self.generations.borrow_mut().clear();
     }
@@ -605,10 +608,12 @@ mod tests {
         sampler.sample_fitness_single(&2.0, &vec![0.0, 0.1]);
         sampler.sample_fitness_single(&1.0, &vec![0.1, 0.1]);
         sampler.sample_fitness_single(&3.0, &vec![0.2, 0.1]);
+        sampler.save_run();
         sampler.end_run();
         sampler.sample_fitness_single(&2.1, &vec![1.0, 0.1]);
         sampler.sample_fitness_single(&0.3, &vec![1.1, 0.1]);
         sampler.sample_fitness_single(&3.2, &vec![1.2, 0.1]);
+        sampler.save_run();
         sampler.end_run();
         let mut output = Vec::new();
         sampler.print_statistics(&mut output);
