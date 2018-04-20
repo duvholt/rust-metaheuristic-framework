@@ -405,7 +405,9 @@ fn start_algorithm() -> Result<(), &'static str> {
             "Number of fitness evaluations: {}",
             Green.paint(evaluations.to_string())
         );
-        sampler.end_run();
+        if run + 1 != number_of_runs {
+            sampler.end_run();
+        }
     }
 
     sampler.print_statistics(stdout());
