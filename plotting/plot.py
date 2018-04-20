@@ -87,6 +87,7 @@ def plot_json_solutions(json_solutions):
         linewidth=1, edgecolors='#333333',
         cmap=cm.jet, norm=norm
     )
+    cset = ax.contour(X, Y, Z, zdir='z', offset=Z.min(), cmap=cm.jet)
 
     x, y, z = np.transpose(solutions)
     ax.plot(
