@@ -297,6 +297,18 @@ fn start_algorithm() -> Result<(), &'static str> {
         "dtlz4",
         TestFunctionVar::Multi(testfunctions::dtlz4, "dtlz4-3d"),
     );
+    test_functions_map.insert(
+        "dtlz5",
+        TestFunctionVar::Multi(testfunctions::dtlz5, "dtlz5-3d"),
+    );
+    test_functions_map.insert(
+        "dtlz6",
+        TestFunctionVar::Multi(testfunctions::dtlz6, "dtlz6-3d"),
+    );
+    test_functions_map.insert(
+        "dtlz7",
+        TestFunctionVar::Multi(testfunctions::dtlz7, "dtlz7-3d"),
+    );
 
     let matches = arguments(&test_functions_map, &algorithms);
 
