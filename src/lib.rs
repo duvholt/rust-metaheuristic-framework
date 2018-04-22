@@ -1,4 +1,5 @@
 #![feature(test)]
+extern crate ansi_term;
 #[cfg(test)]
 #[macro_use]
 extern crate assert_approx_eq;

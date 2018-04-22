@@ -1,3 +1,4 @@
+use ansi_term::Color::{Cyan, Green, Red};
 use itertools::Itertools;
 use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
@@ -163,16 +164,24 @@ impl Sampler {
     fn print_mean_and_stddev(mut writer: impl Write, values: &Vec<f64>) {
         write!(
             writer,
-            "Average {:10.4e} Standard deviation {:10.4e}\n",
-            mean(&values),
-            population_standard_deviation(&values, None),
+            "Average {} Standard deviation {}\n",
+            Green.paint(format!("{:10.4e}", mean(&values))),
+            Green.paint(format!(
+                "{:10.4e}",
+                population_standard_deviation(&values, None)
+            )),
         ).unwrap();
     }
 
     fn print_min_max(mut writer: impl Write, values: &Vec<f64>) {
         let minmax = values.iter().minmax();
         if let MinMaxResult::MinMax(min, max) = minmax {
-            write!(&mut writer, "Min: {:10.4e}. Max: {:10.4e}\n", min, max).unwrap();
+            write!(
+                writer,
+                "Min: {}. Max: {}\n",
+                Cyan.paint(format!("{:10.4e}", min)),
+                Red.paint(format!("{:10.4e}", max)),
+            ).unwrap();
         }
     }
 
@@ -182,7 +191,11 @@ impl Sampler {
             .map(|solution| solution.fitness.clone())
             .collect();
         let igd_value = igd(&front, &self.pareto_front.clone().unwrap());
-        write!(&mut writer, "IGD: {}\n", igd_value).unwrap();
+        write!(
+            &mut writer,
+            "IGD: {}\n",
+            Green.paint(format!("{:10.4e}", igd_value))
+        ).unwrap();
     }
 
     fn print_evolution(&self, mut writer: impl Write) {
@@ -237,8 +250,9 @@ impl Sampler {
         for (i, solution) in self.solutions.borrow().iter().enumerate() {
             write!(
                 &mut writer,
-                "[{:2}] Fitness: {:10.4e}\n",
-                i, solution.fitness[0]
+                "[{:2}] Fitness: {}\n",
+                i,
+                Green.paint(format!("{:10.4e}", solution.fitness[0]))
             ).unwrap();
         }
     }
@@ -511,9 +525,15 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: Evolution with 10 samples\n\
-             [ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n\
-             Min:  1.0000e-1. Max:  4.0000e-1\n"
+            format!(
+                "Mode: Evolution with 10 samples\n\
+                 [ 0] Average {} Standard deviation {}\n\
+                 Min: {}. Max: {}\n",
+                Green.paint(" 2.5000e-1"),
+                Green.paint(" 1.1180e-1"),
+                Cyan.paint(" 1.0000e-1"),
+                Red.paint(" 4.0000e-1"),
+            )
         );
     }
 
@@ -530,7 +550,10 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: Evolution with 10 samples\n[ 0] IGD: 0.0408248290463863\n"
+            format!(
+                "Mode: Evolution with 10 samples\n[ 0] IGD: {}\n",
+                Green.paint(" 4.0825e-2")
+            )
         );
     }
 
@@ -546,7 +569,10 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: Best Solution Evolution with 10 samples\n[ 0] Fitness:  1.0000e-1\n"
+            format!(
+                "Mode: Best Solution Evolution with 10 samples\n[ 0] Fitness: {}\n",
+                Green.paint(" 1.0000e-1")
+            )
         );
     }
 
@@ -562,10 +588,16 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: Last Generation\n\
-             Best solution from last generation:  1.0000e-1\n\
-             Average  2.5000e-1 Standard deviation  1.1180e-1\n\
-             Min:  1.0000e-1. Max:  4.0000e-1\n"
+            format!(
+                "Mode: Last Generation\n\
+                 Best solution from last generation:  1.0000e-1\n\
+                 Average {} Standard deviation {}\n\
+                 Min: {}. Max: {}\n",
+                Green.paint(" 2.5000e-1"),
+                Green.paint(" 1.1180e-1"),
+                Cyan.paint(" 1.0000e-1"),
+                Red.paint(" 4.0000e-1"),
+            )
         );
     }
 
@@ -580,7 +612,13 @@ mod tests {
         sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
-        assert_eq!(output, "Mode: Last Generation\nIGD: 0.0408248290463863\n");
+        assert_eq!(
+            output,
+            format!(
+                "Mode: Last Generation\nIGD: {}\n",
+                Green.paint(" 4.0825e-2")
+            )
+        );
     }
 
     #[test]
@@ -596,9 +634,15 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: All fitness evaluations\n\
-             Average   2.0000e0 Standard deviation  8.1650e-1\n\
-             Min:   1.0000e0. Max:   3.0000e0\n"
+            format!(
+                "Mode: All fitness evaluations\n\
+                 Average {} Standard deviation {}\n\
+                 Min: {}. Max: {}\n",
+                Green.paint("  2.0000e0"),
+                Green.paint(" 8.1650e-1"),
+                Cyan.paint("  1.0000e0"),
+                Red.paint("  3.0000e0"),
+            )
         );
     }
 
@@ -617,9 +661,15 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: All fitness evaluations\n\
-             Average   2.0000e0 Standard deviation  8.1650e-1\n\
-             Min:   1.0000e0. Max:   3.0000e0\n"
+            format!(
+                "Mode: All fitness evaluations\n\
+                 Average {} Standard deviation {}\n\
+                 Min: {}. Max: {}\n",
+                Green.paint("  2.0000e0"),
+                Green.paint(" 8.1650e-1"),
+                Cyan.paint("  1.0000e0"),
+                Red.paint("  3.0000e0"),
+            )
         );
     }
 
@@ -643,9 +693,15 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Number of runs: 2\n\
-             Average  6.5000e-1 Standard deviation  3.5000e-1\n\
-             Min:  3.0000e-1. Max:   1.0000e0\n"
+            format!(
+                "Number of runs: 2\n\
+                 Average {} Standard deviation {}\n\
+                 Min: {}. Max: {}\n",
+                Green.paint(" 6.5000e-1"),
+                Green.paint(" 3.5000e-1"),
+                Cyan.paint(" 3.0000e-1"),
+                Red.paint("  1.0000e0"),
+            ),
         );
     }
 }
