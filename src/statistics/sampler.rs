@@ -226,17 +226,6 @@ impl Sampler {
                     .iter()
                     .map(|solution| solution.fitness[0])
                     .collect();
-                {
-                    let best = fitness_values
-                        .iter()
-                        .min_by(|a, b| a.partial_cmp(&b).unwrap_or(Ordering::Equal))
-                        .unwrap();
-                    write!(
-                        &mut writer,
-                        "Best solution from last generation: {:10.4e}\n",
-                        best
-                    ).unwrap();
-                }
                 Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
                 Sampler::print_min_max(&mut writer, &fitness_values);
             }
@@ -590,7 +579,6 @@ mod tests {
             output,
             format!(
                 "Mode: Last Generation\n\
-                 Best solution from last generation:  1.0000e-1\n\
                  Average {} Standard deviation {}\n\
                  Min: {}. Max: {}\n",
                 Green.paint(" 2.5000e-1"),
