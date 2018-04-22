@@ -160,7 +160,7 @@ impl Sampler {
         }
     }
 
-    fn print_mean_and_stddev(mut writer: impl Write, values: Vec<f64>) {
+    fn print_mean_and_stddev(mut writer: impl Write, values: &Vec<f64>) {
         write!(
             writer,
             "Average {:10.4e} Standard deviation {:10.4e}\n",
@@ -169,7 +169,7 @@ impl Sampler {
         ).unwrap();
     }
 
-    fn print_min_max(mut writer: impl Write, values: Vec<f64>) {
+    fn print_min_max(mut writer: impl Write, values: &Vec<f64>) {
         let minmax = values.iter().minmax();
         if let MinMaxResult::MinMax(min, max) = minmax {
             write!(&mut writer, "Min: {:10.4e}. Max: {:10.4e}\n", min, max).unwrap();
@@ -195,7 +195,7 @@ impl Sampler {
                         .iter()
                         .map(|solution| solution.fitness[0])
                         .collect();
-                    Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                    Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
                 }
                 Objective::Multi => {
                     self.print_igd(&mut writer, &generation);
@@ -223,7 +223,7 @@ impl Sampler {
                         best
                     ).unwrap();
                 }
-                Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+                Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
             }
             Objective::Multi => {
                 self.print_igd(&mut writer, &self.solutions.borrow());
@@ -247,7 +247,7 @@ impl Sampler {
             .iter()
             .map(|solution| solution.fitness[0])
             .collect();
-        Sampler::print_mean_and_stddev(&mut writer, fitness_values);
+        Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
     }
 
     pub fn print_run_statistics(&self, mut writer: impl Write) {
@@ -313,8 +313,8 @@ impl Sampler {
         println!("------ Run Statistics ------");
         let runs = self.runs.borrow().to_vec();
         write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
-        Sampler::print_mean_and_stddev(&mut writer, runs.to_vec());
-        Sampler::print_min_max(&mut writer, runs);
+        Sampler::print_mean_and_stddev(&mut writer, &runs);
+        Sampler::print_min_max(&mut writer, &runs);
         println!("---- End Run Statistics ----");
     }
 }
