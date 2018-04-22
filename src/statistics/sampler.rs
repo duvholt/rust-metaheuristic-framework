@@ -169,6 +169,13 @@ impl Sampler {
         ).unwrap();
     }
 
+    fn print_min_max(mut writer: impl Write, values: Vec<f64>) {
+        let minmax = values.iter().minmax();
+        if let MinMaxResult::MinMax(min, max) = minmax {
+            write!(&mut writer, "Min: {:10.4e}. Max: {:10.4e}\n", min, max).unwrap();
+        }
+    }
+
     fn print_igd(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
         let front = generation
             .iter()
@@ -307,10 +314,7 @@ impl Sampler {
         let runs = self.runs.borrow().to_vec();
         write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
         Sampler::print_mean_and_stddev(&mut writer, runs.to_vec());
-        let minmax = runs.iter().minmax();
-        if let MinMaxResult::MinMax(min, max) = minmax {
-            write!(&mut writer, "Min: {:10.4e}. Max: {:10.4e}\n", min, max).unwrap();
-        }
+        Sampler::print_min_max(&mut writer, runs);
         println!("---- End Run Statistics ----");
     }
 }
