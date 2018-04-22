@@ -196,6 +196,7 @@ impl Sampler {
                         .map(|solution| solution.fitness[0])
                         .collect();
                     Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
+                    Sampler::print_min_max(&mut writer, &fitness_values);
                 }
                 Objective::Multi => {
                     self.print_igd(&mut writer, &generation);
@@ -224,6 +225,7 @@ impl Sampler {
                     ).unwrap();
                 }
                 Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
+                Sampler::print_min_max(&mut writer, &fitness_values);
             }
             Objective::Multi => {
                 self.print_igd(&mut writer, &self.solutions.borrow());
@@ -248,6 +250,7 @@ impl Sampler {
             .map(|solution| solution.fitness[0])
             .collect();
         Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
+        Sampler::print_min_max(&mut writer, &fitness_values);
     }
 
     pub fn print_run_statistics(&self, mut writer: impl Write) {
@@ -506,7 +509,12 @@ mod tests {
         sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
-        assert_eq!(output, "Mode: Evolution with 10 samples\n[ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n");
+        assert_eq!(
+            output,
+            "Mode: Evolution with 10 samples\n\
+             [ 0] Average  2.5000e-1 Standard deviation  1.1180e-1\n\
+             Min:  1.0000e-1. Max:  4.0000e-1\n"
+        );
     }
 
     #[test]
@@ -552,7 +560,13 @@ mod tests {
         sampler.print_run_statistics(&mut output);
 
         let output = String::from_utf8(output).expect("Not UTF-8");
-        assert_eq!(output, "Mode: Last Generation\nBest solution from last generation:  1.0000e-1\nAverage  2.5000e-1 Standard deviation  1.1180e-1\n");
+        assert_eq!(
+            output,
+            "Mode: Last Generation\n\
+             Best solution from last generation:  1.0000e-1\n\
+             Average  2.5000e-1 Standard deviation  1.1180e-1\n\
+             Min:  1.0000e-1. Max:  4.0000e-1\n"
+        );
     }
 
     #[test]
@@ -582,7 +596,9 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+            "Mode: All fitness evaluations\n\
+             Average   2.0000e0 Standard deviation  8.1650e-1\n\
+             Min:   1.0000e0. Max:   3.0000e0\n"
         );
     }
 
@@ -601,7 +617,9 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Mode: All fitness evaluations\nAverage   2.0000e0 Standard deviation  8.1650e-1\n"
+            "Mode: All fitness evaluations\n\
+             Average   2.0000e0 Standard deviation  8.1650e-1\n\
+             Min:   1.0000e0. Max:   3.0000e0\n"
         );
     }
 
@@ -625,7 +643,9 @@ mod tests {
         let output = String::from_utf8(output).expect("Not UTF-8");
         assert_eq!(
             output,
-            "Number of runs: 2\nAverage  6.5000e-1 Standard deviation  3.5000e-1\nMin:  3.0000e-1. Max:   1.0000e0\n"
+            "Number of runs: 2\n\
+             Average  6.5000e-1 Standard deviation  3.5000e-1\n\
+             Min:  3.0000e-1. Max:   1.0000e0\n"
         );
     }
 }
