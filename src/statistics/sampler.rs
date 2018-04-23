@@ -1,4 +1,4 @@
-use ansi_term::Color::{Cyan, Green, Red};
+use ansi_term::Color::{Blue, Cyan, Green, Red, Yellow};
 use itertools::Itertools;
 use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
@@ -257,7 +257,7 @@ impl Sampler {
     }
 
     pub fn print_run_statistics(&self, mut writer: impl Write) {
-        println!("------ Sample Statistics ------");
+        println!("{}", Yellow.underline().paint("Sample Statistics"));
         match self.mode {
             SamplerMode::Evolution => {
                 write!(
@@ -284,7 +284,7 @@ impl Sampler {
                 self.print_fitness_search(&mut writer);
             }
         }
-        println!("---- End Sample Statistics ----");
+        println!("{}", Yellow.underline().paint("End Sample Statistics"));
     }
 
     fn best_fitness(&self) -> f64 {
@@ -316,12 +316,12 @@ impl Sampler {
     }
 
     pub fn print_statistics(&self, mut writer: impl Write) {
-        println!("------ Run Statistics ------");
+        println!("{}", Blue.underline().paint("Run Statistics"));
         let runs = self.runs.borrow().to_vec();
         write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
         Sampler::print_mean_and_stddev(&mut writer, &runs);
         Sampler::print_min_max(&mut writer, &runs);
-        println!("---- End Run Statistics ----");
+        println!("{}", Blue.underline().paint("End Run Statistics"));
     }
 }
 
