@@ -135,3 +135,16 @@ def hgbat(X, Y):
         r2 += x**2
         sum_z += x
     return np.abs(r2**2 - sum_z**2) ** (1.0 / 2.0) + (0.5*r2 + sum_z) / 2 + 0.5
+
+
+def levy05(X, Y):
+    sum1 = 0
+    sum2 = 0
+    for i in range(1, 6):
+        sum1 += i * np.cos((i - 1) * X + i)
+        sum2 += i * np.cos((i + 1) * Y + i)
+    return sum1 * sum2 + (X + 1.42513) ** 2 + (Y + 0.080032) ** 2
+
+
+def easom(X, Y):
+    return -np.cos(X) * np.cos(Y) * np.exp(- (X - np.pi) ** 2 - (Y - np.pi) ** 2)
