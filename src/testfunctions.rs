@@ -316,6 +316,21 @@ pub fn hgbat(x: &Vec<f64>) -> f64 {
     (pow_sum.powi(2) - sum.powi(2)).powi(2).powf(1.0 / 4.0) + (0.5 * pow_sum + sum) / d + 0.5
 }
 
+pub fn levy05(x: &Vec<f64>) -> f64 {
+    if x.len() != 2 {
+        panic!("Levy05 only supports two dimensions!");
+    }
+    let sum_0 = (1..6)
+        .map(|i| i as f64)
+        .map(|i| i * ((i - 1.0) * x[0] + i).cos())
+        .sum::<f64>();
+    let sum_1 = (1..6)
+        .map(|i| i as f64)
+        .map(|i| i * ((i + 1.0) * x[1] + i).cos())
+        .sum::<f64>();
+    return sum_0 * sum_1 + (x[0] + 1.42513).powi(2) + (x[1] + 0.080032).powi(2);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -618,6 +633,16 @@ mod tests {
     #[test]
     fn himmelblau_not_optimum() {
         assert_ne!(0.0, himmelblau(&vec![4.0, 6.0]));
+    }
+
+    #[test]
+    fn levy05_optimum() {
+        assert_approx_eq!(-174.71914553453792, levy05(&vec![-1.3068, -1.4248]));
+    }
+
+    #[test]
+    fn levy05_not_optimum() {
+        assert_ne!(0.0, levy05(&vec![-1.0, -1.0]));
     }
 
     #[ignore]
