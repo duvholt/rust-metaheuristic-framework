@@ -4,7 +4,7 @@ extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
-use ansi_term::Color::{Blue, Green, Red, Yellow};
+use ansi_term::Color::{Blue, Green, Red};
 use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::amo;
 use rustoa::algorithms::da;
@@ -19,7 +19,6 @@ use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFu
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
 use rustoa::testfunctions;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -429,18 +428,6 @@ fn start_algorithm() -> Result<(), &'static str> {
     sampler.print_statistics(stdout());
 
     let solutions = sampler.solutions();
-    if let Objective::Single = sampler.objective {
-        let best_solution = solutions
-            .iter()
-            .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
-        if let Some(solution) = best_solution {
-            println!(
-                "Best solution: {} with fitness {}",
-                Yellow.paint(format!("{:?}", solution.x)),
-                Yellow.paint(format!("{:?}", solution.fitness))
-            );
-        }
-    }
     write_solutions(
         "solutions.json",
         solutions,
