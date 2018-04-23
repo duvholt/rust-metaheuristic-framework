@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::io::Write;
 
+#[derive(Clone)]
 pub enum SamplerMode {
     LastGeneration,
     Evolution,

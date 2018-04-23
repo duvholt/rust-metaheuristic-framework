@@ -4,7 +4,7 @@ extern crate clap;
 extern crate rustoa;
 extern crate serde_json;
 
-use ansi_term::Color::{Blue, Green, Red};
+use ansi_term::Color::{Blue, Cyan, Green, Red};
 use clap::{App, Arg, ArgMatches};
 use rustoa::algorithms::amo;
 use rustoa::algorithms::da;
@@ -79,6 +79,7 @@ fn arguments(
             .help("Name of test function")
             .required(true)
             .possible_values(&test_function_names)
+            .multiple(true)
             .takes_value(true),
     )
         .arg(
@@ -174,6 +175,62 @@ fn arguments(
         )
         .subcommands(subcommands)
         .get_matches()
+}
+
+fn run_algorithm(
+    algorithm: &AlgorithmType,
+    sub_m: &ArgMatches,
+    test_function: TestFunctionVar,
+    mut sampler: Sampler,
+    common: &CommonConfig,
+    number_of_runs: usize,
+) -> Result<Vec<SolutionJSON>, &'static str> {
+    for run in 0..number_of_runs {
+        println!("Starting run #{}", Blue.paint(run.to_string()));
+
+        // Run algorithm
+        let (_, evaluations) = match algorithm {
+            &AlgorithmType::Single(run) => {
+                let single_test_function = get_single(test_function)?;
+                let fitness_evaluator =
+                    FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+            &AlgorithmType::Multi(run) => {
+                let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+                sampler.set_pareto_front(read_pareto_front(&format!(
+                    "optimal_solutions/{}.json",
+                    pareto_filename
+                )));
+                let fitness_evaluator =
+                    FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
+                (
+                    run(&common, &fitness_evaluator, sub_m),
+                    fitness_evaluator.evaluations(),
+                )
+            }
+        };
+
+        sampler.print_run_statistics(stdout());
+        println!(
+            "Number of fitness evaluations: {}",
+            Green.paint(evaluations.to_string())
+        );
+
+        sampler.save_run();
+
+        // Keep last run for plotting
+        if run + 1 != number_of_runs {
+            sampler.end_run();
+        }
+    }
+
+    sampler.print_statistics(stdout());
+
+    Ok(sampler.solutions())
 }
 
 fn start_algorithm() -> Result<(), &'static str> {
@@ -314,12 +371,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     let matches = arguments(&test_functions_map, &algorithms);
 
     // Test function
-    let test_function_name = value_t_or_exit!(matches, "test_function", String);
-    let test_function = test_functions_map
-        .get(test_function_name.as_str())
-        .unwrap()
-        .clone();
-
+    let test_function_names = values_t_or_exit!(matches, "test_function", String);
     let number_of_runs = value_t_or_exit!(matches, "runs", usize);
 
     // Common config for all algorithms
@@ -361,12 +413,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             Objective::Multi
         }
     };
-    let mut sampler = Sampler::new(samples, common.iterations, sampler_mode, sampler_objective);
+    let plot_bounds = matches.is_present("plot-bounds");
 
     println!(
-        "Running algorithm {} on test function {} with bounds ({}, {}) and {} dimensions",
+        "Running algorithm {} with bounds ({}, {}) and {} dimensions",
         Green.paint(algorithm_name.to_owned()),
-        Green.paint(test_function_name.to_owned()),
         Green.paint(common.lower_bound.to_string()),
         Green.paint(common.upper_bound.to_string()),
         Green.paint(common.dimensions.to_string()),
@@ -379,65 +430,40 @@ fn start_algorithm() -> Result<(), &'static str> {
         Blue.paint(common.evaluations.to_string()),
     );
 
-    println!(
-        "Running algorithm {} times",
-        Green.paint(number_of_runs.to_string())
-    );
-
-    for run in 0..number_of_runs {
-        println!("Starting run #{}", Blue.paint(run.to_string()));
-
-        // Run algorithm
-        let (_, evaluations) = match run_subcommand {
-            &AlgorithmType::Single(run) => {
-                let single_test_function = get_single(test_function)?;
-                let fitness_evaluator =
-                    FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
-                (
-                    run(&common, &fitness_evaluator, sub_m.unwrap()),
-                    fitness_evaluator.evaluations(),
-                )
-            }
-            &AlgorithmType::Multi(run) => {
-                let (multi_test_function, pareto_filename) = get_multi(test_function)?;
-                sampler.set_pareto_front(read_pareto_front(&format!(
-                    "optimal_solutions/{}.json",
-                    pareto_filename
-                )));
-                let fitness_evaluator =
-                    FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
-                (
-                    run(&common, &fitness_evaluator, sub_m.unwrap()),
-                    fitness_evaluator.evaluations(),
-                )
-            }
-        };
-
-        sampler.print_run_statistics(stdout());
+    for test_function_name in test_function_names {
         println!(
-            "Number of fitness evaluations: {}",
-            Green.paint(evaluations.to_string())
+            "Running algorithm on {} {} times",
+            Cyan.underline().paint(test_function_name.to_string()),
+            Green.paint(number_of_runs.to_string()),
         );
-
-        sampler.save_run();
-
-        // Keep last run for plotting
-        if run + 1 != number_of_runs {
-            sampler.end_run();
-        }
+        let test_function = test_functions_map
+            .get(test_function_name.as_str())
+            .unwrap()
+            .clone();
+        let mut sampler = Sampler::new(
+            samples,
+            common.iterations,
+            sampler_mode.clone(),
+            sampler_objective.clone(),
+        );
+        let solutions = run_algorithm(
+            &run_subcommand,
+            sub_m.unwrap(),
+            test_function,
+            sampler,
+            &common,
+            number_of_runs,
+        )?;
+        write_solutions(
+            "solutions.json",
+            solutions,
+            test_function_name,
+            plot_bounds,
+            common.upper_bound,
+            common.lower_bound,
+        );
     }
 
-    sampler.print_statistics(stdout());
-
-    let solutions = sampler.solutions();
-    write_solutions(
-        "solutions.json",
-        solutions,
-        test_function_name,
-        matches.is_present("plot-bounds"),
-        common.upper_bound,
-        common.lower_bound,
-    );
     Ok(())
 }
 

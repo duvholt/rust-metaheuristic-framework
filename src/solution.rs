@@ -2,6 +2,7 @@ use ordered_float::NotNaN;
 use std::cmp::Ordering;
 use std::hash;
 
+#[derive(Clone)]
 pub enum Objective {
     Single,
     Multi,
