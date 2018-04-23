@@ -5,7 +5,7 @@ extern crate rustoa;
 extern crate serde_json;
 
 use ansi_term::Color::{Blue, Cyan, Green, Red};
-use clap::{App, Arg, ArgMatches};
+use clap::{App, Arg, ArgGroup, ArgMatches};
 use rustoa::algorithms::amo;
 use rustoa::algorithms::da;
 use rustoa::algorithms::dummy;
@@ -61,6 +61,7 @@ pub fn read_pareto_front(filename: &str) -> Vec<Vec<f64>> {
 fn arguments(
     test_functions_map: &HashMap<&str, TestFunctionVar>,
     algorithms: &HashMap<&str, (AlgorithmSubCommand, AlgorithmType)>,
+    test_suites: &HashMap<&str, Vec<String>>,
 ) -> ArgMatches<'static> {
     // Create a subcommand for each algorithm
     let subcommands: Vec<_> = algorithms
@@ -69,6 +70,7 @@ fn arguments(
         .collect();
     // Create possible values for test functions based on test function hashmap
     let test_function_names: Vec<_> = test_functions_map.keys().map(|&k| k).collect();
+    let test_suite_names: Vec<_> = test_suites.keys().map(|&k| k).collect();
     App::new(
         "Various Evolutionary algorithm implementations in Rust evaluated using test functions",
     ).arg(
@@ -77,11 +79,25 @@ fn arguments(
             .long("test-function")
             .value_name("test_function")
             .help("Name of test function")
-            .required(true)
             .possible_values(&test_function_names)
             .multiple(true)
             .takes_value(true),
     )
+        .arg(
+            Arg::with_name("test_suite")
+                .short("t")
+                .long("test-suite")
+                .value_name("test_suite")
+                .help("Name of test function suite")
+                .possible_values(&test_suite_names)
+                .multiple(true)
+                .takes_value(true),
+        )
+        .group(
+            ArgGroup::with_name("test")
+                .args(&["test_function", "test_suite"])
+                .required(true),
+        )
         .arg(
             Arg::with_name("runs")
                 .short("r")
@@ -368,10 +384,60 @@ fn start_algorithm() -> Result<(), &'static str> {
         TestFunctionVar::Multi(testfunctions::dtlz7, "dtlz7-3d"),
     );
 
-    let matches = arguments(&test_functions_map, &algorithms);
+    let mut test_suites = HashMap::new();
+    test_suites.insert(
+        "zdt",
+        vec![
+            "zdt1".to_string(),
+            "zdt2".to_string(),
+            "zdt3".to_string(),
+            "zdt6".to_string(),
+        ],
+    );
+    test_suites.insert(
+        "dtlz",
+        vec![
+            "dtlz1".to_string(),
+            "dtlz2".to_string(),
+            "dtlz3".to_string(),
+            "dtlz4".to_string(),
+            "dtlz5".to_string(),
+            "dtlz6".to_string(),
+            "dtlz7".to_string(),
+        ],
+    );
+    test_suites.insert(
+        "cec2014",
+        vec![
+            "high-elliptic".to_string(),
+            "bent-cigar".to_string(),
+            // TODO: "discus".to_string(),
+            "rosenbrock".to_string(),
+            "ackley".to_string(),
+            "weierstrass".to_string(),
+            "griewank".to_string(),
+            "rastrigin".to_string(),
+            "schwefel".to_string(),
+            "katsuura".to_string(),
+            "happycat".to_string(),
+            "hgbat".to_string(),
+            // TODO: "griewank_rosenbrock".to_string(),
+            // TODO: "expanded_schaffer6".to_string(),
+        ],
+    );
+
+    let matches = arguments(&test_functions_map, &algorithms, &test_suites);
 
     // Test function
-    let test_function_names = values_t_or_exit!(matches, "test_function", String);
+    let test_function_names = if matches.is_present("test_function") {
+        values_t_or_exit!(matches, "test_function", String)
+    } else {
+        let test_suite = value_t_or_exit!(matches, "test_suite", String);
+        test_suites
+            .get(test_suite.as_str())
+            .ok_or("Invalid test suite")?
+            .clone()
+    };
     let number_of_runs = value_t_or_exit!(matches, "runs", usize);
 
     // Common config for all algorithms
