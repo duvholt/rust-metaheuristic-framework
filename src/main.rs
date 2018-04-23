@@ -261,6 +261,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
     test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
+    test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",

@@ -331,6 +331,13 @@ pub fn levy05(x: &Vec<f64>) -> f64 {
     return sum_0 * sum_1 + (x[0] + 1.42513).powi(2) + (x[1] + 0.080032).powi(2);
 }
 
+pub fn easom(x: &Vec<f64>) -> f64 {
+    if x.len() != 2 {
+        panic!("Easom only supports two dimensions!");
+    }
+    -x[0].cos() * x[1].cos() * (-(x[0] - consts::PI).powi(2) - (x[1] - consts::PI).powi(2)).exp()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -643,6 +650,16 @@ mod tests {
     #[test]
     fn levy05_not_optimum() {
         assert_ne!(0.0, levy05(&vec![-1.0, -1.0]));
+    }
+
+    #[test]
+    fn easom_optimum() {
+        assert_approx_eq!(-1.0, easom(&vec![consts::PI, consts::PI]));
+    }
+
+    #[test]
+    fn easom_not_optimum() {
+        assert_approx_eq!(0.0, easom(&vec![-1.0, -1.0]));
     }
 
     #[ignore]

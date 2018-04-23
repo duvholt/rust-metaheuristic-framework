@@ -144,3 +144,7 @@ def levy05(X, Y):
         sum1 += i * np.cos((i - 1) * X + i)
         sum2 += i * np.cos((i + 1) * Y + i)
     return sum1 * sum2 + (X + 1.42513) ** 2 + (Y + 0.080032) ** 2
+
+
+def easom(X, Y):
+    return -np.cos(X) * np.cos(Y) * np.exp(- (X - np.pi) ** 2 - (Y - np.pi) ** 2)

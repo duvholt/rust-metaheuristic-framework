@@ -78,6 +78,8 @@ def plot_json_solutions(json_solutions):
         test_function = tf.hgbat
     elif test_function_name == 'levy05':
         test_function = tf.levy05
+    elif test_function_name == 'easom':
+        test_function = tf.easom
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
