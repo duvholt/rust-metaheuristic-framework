@@ -342,6 +342,10 @@ fn start_algorithm() -> Result<(), &'static str> {
     test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
     test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
     test_functions_map.insert(
+        "griewank-rosenbrock",
+        TestFunctionVar::Single(testfunctions::griewank_rosenbrock),
+    );
+    test_functions_map.insert(
         "expanded-schaffer6",
         TestFunctionVar::Single(testfunctions::expanded_schaffer6),
     );
@@ -432,7 +436,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             "katsuura".to_string(),
             "happycat".to_string(),
             "hgbat".to_string(),
-            // TODO: "griewank_rosenbrock".to_string(),
+            "griewank-rosenbrock".to_string(),
             "expanded-schaffer6".to_string(),
         ],
     );

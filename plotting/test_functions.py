@@ -76,8 +76,16 @@ def bent_cigar(X, Y):
 
 
 def griewank(X, Y):
-    return 1.0 + 1 / 4000 * (X**2 + Y**2) - np.cos(X / np.sqrt(1)) * \
-        np.cos(Y / np.sqrt(2))
+    return griewank_modular([X, Y])
+
+
+def griewank_modular(x):
+    sum1 = 0
+    product1 = 1
+    for i, x1 in enumerate(x):
+        sum1 += x1 ** 2 / 4000
+        product1 *= np.cos(x1 / np.sqrt(i + 1))
+    return 1.0 + sum1 - product1
 
 
 def schwefel_helper(x, z):
@@ -160,3 +168,7 @@ def schaffer6(X, Y):
 
 def expanded_schaffer6(X, Y):
     return schaffer6(X, Y) + schaffer6(Y, X)
+
+
+def griewank_rosenbrock(X, Y):
+        return griewank_modular([rosenbrock(X, Y)]) + griewank_modular([rosenbrock(Y, X)])
