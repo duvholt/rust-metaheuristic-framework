@@ -83,7 +83,7 @@ def plot_json_solutions(json_solutions):
     elif test_function_name == 'discus':
         test_function = tf.discus
     elif test_function_name == 'expanded-schaffer6':
-        test_function = tf.schaffer6
+        test_function = tf.expanded_schaffer6
 
     Z = test_function(X, Y)
     if Z.min() >= 0:

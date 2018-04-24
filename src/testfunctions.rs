@@ -351,8 +351,8 @@ pub fn schaffer6(x: &Vec<f64>) -> f64 {
 }
 
 pub fn expanded_schaffer6(x: &Vec<f64>) -> f64 {
-    (0..x.len() - 1)
-        .map(|i| schaffer6(&vec![x[i], x[i + 1]]))
+    (0..x.len())
+        .map(|i| schaffer6(&vec![x[i], x[(i + 1) % x.len()]]))
         .sum()
 }
 

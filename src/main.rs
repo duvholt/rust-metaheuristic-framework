@@ -433,7 +433,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             "happycat".to_string(),
             "hgbat".to_string(),
             // TODO: "griewank_rosenbrock".to_string(),
-            // TODO: "expanded_schaffer6".to_string(),
+            "expanded-schaffer6".to_string(),
         ],
     );
 
