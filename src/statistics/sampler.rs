@@ -181,6 +181,18 @@ impl Sampler {
         ).unwrap();
     }
 
+    fn print_best_position(mut writer: impl Write, solutions: &Vec<SolutionJSON>) {
+        let best = solutions
+            .iter()
+            .min_by(|a, b| a.fitness[0].partial_cmp(&b.fitness[0]).unwrap())
+            .unwrap();
+        write!(
+            writer,
+            "Best position: {}\n",
+            Yellow.paint(format!("{:?}", best.x))
+        ).unwrap();
+    }
+
     fn print_min_max(mut writer: impl Write, values: &Vec<f64>) {
         let minmax = values.iter().minmax();
         if let MinMaxResult::MinMax(min, max) = minmax {
@@ -218,6 +230,7 @@ impl Sampler {
                         .collect();
                     Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
                     Sampler::print_min_max(&mut writer, &fitness_values);
+                    Sampler::print_best_position(&mut writer, &generation);
                 }
                 Objective::Multi => {
                     self.print_igd(&mut writer, &generation);
@@ -236,6 +249,7 @@ impl Sampler {
                     .collect();
                 Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
                 Sampler::print_min_max(&mut writer, &fitness_values);
+                Sampler::print_best_position(&mut writer, &self.solutions.borrow());
             }
             Objective::Multi => {
                 self.print_igd(&mut writer, &self.solutions.borrow());
@@ -252,6 +266,7 @@ impl Sampler {
                 Green.paint(format!("{:10.4e}", solution.fitness[0]))
             ).unwrap();
         }
+        Sampler::print_best_position(&mut writer, &self.solutions.borrow());
     }
 
     fn print_fitness_search(&self, mut writer: impl Write) {
@@ -262,6 +277,7 @@ impl Sampler {
             .collect();
         Sampler::print_mean_and_stddev(&mut writer, &fitness_values);
         Sampler::print_min_max(&mut writer, &fitness_values);
+        Sampler::print_best_position(&mut writer, &self.solutions.borrow());
     }
 
     pub fn print_run_statistics(&self, mut writer: impl Write) {
@@ -534,11 +550,13 @@ mod tests {
             format!(
                 "Mode: Evolution with 10 samples\n\
                  [ 0] Average {} Standard deviation {}\n\
-                 Min: {}. Max: {}\n",
+                 Min: {}. Max: {}\n\
+                 Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
                 Green.paint(" 1.1180e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
+                Yellow.paint("[0.1, 0.1]"),
             )
         );
     }
@@ -576,8 +594,11 @@ mod tests {
         assert_eq!(
             output,
             format!(
-                "Mode: Best Solution Evolution with 10 samples\n[ 0] Fitness: {}\n",
-                Green.paint(" 1.0000e-1")
+                "Mode: Best Solution Evolution with 10 samples\n\
+                 [ 0] Fitness: {}\n\
+                 Best position: {}\n",
+                Green.paint(" 1.0000e-1"),
+                Yellow.paint("[0.1, 0.1]")
             )
         );
     }
@@ -597,11 +618,13 @@ mod tests {
             format!(
                 "Mode: Last Generation\n\
                  Average {} Standard deviation {}\n\
-                 Min: {}. Max: {}\n",
+                 Min: {}. Max: {}\n\
+                 Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
                 Green.paint(" 1.1180e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
+                Yellow.paint("[0.1, 0.1]")
             )
         );
     }
@@ -642,11 +665,13 @@ mod tests {
             format!(
                 "Mode: All fitness evaluations\n\
                  Average {} Standard deviation {}\n\
-                 Min: {}. Max: {}\n",
+                 Min: {}. Max: {}\n\
+                 Best position: {}\n",
                 Green.paint("  2.0000e0"),
                 Green.paint(" 8.1650e-1"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
+                Yellow.paint("[0.1, 0.1]")
             )
         );
     }
@@ -669,11 +694,13 @@ mod tests {
             format!(
                 "Mode: All fitness evaluations\n\
                  Average {} Standard deviation {}\n\
-                 Min: {}. Max: {}\n",
+                 Min: {}. Max: {}\n\
+                 Best position: {}\n",
                 Green.paint("  2.0000e0"),
                 Green.paint(" 8.1650e-1"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
+                Yellow.paint("[0.2, 0.2]")
             )
         );
     }
