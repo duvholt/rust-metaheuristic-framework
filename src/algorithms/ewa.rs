@@ -2,11 +2,11 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
-use position::random_position;
+use position::{limit_position, random_position};
 use rand::{thread_rng, Rng};
 use selection::roulette_wheel;
 use solution::{solutions_to_json, Solution, SolutionJSON};
-use std::cmp::Ordering;
+use std::f64::EPSILON;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
@@ -119,7 +119,7 @@ impl<'a> Worms<'a> {
 
     fn sort_population(&mut self) {
         self.population
-            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
     }
 
     fn reproduction1(&self, worm: &Worm) -> Worm {
@@ -130,6 +130,7 @@ impl<'a> Worms<'a> {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
+        limit_position(&mut new_position, -self.config.space, self.config.space);
         let fitness = self.calculate_fitness(&new_position);
         Worm {
             position: new_position,
@@ -161,22 +162,25 @@ impl<'a> Worms<'a> {
         let f1 = self.calculate_fitness(&pos1);
         let f2 = self.calculate_fitness(&pos2);
 
-        let w1 = f2 / (f1 + f2);
-        let w2 = f1 / (f1 + f2);
+        let w1 = f2 / (f1 + f2 + EPSILON);
+        let w2 = f1 / (f1 + f2 + EPSILON);
 
         let mut position = vec![];
         for j in 0..self.config.dimensions {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
+
+        limit_position(&mut position, -self.config.space, self.config.space);
         let fitness = self.calculate_fitness(&position);
         Worm { position, fitness }
     }
 
     fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
-        let new_position = (0..self.config.dimensions)
+        let mut new_position = (0..self.config.dimensions)
             .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
             .collect();
+        limit_position(&mut new_position, -self.config.space, self.config.space);
         let fitness = self.calculate_fitness(&new_position);
         Worm {
             position: new_position,
@@ -196,7 +200,7 @@ impl<'a> Worms<'a> {
     fn cauchy_mutation(&self, worm: &Worm) -> Worm {
         let population_size = self.population.len();
         let mut rng = thread_rng();
-        let position = worm.position
+        let mut position = worm.position
             .iter()
             .enumerate()
             .map(|(j, value)| {
@@ -206,6 +210,7 @@ impl<'a> Worms<'a> {
                 value + average_j * cauchy(r, 1.0)
             })
             .collect();
+        limit_position(&mut position, -self.config.space, self.config.space);
         let fitness = self.calculate_fitness(&position);
         Worm { position, fitness }
     }
@@ -231,8 +236,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         }
         // The following code was introduced when looking at the matlab version of EWA
         // It does not seem to perform any better though
-        new_worms
-            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+        new_worms.sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
         let mut rng = thread_rng();
         for worm in &mut new_worms {
             let r = rng.next_f64();
@@ -240,8 +244,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
                 *worm = worms.cauchy_mutation(&worm);
             }
         }
-        new_worms
-            .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap_or(Ordering::Equal));
+        new_worms.sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
         worms.population = worms.population[..elites].to_vec();
         worms
             .population
