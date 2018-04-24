@@ -244,7 +244,7 @@ pub fn griewank(x: &Vec<f64>) -> f64 {
     (1.0 / 4000.0) * x.iter().map(|x_i| x_i.powi(2)).sum::<f64>()
         - x.iter()
             .enumerate()
-            .map(|(i, x_i)| (x_i / (i + 1) as f64).cos())
+            .map(|(i, x_i)| (x_i / (i as f64 + 1.0).sqrt()).cos())
             .product::<f64>() + 1.0
 }
 
