@@ -148,3 +148,15 @@ def levy05(X, Y):
 
 def easom(X, Y):
     return -np.cos(X) * np.cos(Y) * np.exp(- (X - np.pi) ** 2 - (Y - np.pi) ** 2)
+
+
+def discus(X, Y):
+    return 10**6 * X**2 + Y**2
+
+
+def schaffer6(X, Y):
+    return 0.5 + (np.sin(np.sqrt(X**2 + Y**2))**2 - 0.5) / (1.0 + 0.001 * X**2 + 0.001 * Y**2)**2
+
+
+def expanded_schaffer6(X, Y):
+    return schaffer6(X, Y) + schaffer6(Y, X)

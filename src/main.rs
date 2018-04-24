@@ -340,6 +340,11 @@ fn start_algorithm() -> Result<(), &'static str> {
     test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
     test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
+    test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
+    test_functions_map.insert(
+        "expanded-schaffer6",
+        TestFunctionVar::Single(testfunctions::expanded_schaffer6),
+    );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
@@ -417,7 +422,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         vec![
             "high-elliptic".to_string(),
             "bent-cigar".to_string(),
-            // TODO: "discus".to_string(),
+            "discus".to_string(),
             "rosenbrock".to_string(),
             "ackley".to_string(),
             "weierstrass".to_string(),
@@ -428,7 +433,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             "happycat".to_string(),
             "hgbat".to_string(),
             // TODO: "griewank_rosenbrock".to_string(),
-            // TODO: "expanded_schaffer6".to_string(),
+            "expanded-schaffer6".to_string(),
         ],
     );
 
