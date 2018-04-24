@@ -244,7 +244,7 @@ pub fn griewank(x: &Vec<f64>) -> f64 {
     (1.0 / 4000.0) * x.iter().map(|x_i| x_i.powi(2)).sum::<f64>()
         - x.iter()
             .enumerate()
-            .map(|(i, x_i)| (x_i / (i + 1) as f64).cos())
+            .map(|(i, x_i)| (x_i / (i as f64 + 1.0).sqrt()).cos())
             .product::<f64>() + 1.0
 }
 
@@ -354,6 +354,16 @@ pub fn expanded_schaffer6(x: &Vec<f64>) -> f64 {
     (0..x.len())
         .map(|i| schaffer6(&vec![x[i], x[(i + 1) % x.len()]]))
         .sum()
+}
+
+pub fn griewank_rosenbrock(x: &Vec<f64>) -> f64 {
+    (0..x.len())
+        .map(|i| {
+            let x_current = x[i];
+            let x_next = x[(i + 1) % x.len()];
+            griewank(&vec![rosenbrock(&vec![x_current, x_next])])
+        })
+        .sum::<f64>()
 }
 
 #[cfg(test)]
@@ -700,6 +710,19 @@ mod tests {
     #[test]
     fn easom_not_optimum() {
         assert_approx_eq!(0.0, easom(&vec![-1.0, -1.0]));
+    }
+
+    #[test]
+    fn griewank_rosenbrock_optimum() {
+        assert_approx_eq!(
+            0.0,
+            griewank_rosenbrock(&vec![1.0000027931852864, 1.0000049737406767])
+        );
+    }
+
+    #[test]
+    fn griewank_rosenbrock_not_optimum() {
+        assert_ne!(0.0, griewank_rosenbrock(&vec![-1.0, -1.0]));
     }
 
     #[ignore]
