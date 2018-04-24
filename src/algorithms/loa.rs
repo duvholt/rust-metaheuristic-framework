@@ -602,6 +602,9 @@ fn defense_against_nomad_male<'a>(
         .population
         .into_iter()
         .map(|nomad| {
+            if nomad.sex != Sex::Male {
+                return nomad;
+            }
             for pride in prides.iter_mut() {
                 if rng.gen() {
                     continue;
