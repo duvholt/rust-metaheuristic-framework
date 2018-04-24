@@ -85,10 +85,10 @@ def schwefel_helper(x, z):
     d = 2
     if z_i < -500:
         return (abs(z_i) % 500.0 - 500.0) * sin(sqrt(abs((abs(z_i) % 500.0 - 500.0))))
-        - (z_i + 500.0) ** 2 / (10_000.0 * d)
+        - (z_i + 500.0) ** 2 / (10000.0 * d)
     elif z_i > 500.0:
         return (500.0 - (z_i % 500.0)) * sin(sqrt(abs(500.0 - z_i % 500.0)))
-        - (z_i - 500.0) ** 2 / (10_000.0 * d)
+        - (z_i - 500.0) ** 2 / (10000.0 * d)
     else:
         return z_i * sin(abs(z_i) ** (1.0 / 2.0))
 
