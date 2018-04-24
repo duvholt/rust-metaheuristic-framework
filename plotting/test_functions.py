@@ -148,3 +148,7 @@ def levy05(X, Y):
 
 def easom(X, Y):
     return -np.cos(X) * np.cos(Y) * np.exp(- (X - np.pi) ** 2 - (Y - np.pi) ** 2)
+
+
+def discus(X, Y):
+    return 10**6 * X**2 + Y**2

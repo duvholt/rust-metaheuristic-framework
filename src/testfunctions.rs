@@ -338,6 +338,10 @@ pub fn easom(x: &Vec<f64>) -> f64 {
     -x[0].cos() * x[1].cos() * (-(x[0] - consts::PI).powi(2) - (x[1] - consts::PI).powi(2)).exp()
 }
 
+pub fn discus(x: &Vec<f64>) -> f64 {
+    10.0_f64.powi(6) * x[0].powi(2) + (1..x.len()).map(|i| x[i].powi(2)).sum::<f64>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -377,6 +381,16 @@ mod tests {
         assert_ne!(sum(result), f);
     }
 
+    #[test]
+    fn discus_optimum() {
+        assert_eq!(discus(&vec![0.0, 0.0, 0.0]), 0.0);
+        assert_eq!(discus(&vec![0.0, 0.0]), 0.0);
+    }
+
+    #[test]
+    fn discus_not_optimum() {
+        assert_ne!(discus(&vec![0.1, 0.0, 0.0]), 0.0);
+    }
     #[test]
     fn dtlz1_optimum() {
         dtlz_optimum(&dtlz1, &sum, 0.5, 0.5);

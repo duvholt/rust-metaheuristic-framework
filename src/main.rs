@@ -340,6 +340,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
     test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
     test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
+    test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
@@ -417,7 +418,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         vec![
             "high-elliptic".to_string(),
             "bent-cigar".to_string(),
-            // TODO: "discus".to_string(),
+            "discus".to_string(),
             "rosenbrock".to_string(),
             "ackley".to_string(),
             "weierstrass".to_string(),

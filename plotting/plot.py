@@ -80,6 +80,8 @@ def plot_json_solutions(json_solutions):
         test_function = tf.levy05
     elif test_function_name == 'easom':
         test_function = tf.easom
+    elif test_function_name == 'discus':
+        test_function = tf.discus
 
     Z = test_function(X, Y)
     if Z.min() >= 0:
