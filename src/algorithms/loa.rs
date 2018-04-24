@@ -574,16 +574,19 @@ fn defense_resident_male(
     old_males: Vec<Lion>,
     mut new_males: Vec<Lion>,
     mut males_in_pride: usize,
+    verbose: bool,
 ) -> (Vec<Lion>, Vec<Lion>) {
     let mut males = old_males;
     males.append(&mut new_males);
     sort_lions(&mut males);
-    if males_in_pride >= males.len() {
-        println!(
-            "Limiting nomads. Wanted {}, but max was {}",
-            males_in_pride,
-            males.len()
-        );
+    if males_in_pride > males.len() {
+        if verbose {
+            println!(
+                "Limiting nomads. Wanted {}, but max was {}",
+                males_in_pride,
+                males.len()
+            );
+        }
         males_in_pride = males.len();
     }
     let nomads = males.split_off(males_in_pride);
@@ -634,6 +637,7 @@ fn migration(
     mut prides: Vec<Pride>,
     females_in_pride: usize,
     immigate_rate: f64,
+    verbose: bool,
     mut rng: impl Rng,
 ) -> (Vec<Pride>, Vec<Lion>) {
     let mut new_nomads: Vec<Lion> = Vec::new();
@@ -644,19 +648,25 @@ fn migration(
             .cloned()
             .filter(|lion| lion.sex == Sex::Female)
             .collect();
-        println!("Females {} Max {}", females.len(), females_in_pride);
+        if verbose {
+            println!("Females {} Max {}", females.len(), females_in_pride);
+        }
         let mut surplus: isize = females.len() as isize - females_in_pride as isize;
         let mut females_to_migrate = (immigate_rate * females_in_pride as f64) as isize;
         if surplus < 0 {
-            println!("Surplas was negative {}", surplus);
+            if verbose {
+                println!("Surplas was negative {}", surplus);
+            }
             surplus = 0;
             females_to_migrate = 0;
         }
         let total_migrate = surplus + females_to_migrate;
-        println!(
-            "Total females migrating: {}. Surplus: {}. Immigrate: {}",
-            total_migrate, surplus, females_to_migrate
-        );
+        if verbose {
+            println!(
+                "Total females migrating: {}. Surplus: {}. Immigrate: {}",
+                total_migrate, surplus, females_to_migrate
+            );
+        }
         let migrated_females = seq::sample_iter(&mut rng, females, total_migrate as usize).unwrap();
         for female in migrated_females.into_iter() {
             let index = pride
@@ -676,18 +686,21 @@ fn assign_to_prides<'a>(
     mut nomad_females: Vec<Lion>,
     females_in_pride: usize,
     immigate_rate: f64,
+    verbose: bool,
     mut rng: impl Rng,
 ) -> Vec<Pride> {
     prides
         .into_iter()
         .map(|mut pride| {
             let missing_females = (immigate_rate * females_in_pride as f64) as usize;
-            println!(
-                "Max {} Missing {} nomad_left {}",
-                females_in_pride,
-                missing_females,
-                nomad_females.len()
-            );
+            if verbose {
+                println!(
+                    "Max {} Missing {} nomad_left {}",
+                    females_in_pride,
+                    missing_females,
+                    nomad_females.len()
+                );
+            }
             for _ in 0..missing_females {
                 let i = rng.gen_range(0, nomad_females.len());
                 let nomad_female = nomad_females.remove(i);
@@ -702,6 +715,7 @@ fn equilibrium(
     prides: Vec<Pride>,
     nomad: Nomad,
     config: &Config,
+    verbose: bool,
     mut rng: impl Rng,
 ) -> (Vec<Pride>, Nomad) {
     let mut sorted_nomads = nomad.population.into_iter().collect();
@@ -728,16 +742,19 @@ fn equilibrium(
         );
         females_for_prides = sorted_females.len() - 1;
     }
-    println!(
-        "ffp {}, sorted_females {}",
-        females_for_prides,
-        sorted_females.len()
-    );
+    if verbose {
+        println!(
+            "ffp {}, sorted_females {}",
+            females_for_prides,
+            sorted_females.len()
+        );
+    }
     let prides = assign_to_prides(
         prides,
         sorted_females[..females_for_prides].to_vec(),
         config.females_in_pride(),
         config.immigate_rate,
+        config.verbose,
         &mut rng,
     );
 
@@ -746,12 +763,14 @@ fn equilibrium(
     let nomad_females_count =
         (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate)) as usize;
     let mut population: Vec<Lion> = sorted_males[..nomad_males_count].to_vec();
-    println!(
-        "ffp {} nfc {} sf {}",
-        females_for_prides,
-        nomad_females_count,
-        sorted_females.len()
-    );
+    if verbose {
+        println!(
+            "ffp {} nfc {} sf {}",
+            females_for_prides,
+            nomad_females_count,
+            sorted_females.len()
+        );
+    }
     population.extend(
         sorted_females[females_for_prides..females_for_prides + nomad_females_count].to_vec(),
     );
@@ -899,8 +918,12 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                     })
                     .collect();
                 let (new_males, mut new_females) = partition_on_sex(new_lions);
-                let (males, new_nomad) =
-                    defense_resident_male(males, new_males, config.males_in_pride());
+                let (males, new_nomad) = defense_resident_male(
+                    males,
+                    new_males,
+                    config.males_in_pride(),
+                    config.verbose,
+                );
                 if config.verbose {
                     println!("Add");
                     println!("Males added: {}", males.len());
@@ -1015,6 +1038,7 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
             prides,
             config.females_in_pride(),
             config.immigate_rate,
+            config.verbose,
             &mut rng,
         );
         if config.verbose {
@@ -1026,7 +1050,7 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
             print_info(&prides, &nomad);
             println!("Equilibrium");
         }
-        let (new_prides, new_nomad) = equilibrium(prides, nomad, &config, &mut rng);
+        let (new_prides, new_nomad) = equilibrium(prides, nomad, &config, config.verbose, &mut rng);
         prides = new_prides;
         nomad = new_nomad;
         if config.verbose {
@@ -1050,6 +1074,7 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
+            verbose: false,
             iterations: 100,
             population: 10,
             upper_bound: 1.0,
@@ -1400,7 +1425,7 @@ mod tests {
             create_lion_with_sex(vec![0.1, 0.1], 0.1, Sex::Male),
         ];
 
-        let (pride_males, nomads) = defense_resident_male(old_males, new_males, 3);
+        let (pride_males, nomads) = defense_resident_male(old_males, new_males, 3, false);
 
         // Checking fitness only as several mutable referens does not work good in Rust
         let pride_males_fitness: Vec<_> = pride_males.iter().map(|l| l.fitness).collect();
@@ -1474,7 +1499,7 @@ mod tests {
         ];
         let rng = create_rng();
 
-        let (prides, new_nomads) = migration(prides, 1, 0.0, rng);
+        let (prides, new_nomads) = migration(prides, 1, 0.0, false, rng);
 
         assert_eq!(prides[0].population.len(), 3);
         assert_eq!(prides[1].population.len(), 2);
@@ -1496,7 +1521,7 @@ mod tests {
         }];
         let rng = create_rng();
 
-        let (prides, new_nomads) = migration(prides, 1, 0.5, rng);
+        let (prides, new_nomads) = migration(prides, 1, 0.5, false, rng);
 
         assert_eq!(prides[0].population.len(), 4);
         assert_eq!(new_nomads.len(), 2);
@@ -1534,7 +1559,7 @@ mod tests {
         ];
         let rng = create_rng();
 
-        let prides = assign_to_prides(prides, nomads.iter().cloned().collect(), 5, 0.5, rng);
+        let prides = assign_to_prides(prides, nomads.iter().cloned().collect(), 5, 0.5, false, rng);
 
         assert_eq!(prides.len(), 2);
         assert_eq!(prides[0].population.len(), 7);
@@ -1578,6 +1603,7 @@ mod tests {
         };
 
         let config = Config {
+            verbose: false,
             iterations: 100,
             population: 15,
             upper_bound: 1.0,
@@ -1593,7 +1619,7 @@ mod tests {
         };
         let rng = create_rng();
 
-        let (prides, nomad) = equilibrium(prides, nomad, &config, rng);
+        let (prides, nomad) = equilibrium(prides, nomad, &config, false, rng);
 
         assert_eq!(prides[0].population.len(), 6);
         assert_eq!(prides[1].population.len(), 6);
