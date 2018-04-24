@@ -238,12 +238,6 @@ impl<'a> Swarm<'a> {
             self.population[i].core_dandelion = best;
             self.population[i].old_fitness = old_fitness;
             self.population[i].seeds.clear();
-            println!(
-                "best fitness: {}, Dandelion number: {}, pos: {:?}",
-                self.population[i].core_dandelion.fitness,
-                i,
-                self.population[i].core_dandelion.position
-            );
         }
     }
 
