@@ -16,6 +16,13 @@ pub enum SamplerMode {
     FitnessSearch,
 }
 
+#[derive(Serialize, Clone)]
+pub struct SamplerJSON {
+    mean: f64,
+    standard_deviation: f64,
+    pub test_function: String,
+}
+
 pub struct Sampler {
     mode: SamplerMode,
     pub objective: Objective,
@@ -323,6 +330,15 @@ impl Sampler {
         Sampler::print_mean_and_stddev(&mut writer, &runs);
         Sampler::print_min_max(&mut writer, &runs);
         println!("{}", Blue.underline().paint("End Run Statistics"));
+    }
+
+    pub fn to_json(&self) -> SamplerJSON {
+        let runs = self.runs.borrow().to_vec();
+        SamplerJSON {
+            mean: mean(&runs),
+            standard_deviation: population_standard_deviation(&runs, None),
+            test_function: "".to_string(),
+        }
     }
 }
 

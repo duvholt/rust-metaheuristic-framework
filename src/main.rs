@@ -189,6 +189,12 @@ fn arguments(
                 .long("verbose")
                 .help("Verbose output"),
         )
+        .arg(
+            Arg::with_name("json")
+                .short("j")
+                .long("json")
+                .help("Output json data about run"),
+        )
         .subcommands(subcommands)
         .get_matches()
 }
@@ -197,7 +203,7 @@ fn run_algorithm(
     algorithm: &AlgorithmType,
     sub_m: &ArgMatches,
     test_function: TestFunctionVar,
-    mut sampler: Sampler,
+    sampler: &mut Sampler,
     common: &CommonConfig,
     number_of_runs: usize,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
@@ -496,6 +502,8 @@ fn start_algorithm() -> Result<(), &'static str> {
         Blue.paint(common.evaluations.to_string()),
     );
 
+    let mut test_function_samples = vec![];
+
     for test_function_name in test_function_names {
         println!(
             "Running algorithm on {} {} times",
@@ -512,14 +520,20 @@ fn start_algorithm() -> Result<(), &'static str> {
             sampler_mode.clone(),
             sampler_objective.clone(),
         );
+
         let solutions = run_algorithm(
             &run_subcommand,
             sub_m.unwrap(),
             test_function,
-            sampler,
+            &mut sampler,
             &common,
             number_of_runs,
         )?;
+
+        let mut json_sample = sampler.to_json();
+        json_sample.test_function = test_function_name.to_string();
+        test_function_samples.push(json_sample);
+
         write_solutions(
             "solutions.json",
             solutions,
@@ -528,6 +542,10 @@ fn start_algorithm() -> Result<(), &'static str> {
             common.upper_bound,
             common.lower_bound,
         );
+    }
+
+    if matches.is_present("json") {
+        println!("{}", serde_json::to_string(&test_function_samples).unwrap());
     }
 
     Ok(())
