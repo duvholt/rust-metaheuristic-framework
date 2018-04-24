@@ -88,6 +88,7 @@ pub fn run_subcommand(
     let immigrate_rate = value_t_or_exit!(sub_m, "immigrate_rate", f64);
 
     let config = Config {
+        verbose: common.verbose,
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
         dimensions: common.dimensions,
@@ -107,6 +108,7 @@ pub fn run_subcommand(
 
 #[derive(Debug)]
 struct Config {
+    verbose: bool,
     iterations: i64,
     population: usize,
     upper_bound: f64,
@@ -805,15 +807,19 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
     let population = random_population(&config, &fitness_evaluator);
     let (mut nomad, mut prides) = partition_lions(&config, population);
 
-    println!("Males in pride {}", config.males_in_pride());
-    println!("Females in pride {}", config.females_in_pride());
+    if config.verbose {
+        println!("Males in pride {}", config.males_in_pride());
+        println!("Females in pride {}", config.females_in_pride());
+    }
     for i in 0..config.iterations {
-        println!(
-            " ##### New iter [{}] Nomad {} ######",
-            i,
-            nomad.population.len(),
-        );
-        print_info(&prides, &nomad);
+        if config.verbose {
+            println!(
+                " ##### New iter [{}] Nomad {} ######",
+                i,
+                nomad.population.len(),
+            );
+            print_info(&prides, &nomad);
+        }
         let hunters = find_hunters(&mut prides, &mut rng);
         let hunters = hunt(
             hunters,
@@ -829,12 +835,18 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         prides = prides
             .into_iter()
             .map(|pride| {
-                println!("---- New Pride! ----");
+                if config.verbose {
+                    println!("---- New Pride! ----");
+                }
                 let lions: Vec<Lion> = pride.population.into_iter().collect();
-                println!("Partion");
+                if config.verbose {
+                    println!("Partion");
+                }
                 let (mut males, mut females) = partition_on_sex(lions.clone());
-                println!("Females {} Males {}", females.len(), males.len());
-                println!("Roam");
+                if config.verbose {
+                    println!("Females {} Males {}", females.len(), males.len());
+                    println!("Roam");
+                }
                 for mut male in males.iter_mut() {
                     roam_pride(
                         &mut male,
@@ -846,7 +858,9 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                         &mut rng,
                     );
                 }
-                println!("Move safe");
+                if config.verbose {
+                    println!("Move safe");
+                }
                 females = females
                     .iter()
                     .cloned()
@@ -864,7 +878,9 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                         lion
                     })
                     .collect();
-                println!("Mate");
+                if config.verbose {
+                    println!("Mate");
+                }
                 let new_lions = females
                     .iter()
                     .flat_map(|female| {
@@ -885,33 +901,44 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 let (new_males, mut new_females) = partition_on_sex(new_lions);
                 let (males, new_nomad) =
                     defense_resident_male(males, new_males, config.males_in_pride());
-                println!("Add");
-                println!("Males added: {}", males.len());
+                if config.verbose {
+                    println!("Add");
+                    println!("Males added: {}", males.len());
+                }
                 let mut population = males;
-                println!(
-                    "Old females added: {}, size: {}",
-                    females.len(),
-                    population.len()
-                );
+                if config.verbose {
+                    println!(
+                        "Old females added: {}, size: {}",
+                        females.len(),
+                        population.len()
+                    );
+                }
                 population.append(&mut females);
-                println!(
-                    "New females added: {}, size: {}",
-                    new_females.len(),
-                    population.len()
-                );
+                if config.verbose {
+                    println!(
+                        "New females added: {}, size: {}",
+                        new_females.len(),
+                        population.len()
+                    );
+                }
                 population.append(&mut new_females);
-                println!(
-                    "New monads: {}, size: {}",
-                    new_nomad.len(),
-                    population.len()
-                );
+                if config.verbose {
+                    println!(
+                        "New monads: {}, size: {}",
+                        new_nomad.len(),
+                        population.len()
+                    );
+                }
                 nomad.population.extend(new_nomad);
                 Pride {
                     population: population.into_iter().collect(),
                 }
             })
             .collect();
-        print_info(&prides, &nomad);
+        if config.verbose {
+            println!("Prides completed");
+            print_info(&prides, &nomad);
+        }
         let best = nomad
             .population
             .iter()
@@ -936,11 +963,13 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 .collect(),
         };
         let (mut males, mut females) = partition_on_sex(nomad.population.into_iter().collect());
-        println!(
-            "Nomad males: {}. Nomad females: {}",
-            males.len(),
-            females.len()
-        );
+        if config.verbose {
+            println!(
+                "Nomad males: {}. Nomad females: {}",
+                males.len(),
+                females.len()
+            );
+        }
         nomad.population = females
             .iter()
             .flat_map(|female| {
@@ -958,37 +987,51 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
                 }
             })
             .collect();
-        println!("New nomad from mating: {}", nomad.population.len());
-        println!(
-            "Males added: {}, Females added: {}",
-            males.len(),
-            females.len()
-        );
+        if config.verbose {
+            println!("New nomad from mating: {}", nomad.population.len());
+            println!(
+                "Males added: {}, Females added: {}",
+                males.len(),
+                females.len()
+            );
+        }
         nomad.population.extend(males);
         nomad.population.extend(females);
-        println!("Pre defense {}", nomad.population.len());
+        if config.verbose {
+            println!("Pre defense {}", nomad.population.len());
+        }
         let (new_prides, new_nomad) = defense_against_nomad_male(prides, nomad, &mut rng);
-        println!("Post defense {}", new_nomad.population.len());
+        if config.verbose {
+            println!("Post defense {}", new_nomad.population.len());
+        }
         prides = new_prides;
         nomad = new_nomad;
-        print_info(&prides, &nomad);
+        if config.verbose {
+            print_info(&prides, &nomad);
+            println!("Migration");
+        }
 
-        println!("Migration");
         let (new_prides, new_nomad) = migration(
             prides,
             config.females_in_pride(),
             config.immigate_rate,
             &mut rng,
         );
-        println!("New nomad after migration {}", new_nomad.len());
+        if config.verbose {
+            println!("New nomad after migration {}", new_nomad.len());
+        }
         nomad.population.extend(new_nomad);
         prides = new_prides;
-        print_info(&prides, &nomad);
-        println!("Equilibrium");
+        if config.verbose {
+            print_info(&prides, &nomad);
+            println!("Equilibrium");
+        }
         let (new_prides, new_nomad) = equilibrium(prides, nomad, &config, &mut rng);
         prides = new_prides;
         nomad = new_nomad;
-        print_info(&prides, &nomad);
+        if config.verbose {
+            print_info(&prides, &nomad);
+        }
         fitness_evaluator
             .sampler
             .population_sample_single(i, &combine_population(&prides, &nomad));
