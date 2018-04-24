@@ -341,6 +341,10 @@ fn start_algorithm() -> Result<(), &'static str> {
     test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
     test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
     test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
+    test_functions_map.insert(
+        "expanded-schaffer6",
+        TestFunctionVar::Single(testfunctions::expanded_schaffer6),
+    );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",

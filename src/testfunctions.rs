@@ -342,11 +342,37 @@ pub fn discus(x: &Vec<f64>) -> f64 {
     10.0_f64.powi(6) * x[0].powi(2) + (1..x.len()).map(|i| x[i].powi(2)).sum::<f64>()
 }
 
+pub fn schaffer6(x: &Vec<f64>) -> f64 {
+    if x.len() != 2 {
+        panic!("Schaffer6 only supports two dimensions!");
+    }
+    0.5 + ((x[0].powi(2) + x[1].powi(2)).sqrt().sin().powi(2) - 0.5)
+        / (1.0 + 0.001 * x[0].powi(2) + 0.001 * x[1].powi(2)).powi(2)
+}
+
+pub fn expanded_schaffer6(x: &Vec<f64>) -> f64 {
+    (0..x.len() - 1)
+        .map(|i| schaffer6(&vec![x[i], x[i + 1]]))
+        .sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rand::{thread_rng, Rng};
     use test::Bencher;
+
+    #[test]
+    fn expanded_schaffer6_optimum() {
+        assert_eq!(expanded_schaffer6(&vec![0.0, 0.0, 0.0]), 0.0);
+        assert_eq!(expanded_schaffer6(&vec![0.0, 0.0]), 0.0);
+    }
+
+    #[test]
+    fn expanded_schaffer6_not_optimum() {
+        assert_ne!(expanded_schaffer6(&vec![0.1, 0.2, 0.0]), 0.0);
+        assert_ne!(expanded_schaffer6(&vec![0.1, 0.0]), 0.0);
+    }
 
     fn sum(vector: Vec<f64>) -> f64 {
         vector.iter().sum::<f64>()
