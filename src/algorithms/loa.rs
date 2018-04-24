@@ -1460,10 +1460,12 @@ mod tests {
         ];
         let nomad_males = vec![
             create_lion_with_sex(vec![0.5, 0.3], 0.8, Sex::Male),
+            create_lion_with_sex(vec![2.5, 1.3], 1.4, Sex::Female),
             create_lion_with_sex(vec![2.5, 1.3], 1.4, Sex::Male),
+            create_lion_with_sex(vec![2.5, 1.3], 1.4, Sex::Female),
             create_lion_with_sex(vec![10.0, 10.0], 10.0, Sex::Male),
         ];
-        let worst_nomad = nomad_males[2].clone();
+        let worst_nomad = nomad_males[4].clone();
         let nomad = Nomad {
             population: nomad_males.into_iter().collect(),
         };
@@ -1471,7 +1473,23 @@ mod tests {
 
         let (prides, nomad) = defense_against_nomad_male(prides, nomad, rng);
 
-        assert_eq!(nomad.population.len(), 3);
+        assert_eq!(nomad.population.len(), 5);
+        assert_eq!(
+            nomad
+                .population
+                .iter()
+                .filter(|l| l.sex == Sex::Male)
+                .count(),
+            3
+        );
+        assert_eq!(
+            nomad
+                .population
+                .iter()
+                .filter(|l| l.sex == Sex::Female)
+                .count(),
+            2
+        );
         let pride_population: Vec<_> = prides.iter().flat_map(|pride| &pride.population).collect();
         assert_eq!(pride_population.len(), 6);
         let females: Vec<_> = pride_population
