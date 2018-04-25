@@ -13,16 +13,29 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
         .about("earth worm optimization algorithm")
         .arg(
             Arg::with_name("beta")
+                .short("b")
                 .long("beta")
-                .value_name("beta")
+                .value_name("FLOAT")
                 .help("beta constant")
+                .default_value("1.0")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("similarity")
+                .short("s")
                 .long("similarity")
-                .value_name("similarity")
+                .value_name("FLOAT")
                 .help("similarity constant")
+                .default_value("0.98")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("cooling_factor")
+                .short("c")
+                .long("cooling-factor")
+                .value_name("FLOAT")
+                .help("beta cooling factor")
+                .default_value("0.9")
                 .takes_value(true),
         )
 }
@@ -32,9 +45,13 @@ pub fn run_subcommand(
     function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
-    let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
-    let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
-    println!("Running EWA with beta: {} similarity: {}", beta, similarity);
+    let beta = value_t_or_exit!(sub_m, "beta", f64);
+    let similarity = value_t_or_exit!(sub_m, "similarity", f64);
+    let cooling_factor = value_t_or_exit!(sub_m, "cooling_factor", f64);
+    println!(
+        "Running EWA with beta: {} similarity: {}, cooling factor: {}",
+        beta, similarity, cooling_factor
+    );
 
     let config = Config {
         upper_bound: common.upper_bound,
@@ -44,6 +61,7 @@ pub fn run_subcommand(
         population: common.population,
         beta,
         similarity,
+        cooling_factor,
     };
     run(config, &function_evaluator)
 }
@@ -57,6 +75,7 @@ pub struct Config {
     pub population: usize,
     pub beta: f64,
     pub similarity: f64,
+    pub cooling_factor: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -181,7 +200,7 @@ impl<'a> Worms<'a> {
     }
 
     fn combine_worms(&self, position1: &Vec<f64>, position2: &Vec<f64>, iteration: i64) -> Worm {
-        let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
+        let beta = self.config.cooling_factor.powf(iteration as f64) * self.config.beta;
         let mut new_position = (0..self.config.dimensions)
             .map(|j| beta * position1[j] + (1.0 - beta) * position2[j])
             .collect();
@@ -238,7 +257,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         let mut new_worms = vec![];
         for (worm_index, worm) in worms.population.iter().enumerate() {
             let offspring1 = worms.reproduction1(&worm);
-            let offspring2 = if worm_index > elites {
+            let offspring2 = if worm_index >= elites {
                 worms.reproduction2()
             } else {
                 worms.random_other_worm(worm_index).position
@@ -246,8 +265,6 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
             let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             new_worms.push(new_worm);
         }
-        // The following code was introduced when looking at the matlab version of EWA
-        // It does not seem to perform any better though
         let mut rng = thread_rng();
         for worm in &mut new_worms[elites..] {
             let r = rng.next_f64();
