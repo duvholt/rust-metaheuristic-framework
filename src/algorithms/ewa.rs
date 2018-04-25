@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
-use position::{limit_position, random_position};
+use position::{limit_position_random, random_position};
 use rand::{thread_rng, Rng};
 use selection::roulette_wheel;
 use solution::{solutions_to_json, Solution, SolutionJSON};
@@ -151,7 +151,7 @@ impl<'a> Worms<'a> {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
-        limit_position(
+        limit_position_random(
             &mut new_position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -191,7 +191,7 @@ impl<'a> Worms<'a> {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
 
-        limit_position(
+        limit_position_random(
             &mut position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -204,7 +204,7 @@ impl<'a> Worms<'a> {
         let mut new_position = (0..self.config.dimensions)
             .map(|j| beta * position1[j] + (1.0 - beta) * position2[j])
             .collect();
-        limit_position(
+        limit_position_random(
             &mut new_position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -238,7 +238,7 @@ impl<'a> Worms<'a> {
                 value + average_j * cauchy(r, 1.0)
             })
             .collect();
-        limit_position(
+        limit_position_random(
             &mut position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -305,6 +305,7 @@ mod tests {
             population: 50,
             beta: 1.0,
             similarity: 0.98,
+            cooling_factor: 0.9,
         }
     }
 
