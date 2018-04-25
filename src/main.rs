@@ -131,6 +131,7 @@ fn arguments(
                 .long("ub")
                 .value_name("upper_bound")
                 .help("Upper bound solution space")
+                .allow_hyphen_values(true)
                 .default_value("30.0")
                 .takes_value(true),
         )
@@ -140,6 +141,7 @@ fn arguments(
                 .long("lb")
                 .value_name("lower_bound")
                 .help("Lower bound solution space")
+                .allow_hyphen_values(true)
                 .takes_value(true),
         )
         .arg(
