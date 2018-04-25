@@ -37,7 +37,8 @@ pub fn run_subcommand(
     println!("Running EWA with beta: {} similarity: {}", beta, similarity);
 
     let config = Config {
-        space: common.upper_bound,
+        upper_bound: common.upper_bound,
+        lower_bound: common.lower_bound,
         dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
@@ -49,7 +50,8 @@ pub fn run_subcommand(
 
 #[derive(Debug)]
 pub struct Config {
-    pub space: f64,
+    pub lower_bound: f64,
+    pub upper_bound: f64,
     pub dimensions: usize,
     pub iterations: i64,
     pub population: usize,
@@ -100,8 +102,8 @@ impl<'a> Worms<'a> {
 
     fn random_position(&self) -> Vec<f64> {
         random_position(
-            -self.config.space,
-            self.config.space,
+            self.config.lower_bound,
+            self.config.upper_bound,
             self.config.dimensions,
         )
     }
@@ -123,14 +125,18 @@ impl<'a> Worms<'a> {
     }
 
     fn reproduction1(&self, worm: &Worm) -> Worm {
-        let minmax = -self.config.space + self.config.space;
+        let minmax = self.config.lower_bound + self.config.upper_bound;
         let alpha = self.config.similarity;
         let mut new_position = vec![];
         for j in 0..self.config.dimensions {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
-        limit_position(&mut new_position, -self.config.space, self.config.space);
+        limit_position(
+            &mut new_position,
+            self.config.lower_bound,
+            self.config.upper_bound,
+        );
         let fitness = self.calculate_fitness(&new_position);
         Worm {
             position: new_position,
@@ -170,7 +176,11 @@ impl<'a> Worms<'a> {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
 
-        limit_position(&mut position, -self.config.space, self.config.space);
+        limit_position(
+            &mut position,
+            self.config.lower_bound,
+            self.config.upper_bound,
+        );
         let fitness = self.calculate_fitness(&position);
         Worm { position, fitness }
     }
@@ -180,7 +190,11 @@ impl<'a> Worms<'a> {
         let mut new_position = (0..self.config.dimensions)
             .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
             .collect();
-        limit_position(&mut new_position, -self.config.space, self.config.space);
+        limit_position(
+            &mut new_position,
+            self.config.lower_bound,
+            self.config.upper_bound,
+        );
         let fitness = self.calculate_fitness(&new_position);
         Worm {
             position: new_position,
@@ -210,7 +224,11 @@ impl<'a> Worms<'a> {
                 value + average_j * cauchy(r, 1.0)
             })
             .collect();
-        limit_position(&mut position, -self.config.space, self.config.space);
+        limit_position(
+            &mut position,
+            self.config.lower_bound,
+            self.config.upper_bound,
+        );
         let fitness = self.calculate_fitness(&position);
         Worm { position, fitness }
     }
@@ -270,7 +288,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            space: 4.0,
+            lower_bound: -4.0,
+            upper_bound: 4.0,
             dimensions: 2,
             iterations: 50,
             population: 50,
