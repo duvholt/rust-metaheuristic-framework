@@ -28,8 +28,18 @@ for name, parameters in algorithms.items():
         else:
             results[tf['test_function']] = [tf]
 
+color = False
+
 for test_function, alg_data in results.items():
     table_data = test_function
+    table_data += ' & Mean'
     for stat_data in alg_data:
-        table_data += ' & {:.2E} & {:.2E} '.format(stat_data["mean"], stat_data["standard_deviation"])
-    print(table_data + '\\\\')
+        table_data += ' & {:.2E} '.format(stat_data["mean"])
+    table_data += '\\\\\n'
+    table_data += ' & StdDev'
+    for stat_data in alg_data:
+        table_data += ' & {:.2E} '.format(stat_data["standard_deviation"])
+    table_data += '\\\\'
+    table_data += '\\showrowcolors' if color else '\\hiderowcolors'
+    print(table_data)
+    color = not color
