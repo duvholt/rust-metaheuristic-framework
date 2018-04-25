@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
-use position::{limit_position, random_position};
+use position::{limit_position_random, random_position};
 use rand::{thread_rng, Rng};
 use selection::roulette_wheel;
 use solution::{solutions_to_json, Solution, SolutionJSON};
@@ -13,16 +13,29 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
         .about("earth worm optimization algorithm")
         .arg(
             Arg::with_name("beta")
+                .short("b")
                 .long("beta")
-                .value_name("beta")
+                .value_name("FLOAT")
                 .help("beta constant")
+                .default_value("1.0")
                 .takes_value(true),
         )
         .arg(
             Arg::with_name("similarity")
+                .short("s")
                 .long("similarity")
-                .value_name("similarity")
+                .value_name("FLOAT")
                 .help("similarity constant")
+                .default_value("0.98")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("cooling_factor")
+                .short("c")
+                .long("cooling-factor")
+                .value_name("FLOAT")
+                .help("beta cooling factor")
+                .default_value("0.9")
                 .takes_value(true),
         )
 }
@@ -32,9 +45,13 @@ pub fn run_subcommand(
     function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
-    let beta = value_t!(sub_m, "beta", f64).unwrap_or(1.0);
-    let similarity = value_t!(sub_m, "similarity", f64).unwrap_or(0.98);
-    println!("Running EWA with beta: {} similarity: {}", beta, similarity);
+    let beta = value_t_or_exit!(sub_m, "beta", f64);
+    let similarity = value_t_or_exit!(sub_m, "similarity", f64);
+    let cooling_factor = value_t_or_exit!(sub_m, "cooling_factor", f64);
+    println!(
+        "Running EWA with beta: {} similarity: {}, cooling factor: {}",
+        beta, similarity, cooling_factor
+    );
 
     let config = Config {
         upper_bound: common.upper_bound,
@@ -44,6 +61,7 @@ pub fn run_subcommand(
         population: common.population,
         beta,
         similarity,
+        cooling_factor,
     };
     run(config, &function_evaluator)
 }
@@ -57,6 +75,7 @@ pub struct Config {
     pub population: usize,
     pub beta: f64,
     pub similarity: f64,
+    pub cooling_factor: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -124,7 +143,7 @@ impl<'a> Worms<'a> {
             .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
     }
 
-    fn reproduction1(&self, worm: &Worm) -> Worm {
+    fn reproduction1(&self, worm: &Worm) -> Vec<f64> {
         let minmax = self.config.lower_bound + self.config.upper_bound;
         let alpha = self.config.similarity;
         let mut new_position = vec![];
@@ -132,19 +151,15 @@ impl<'a> Worms<'a> {
             let x_j = minmax - alpha * worm.position[j];
             new_position.push(x_j);
         }
-        limit_position(
+        limit_position_random(
             &mut new_position,
             self.config.lower_bound,
             self.config.upper_bound,
         );
-        let fitness = self.calculate_fitness(&new_position);
-        Worm {
-            position: new_position,
-            fitness,
-        }
+        new_position
     }
 
-    fn reproduction2(&self) -> Worm {
+    fn reproduction2(&self) -> Vec<f64> {
         let (parent1index, parent1) = roulette_wheel(&self.population);
         let parent2 = self.random_other_worm(parent1index);
 
@@ -176,21 +191,20 @@ impl<'a> Worms<'a> {
             position.push(w1 * pos1[j] + w2 * pos2[j]);
         }
 
-        limit_position(
+        limit_position_random(
             &mut position,
             self.config.lower_bound,
             self.config.upper_bound,
         );
-        let fitness = self.calculate_fitness(&position);
-        Worm { position, fitness }
+        position
     }
 
-    fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
-        let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
+    fn combine_worms(&self, position1: &Vec<f64>, position2: &Vec<f64>, iteration: i64) -> Worm {
+        let beta = self.config.cooling_factor.powf(iteration as f64) * self.config.beta;
         let mut new_position = (0..self.config.dimensions)
-            .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
+            .map(|j| beta * position1[j] + (1.0 - beta) * position2[j])
             .collect();
-        limit_position(
+        limit_position_random(
             &mut new_position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -224,7 +238,7 @@ impl<'a> Worms<'a> {
                 value + average_j * cauchy(r, 1.0)
             })
             .collect();
-        limit_position(
+        limit_position_random(
             &mut position,
             self.config.lower_bound,
             self.config.upper_bound,
@@ -242,21 +256,17 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         worms.sort_population();
         let mut new_worms = vec![];
         for (worm_index, worm) in worms.population.iter().enumerate() {
-            let offspring1 = worm.clone();
-            let offspring2 = if worm_index > elites {
+            let offspring1 = worms.reproduction1(&worm);
+            let offspring2 = if worm_index >= elites {
                 worms.reproduction2()
             } else {
-                // worms.random_other_worm(worm_index)
-                worms.reproduction1(&worm)
+                worms.random_other_worm(worm_index).position
             };
             let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             new_worms.push(new_worm);
         }
-        // The following code was introduced when looking at the matlab version of EWA
-        // It does not seem to perform any better though
-        new_worms.sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
         let mut rng = thread_rng();
-        for worm in &mut new_worms {
+        for worm in &mut new_worms[elites..] {
             let r = rng.next_f64();
             if 0.01 > r {
                 *worm = worms.cauchy_mutation(&worm);
@@ -295,6 +305,7 @@ mod tests {
             population: 50,
             beta: 1.0,
             similarity: 0.98,
+            cooling_factor: 0.9,
         }
     }
 
@@ -327,10 +338,7 @@ mod tests {
 
         let offspring = worms.reproduction1(&worm1);
 
-        assert_eq!(
-            offspring.position,
-            vec![-0.3 * config.similarity; dimensions]
-        );
+        assert_eq!(offspring, vec![-0.3 * config.similarity; dimensions]);
     }
 
     #[test]
@@ -340,8 +348,8 @@ mod tests {
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimensions = config.dimensions;
-        let worm1 = worms.create_worm(vec![1.0; dimensions]);
-        let worm2 = worms.create_worm(vec![2.0; dimensions]);
+        let worm1 = vec![1.0; dimensions];
+        let worm2 = vec![2.0; dimensions];
 
         let combined = worms.combine_worms(&worm1, &worm2, 0);
 
@@ -355,8 +363,8 @@ mod tests {
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimensions = config.dimensions;
-        let worm1 = worms.create_worm(vec![1.0; dimensions]);
-        let worm2 = worms.create_worm(vec![2.0; dimensions]);
+        let worm1 = vec![1.0; dimensions];
+        let worm2 = vec![2.0; dimensions];
 
         let combined = worms.combine_worms(&worm1, &worm2, 2);
 

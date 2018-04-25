@@ -68,6 +68,15 @@ pub fn limit_position(position: &mut Vec<f64>, lower_bound: f64, upper_bound: f6
     }
 }
 
+pub fn limit_position_random(position: &mut Vec<f64>, lower_bound: f64, upper_bound: f64) {
+    let out_of_bounds = position
+        .iter()
+        .any(|&x_i| x_i > upper_bound || x_i < lower_bound);
+    if out_of_bounds {
+        *position = random_position(lower_bound, upper_bound, position.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,6 +154,26 @@ mod tests {
         limit_position(&mut position, -4.0, 4.0);
 
         assert_eq!(position, vec![0.5, 1.0, 4.0, -4.0, -3.0, 4.0, -4.0]);
+    }
+
+    #[test]
+    fn test_limit_position_random_out_of_bounds() {
+        let mut position = vec![0.5, 1.0, 10.0, -5.0, -3.0, 4.0, -10.0];
+        let original = position.clone();
+
+        limit_position_random(&mut position, -4.0, 4.0);
+
+        assert_ne!(position, original);
+    }
+
+    #[test]
+    fn test_limit_position_random() {
+        let mut position = vec![0.5, 1.0, 2.0, -3.9, -3.0, 4.0, -1.0];
+        let original = position.clone();
+
+        limit_position_random(&mut position, -4.0, 4.0);
+
+        assert_eq!(position, original);
     }
 
     #[bench]
