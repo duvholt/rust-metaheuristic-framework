@@ -1,8 +1,9 @@
+from collections import OrderedDict
 from subprocess import check_output
 import json
 
 
-algorithms = {
+algorithms_unsorted = {
     'amo': {
         'p': 50
     },
@@ -17,7 +18,9 @@ algorithms = {
     }
 }
 
-results = {}
+algorithms = OrderedDict(sorted(algorithms_unsorted.items(), key= lambda t: t[0]))
+
+results = OrderedDict()
 
 for name, parameters in algorithms.items():
     command = 'cargo run --release -- -t cec2014 -r 25 -u 30 -d 30 -i 10000 -j -p {} {}'.format(parameters['p'], name)
