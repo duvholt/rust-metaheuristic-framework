@@ -33,8 +33,13 @@ color = False
 for test_function, alg_data in results.items():
     table_data = test_function
     table_data += ' & Mean'
+    min_mean = min(map(lambda x: x['mean'], alg_data))
     for stat_data in alg_data:
-        table_data += ' & {:.2E} '.format(stat_data["mean"])
+        mean = stat_data["mean"]
+        mean_format = '{:.2E}'.format(mean)
+        if mean == min_mean:
+            mean_format = '\\tbnum{{{}}}'.format(mean_format)
+        table_data += ' & {} '.format(mean_format)
     table_data += '\\\\\n'
     table_data += ' & StdDev'
     for stat_data in alg_data:
