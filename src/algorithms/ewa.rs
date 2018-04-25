@@ -124,7 +124,7 @@ impl<'a> Worms<'a> {
             .sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
     }
 
-    fn reproduction1(&self, worm: &Worm) -> Worm {
+    fn reproduction1(&self, worm: &Worm) -> Vec<f64> {
         let minmax = self.config.lower_bound + self.config.upper_bound;
         let alpha = self.config.similarity;
         let mut new_position = vec![];
@@ -137,14 +137,10 @@ impl<'a> Worms<'a> {
             self.config.lower_bound,
             self.config.upper_bound,
         );
-        let fitness = self.calculate_fitness(&new_position);
-        Worm {
-            position: new_position,
-            fitness,
-        }
+        new_position
     }
 
-    fn reproduction2(&self) -> Worm {
+    fn reproduction2(&self) -> Vec<f64> {
         let (parent1index, parent1) = roulette_wheel(&self.population);
         let parent2 = self.random_other_worm(parent1index);
 
@@ -181,14 +177,13 @@ impl<'a> Worms<'a> {
             self.config.lower_bound,
             self.config.upper_bound,
         );
-        let fitness = self.calculate_fitness(&position);
-        Worm { position, fitness }
+        position
     }
 
-    fn combine_worms(&self, worm1: &Worm, worm2: &Worm, iteration: i64) -> Worm {
+    fn combine_worms(&self, position1: &Vec<f64>, position2: &Vec<f64>, iteration: i64) -> Worm {
         let beta = 0.9f64.powf(iteration as f64) * self.config.beta;
         let mut new_position = (0..self.config.dimensions)
-            .map(|j| beta * worm1.position[j] + (1.0 - beta) * worm2.position[j])
+            .map(|j| beta * position1[j] + (1.0 - beta) * position2[j])
             .collect();
         limit_position(
             &mut new_position,
@@ -242,21 +237,19 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
         worms.sort_population();
         let mut new_worms = vec![];
         for (worm_index, worm) in worms.population.iter().enumerate() {
-            let offspring1 = worm.clone();
+            let offspring1 = worms.reproduction1(&worm);
             let offspring2 = if worm_index > elites {
                 worms.reproduction2()
             } else {
-                // worms.random_other_worm(worm_index)
-                worms.reproduction1(&worm)
+                worms.random_other_worm(worm_index).position
             };
             let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             new_worms.push(new_worm);
         }
         // The following code was introduced when looking at the matlab version of EWA
         // It does not seem to perform any better though
-        new_worms.sort_unstable_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap());
         let mut rng = thread_rng();
-        for worm in &mut new_worms {
+        for worm in &mut new_worms[elites..] {
             let r = rng.next_f64();
             if 0.01 > r {
                 *worm = worms.cauchy_mutation(&worm);
@@ -327,10 +320,7 @@ mod tests {
 
         let offspring = worms.reproduction1(&worm1);
 
-        assert_eq!(
-            offspring.position,
-            vec![-0.3 * config.similarity; dimensions]
-        );
+        assert_eq!(offspring, vec![-0.3 * config.similarity; dimensions]);
     }
 
     #[test]
@@ -340,8 +330,8 @@ mod tests {
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimensions = config.dimensions;
-        let worm1 = worms.create_worm(vec![1.0; dimensions]);
-        let worm2 = worms.create_worm(vec![2.0; dimensions]);
+        let worm1 = vec![1.0; dimensions];
+        let worm2 = vec![2.0; dimensions];
 
         let combined = worms.combine_worms(&worm1, &worm2, 0);
 
@@ -355,8 +345,8 @@ mod tests {
         let evaluator = create_evaluator(&sampler);
         let worms = Worms::new(&config, &evaluator);
         let dimensions = config.dimensions;
-        let worm1 = worms.create_worm(vec![1.0; dimensions]);
-        let worm2 = worms.create_worm(vec![2.0; dimensions]);
+        let worm1 = vec![1.0; dimensions];
+        let worm2 = vec![2.0; dimensions];
 
         let combined = worms.combine_worms(&worm1, &worm2, 2);
 
