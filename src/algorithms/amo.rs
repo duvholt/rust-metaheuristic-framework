@@ -82,7 +82,7 @@ fn animal_migration(
         .iter()
         .enumerate()
         .map(|(i, current_animal)| {
-            let mut moved_position = vec![];
+            let mut moved_position = Vec::with_capacity(config.dimensions);
             let mut out_of_bounds = false;
             let StandardNormal(gaussian) = rng.gen();
             for d in 0..config.dimensions {
@@ -114,16 +114,16 @@ fn animal_migration(
 
 fn animal_replacement(
     population: Vec<Animal>,
-    best_animal: &Animal,
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<f64>,
     config: &Config,
 ) -> Vec<Animal> {
+    let best_animal = find_best_animal(&population);
     let new_population: Vec<Animal> = population
         .iter()
         .enumerate()
         .map(|(i, current_animal)| {
-            let mut new_position = vec![];
+            let mut new_position = Vec::with_capacity(config.dimensions);
             let mut fitness = current_animal.fitness;
             let mut changed = false;
             let mut out_of_bounds = false;
@@ -135,13 +135,13 @@ fn animal_replacement(
                     let r2 = population[r.1].position[d];
                     let best = best_animal.position[d];
                     let current = current_animal.position[d];
-                    new_position.push(
-                        r1 + rng.next_f64() * (best - current) + rng.next_f64() * (r2 - current),
-                    );
-                    if new_position[d] > config.upper_bound || new_position[d] < config.lower_bound
-                    {
+                    let pos_d =
+                        r1 + rng.next_f64() * (best - current) + rng.next_f64() * (r2 - current);
+                    if pos_d > config.upper_bound || pos_d < config.lower_bound {
                         out_of_bounds = true;
+                        break;
                     }
+                    new_position.push(pos_d);
                 } else {
                     new_position.push(current_animal.position[d]);
                 }
@@ -217,29 +217,24 @@ fn generate_random_animal(fitness_evaluator: &FitnessEvaluator<f64>, config: &Co
         position,
     }
 }
+fn find_best_animal(population: &Vec<Animal>) -> Animal {
+    population
+        .iter()
+        .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
+        .unwrap()
+        .clone()
+}
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
     let solutions = vec![];
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
-    let mut best_animal = population[0].clone();
     let mut rng = thread_rng();
     for i in 0..config.iterations {
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
         sort_solutions_by_fitness(&mut population);
-        population = animal_replacement(
-            population,
-            &best_animal,
-            &mut rng,
-            &fitness_evaluator,
-            &config,
-        );
+        population = animal_replacement(population, &mut rng, &fitness_evaluator, &config);
 
-        for animal in &population {
-            if animal.fitness < best_animal.fitness {
-                best_animal = animal.clone();
-            }
-        }
         fitness_evaluator
             .sampler
             .population_sample_single(i, &population);
@@ -307,14 +302,11 @@ mod tests {
         let config = create_config();
         let sampler = create_sampler();
         let fitness_evaluator = &create_evaluator(&sampler);
-        let best = Animal {
-            position: vec![0.1, 0.2],
-            fitness: 0.3,
-        };
+
         let population = vec![
             Animal {
-                position: vec![1.0, 2.0],
-                fitness: 3.0,
+                position: vec![0.1, 0.2],
+                fitness: 0.3,
             },
             Animal {
                 position: vec![2.0, 2.1],
@@ -331,9 +323,8 @@ mod tests {
         ];
 
         let rng = create_seedable_rng();
-        let new_population =
-            animal_replacement(population, &best, rng, &fitness_evaluator, &config);
-        assert_eq!(new_population[0].fitness, 3.0);
+        let new_population = animal_replacement(population, rng, &fitness_evaluator, &config);
+        assert_eq!(new_population[0].fitness, 0.3);
         assert_eq!(new_population[1].fitness, 4.1);
         assert_eq!(new_population[2].fitness, 4.0448939501300325);
         assert_eq!(new_population[3].fitness, 5.388251274328821);
@@ -375,7 +366,7 @@ mod tests {
             let sampler = create_sampler();
             let evaluator = create_evaluator(&sampler);
             let config = create_config();
-            run(config, &evaluator);
+            run(config, &evaluator)
         });
     }
 }
