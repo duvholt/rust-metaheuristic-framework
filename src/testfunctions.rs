@@ -332,10 +332,9 @@ pub fn levy05(x: &Vec<f64>) -> f64 {
 }
 
 pub fn easom(x: &Vec<f64>) -> f64 {
-    if x.len() != 2 {
-        panic!("Easom only supports two dimensions!");
-    }
-    -x[0].cos() * x[1].cos() * (-(x[0] - consts::PI).powi(2) - (x[1] - consts::PI).powi(2)).exp()
+    let cos_product: f64 = x.iter().map(|x_i| x_i.cos()).product();
+    let sum: f64 = x.iter().map(|x_i| -(x_i - consts::PI).powi(2)).sum();
+    -cos_product * sum.exp()
 }
 
 pub fn discus(x: &Vec<f64>) -> f64 {
