@@ -49,10 +49,10 @@ pub fn run_subcommand(
     function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
-    let r = value_t!(sub_m, "r", f64).unwrap_or(0.95);
-    let e = value_t!(sub_m, "e", f64).unwrap_or(1.05);
-    let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(200);
-    let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(10);
+    let r = value_t!(sub_m, "r", f64).unwrap_or(0.9);
+    let e = value_t!(sub_m, "e", f64).unwrap_or(1.1);
+    let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(100);
+    let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(1);
     println!(
         "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
         r, e, normal_seeds, self_learning_seeds
