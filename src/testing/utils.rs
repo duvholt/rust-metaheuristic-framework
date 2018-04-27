@@ -13,11 +13,11 @@ pub fn create_sampler_multi() -> Sampler {
 }
 
 pub fn create_evaluator(sampler: &Sampler) -> FitnessEvaluator<f64> {
-    FitnessEvaluator::new(single_dummy, 100, &sampler)
+    FitnessEvaluator::new(single_dummy, 10000, &sampler)
 }
 
 pub fn create_evaluator_multi(sampler: &Sampler) -> FitnessEvaluator<Vec<f64>> {
-    FitnessEvaluator::new(multi_dummy, 100, &sampler)
+    FitnessEvaluator::new(multi_dummy, 10000, &sampler)
 }
 
 pub fn create_rng() -> StdRng {
