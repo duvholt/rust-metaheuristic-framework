@@ -6,7 +6,7 @@ import sys
 default_parameters = {
     'r': 25,  # Runs
     'd': 30,  # Dimensions
-    'u': 30,  # Upper bound
+    'u': 100,  # Upper bound
     'i': 10000,  # Iterations
     'p': 50,  # Population
 }

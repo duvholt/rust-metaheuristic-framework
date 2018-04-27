@@ -208,6 +208,7 @@ fn run_algorithm(
     sampler: &mut Sampler,
     common: &CommonConfig,
     number_of_runs: usize,
+    algorithm_data: Option<&(usize, f64)>,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
     for run in 0..number_of_runs {
         println!("Starting run #{}", Blue.paint(run.to_string()));
@@ -216,8 +217,20 @@ fn run_algorithm(
         let (_, evaluations) = match algorithm {
             &AlgorithmType::Single(run) => {
                 let single_test_function = get_single(test_function)?;
-                let fitness_evaluator =
+                let mut fitness_evaluator =
                     FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
+                if let Some(&(algorithm_number, input_scale)) = algorithm_data {
+                    fitness_evaluator
+                        .read_shifted(algorithm_number, common.dimensions)
+                        .unwrap();
+                    fitness_evaluator
+                        .read_rotate(algorithm_number, common.dimensions)
+                        .unwrap();
+                    if algorithm_number > 14 {
+                        fitness_evaluator.add_to_position = 1.0;
+                    }
+                    fitness_evaluator.input_scale = input_scale;
+                }
                 (
                     run(&common, &fitness_evaluator, sub_m),
                     fitness_evaluator.evaluations(),
@@ -467,6 +480,24 @@ fn start_algorithm() -> Result<(), &'static str> {
         ],
     );
 
+    let mut shift_rotate_number = HashMap::new();
+    shift_rotate_number.insert("high-elliptic", (1, 1.0));
+    shift_rotate_number.insert("bent-cigar", (2, 1.0));
+    shift_rotate_number.insert("discus", (3, 1.0));
+    shift_rotate_number.insert("rosenbrock", (4, 2.048 / 100.0));
+    shift_rotate_number.insert("ackley", (5, 1.0));
+    shift_rotate_number.insert("weierstrass", (6, 0.5 / 100.0));
+    shift_rotate_number.insert("griewank", (7, 600.0 / 100.0));
+    // shift_rotate_number.insert("rastrigin", (8, 5.12 / 100.0));
+    shift_rotate_number.insert("rastrigin", (9, 5.12 / 100.0));
+    // shift_rotate_number.insert("schwefel", (10, 1000.0 / 100.0));
+    shift_rotate_number.insert("schwefel", (11, 1000.0 / 100.0));
+    shift_rotate_number.insert("katsuura", (12, 5.0 / 100.0));
+    shift_rotate_number.insert("happycat", (13, 5.0 / 100.0));
+    shift_rotate_number.insert("hgbat", (14, 5.0 / 100.0));
+    shift_rotate_number.insert("griewank-rosenbrock", (15, 5.0 / 100.0));
+    shift_rotate_number.insert("expanded-schaffer6", (16, 1.0));
+
     let matches = arguments(&test_functions_map, &algorithms, &test_suites);
 
     // Test function
@@ -555,6 +586,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             sampler_mode.clone(),
             sampler_objective.clone(),
         );
+        let algorithm_number = shift_rotate_number.get(test_function_name.as_str());
 
         let solutions = run_algorithm(
             &run_subcommand,
@@ -563,6 +595,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             &mut sampler,
             &common,
             number_of_runs,
+            algorithm_number,
         )?;
 
         let mut json_sample = sampler.to_json();
