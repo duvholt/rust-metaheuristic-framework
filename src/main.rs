@@ -226,8 +226,10 @@ fn run_algorithm(
                     fitness_evaluator
                         .read_rotate(algorithm_number, common.dimensions)
                         .unwrap();
-                    if algorithm_number > 14 {
+                    if algorithm_number == 15 || algorithm_number == 4 {
                         fitness_evaluator.add_to_position = 1.0;
+                    } else if algorithm_number == 13 || algorithm_number == 14 {
+                        fitness_evaluator.add_to_position = -1.0;
                     }
                     fitness_evaluator.input_scale = input_scale;
                 }
