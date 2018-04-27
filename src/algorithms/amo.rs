@@ -128,9 +128,9 @@ fn animal_replacement(
                 let mut changed = false;
                 let mut out_of_bounds = false;
                 for d in 0..config.dimensions {
-                    let r = get_two_unique_numbers(i, population.len(), &mut rng);
                     if rng.next_f64() > probabilities[i] {
                         changed = true;
+                        let r = get_two_unique_numbers(i, population.len(), &mut rng);
                         let r1 = population[r.0].position[d];
                         let r2 = population[r.1].position[d];
                         let best = best_animal.position[d];
@@ -342,8 +342,8 @@ mod tests {
         let new_population = animal_replacement(population, rng, &fitness_evaluator, &config);
         assert_eq!(new_population[0].fitness, 0.3);
         assert_eq!(new_population[1].fitness, 4.1);
-        assert_eq!(new_population[2].fitness, 2.1055235269164543);
-        assert_eq!(new_population[3].fitness, 2.2815542409502383);
+        assert_eq!(new_population[2].fitness, 3.6356651356791128);
+        assert_eq!(new_population[3].fitness, 0.2597658499586726);
     }
 
     #[test]
