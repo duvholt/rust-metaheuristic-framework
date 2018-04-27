@@ -368,7 +368,7 @@ pub fn griewank_rosenbrock(x: &Vec<f64>) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{thread_rng, Rng};
+    use rand::{weak_rng, Rng};
     use test::Bencher;
 
     #[test]
@@ -392,7 +392,7 @@ mod tests {
     }
 
     fn dtlz_optimum(dtlz: &Fn(&Vec<f64>) -> Vec<f64>, sum: &Fn(Vec<f64>) -> f64, x: f64, f: f64) {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let objectives = 3;
         for i in objectives..31 {
             let mut vector = vec![x; i];

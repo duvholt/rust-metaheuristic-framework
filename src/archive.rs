@@ -1,5 +1,5 @@
 use domination::find_non_dominated;
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use selection::roulette_wheel;
 use solution::Solution;
 use std::collections::{HashMap, HashSet};
@@ -44,7 +44,7 @@ impl<M: Solution<Vec<f64>> + Eq + Hash + Clone> Hypercube<M> {
     }
 
     fn random(&self) -> &M {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let hypercube_vec: Vec<&M> = self.set.iter().collect();
         rng.choose(&hypercube_vec).unwrap().clone()
     }

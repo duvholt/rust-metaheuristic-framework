@@ -4,7 +4,7 @@ use config::CommonConfig;
 use domination::dominates;
 use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 use std::hash;
 
@@ -196,7 +196,7 @@ impl<'a> Swarm<'a> {
 
     fn mutate(&self, position: &Vec<f64>, pm: f64) -> Vec<f64> {
         let diff_position = pm * (self.config.upper_bound - self.config.lower_bound);
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let j: usize = rng.gen_range(0, self.config.dimensions);
 
         let mut lb = position[j] - diff_position;
@@ -214,7 +214,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn particle_move(&self, particle: &Particle, leader: &Particle, iteration: i64) -> Particle {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let mut velocity = vec![];
         let mut position = vec![];
         for i in 0..self.config.dimensions {

@@ -3,7 +3,7 @@ use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use rand;
 use rand::distributions::{IndependentSample, Range};
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use solution::{Solution, SolutionJSON};
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
@@ -94,7 +94,7 @@ impl Solution<f64> for SASolution {
 struct Neighbourhood<'a> {
     dimonension: usize,
     space: f64,
-    rng: rand::ThreadRng,
+    rng: rand::XorShiftRng,
     fitness_evaluator: &'a FitnessEvaluator<'a, f64>,
 }
 
@@ -107,14 +107,14 @@ impl<'a> Neighbourhood<'a> {
         return Neighbourhood {
             dimonension,
             space,
-            rng: rand::thread_rng(),
+            rng: rand::weak_rng(),
             fitness_evaluator,
         };
     }
 
     fn random_solution(&self) -> SASolution {
         let between = Range::new(-self.space, self.space);
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::weak_rng();
         let x = (0..self.dimonension)
             .map(|_| between.ind_sample(&mut rng))
             .collect();
@@ -151,7 +151,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
     let mut neighbourhood = Neighbourhood::new(config.dimensions, config.space, &fitness_evaluator);
     let mut current = neighbourhood.random_solution();
     let mut i = 0;
-    let mut rng = thread_rng();
+    let mut rng = weak_rng();
     let mut best = current.clone();
     let mut solutions = vec![];
     while i < config.iterations {

@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use rand::distributions::{IndependentSample, Range};
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use solution::Solution;
 use solution::SolutionJSON;
 use std::f64;
@@ -125,7 +125,7 @@ impl<'a> Swarm<'a> {
 
     fn generate_random_dandelion(&self) -> Dandelion {
         let between = Range::new(self.config.lower_bound, self.config.upper_bound);
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let position = (0..self.config.dimensions)
             .map(|_| between.ind_sample(&mut rng))
             .collect();
@@ -149,7 +149,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn dandelion_sowing(&mut self) {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         for i in 0..self.population.len() {
             self.population[i].seeds = (0..self.config.normal_seeds)
                 .map(|_| {
@@ -173,7 +173,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn self_learning_sowing(&mut self) {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         for i in 0..self.population.len() {
             let average_position = self.find_average_seed_position(&self.population[i]);
             let mut seeds: Vec<Seed> = (0..self.config.self_learning_seeds)
