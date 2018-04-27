@@ -4,10 +4,10 @@ import json
 import sys
 
 default_parameters = {
-    '-r': 1,  # Runs
-    '-d': 2,  # Dimensions
+    '-r': 25,  # Runs
+    '-d': 30,  # Dimensions
     '-u': 100,  # Upper bound
-    '-i': 1000,  # Iterations
+    '-i': 10000,  # Iterations
     '-p': 50,  # Population
 }
 
