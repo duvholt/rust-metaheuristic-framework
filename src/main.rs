@@ -197,6 +197,11 @@ fn arguments(
                 .long("json")
                 .help("Output json data about run"),
         )
+        .arg(
+            Arg::with_name("shift")
+                .long("sr")
+                .help("Shift and rotate functions (requires data files)"),
+        )
         .subcommands(subcommands)
         .get_matches()
 }
@@ -655,7 +660,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             sampler_mode.clone(),
             sampler_objective.clone(),
         );
-        let algorithm_info = algorithm_shift_info(test_function_name.as_str());
+        let algorithm_info = if matches.is_present("shift") {
+            algorithm_shift_info(test_function_name.as_str())
+        } else {
+            None
+        };
 
         let solutions = run_algorithm(
             &run_subcommand,
