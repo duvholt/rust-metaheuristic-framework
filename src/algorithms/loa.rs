@@ -4,7 +4,7 @@ use crossover::uniform;
 use fitness_evaluation::FitnessEvaluator;
 use position::{limit_position, perpendicular_position, random_position};
 use rand::distributions::{IndependentSample, Normal};
-use rand::{seq, thread_rng, Rng};
+use rand::{seq, weak_rng, Rng};
 use selection::tournament_selection;
 use solution::{Solution, SolutionJSON};
 use std::cmp::max;
@@ -825,7 +825,7 @@ fn print_info(prides: &Vec<Pride>, nomad: &Nomad) {
 }
 
 fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<SolutionJSON> {
-    let mut rng = thread_rng();
+    let mut rng = weak_rng();
     let population = random_population(&config, &fitness_evaluator);
     let (mut nomad, mut prides) = partition_lions(&config, population);
 

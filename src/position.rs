@@ -1,9 +1,9 @@
 use rand::distributions::{IndependentSample, Range};
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 
 pub fn random_position(lower_space: f64, upper_space: f64, dimensions: usize) -> Vec<f64> {
     let between = Range::new(lower_space, upper_space);
-    let mut rng = thread_rng();
+    let mut rng = weak_rng();
     (0..dimensions)
         .map(|_| between.ind_sample(&mut rng))
         .collect()
@@ -180,7 +180,7 @@ mod tests {
     #[ignore]
     fn bench_perpendicular(b: &mut Bencher) {
         let position = vec![2.0, 2.0, 2.0, 2.0, 2.0, 2.0];
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         b.iter(|| perpendicular_position(&position, &mut rng));
     }
 }

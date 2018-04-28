@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use position::random_position;
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use std::cmp::Ordering;
 
@@ -147,7 +147,7 @@ impl<'a> Swarm<'a> {
     }
 
     fn particle_move(&self, particle: &Particle, leader: &Particle, iteration: i64) -> Particle {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let mut velocity = vec![];
         let mut position = vec![];
         let inertia = self.config.inertia * 0.99_f64.powi(iteration as i32);

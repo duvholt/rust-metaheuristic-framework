@@ -3,7 +3,7 @@ use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
 use position::{limit_position_random, random_position};
-use rand::{thread_rng, Rng};
+use rand::{weak_rng, Rng};
 use selection::roulette_wheel;
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use std::f64::EPSILON;
@@ -166,7 +166,7 @@ impl<'a> Worms<'a> {
         // uniform crossover
         let mut pos1 = vec![];
         let mut pos2 = vec![];
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         for j in 0..self.config.dimensions {
             let r = rng.next_f64();
             let p1j = parent1.position[j];
@@ -217,7 +217,7 @@ impl<'a> Worms<'a> {
     }
 
     fn random_other_worm(&self, worm_index: usize) -> Worm {
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let mut other_index = worm_index;
         while other_index == worm_index {
             other_index = rng.gen_range(0, self.config.population);
@@ -227,7 +227,7 @@ impl<'a> Worms<'a> {
 
     fn cauchy_mutation(&self, worm: &Worm) -> Worm {
         let population_size = self.population.len();
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         let mut position = worm.position
             .iter()
             .enumerate()
@@ -265,7 +265,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Sol
             let mut new_worm = worms.combine_worms(&offspring1, &offspring2, iteration);
             new_worms.push(new_worm);
         }
-        let mut rng = thread_rng();
+        let mut rng = weak_rng();
         for worm in &mut new_worms[elites..] {
             let r = rng.next_f64();
             if 0.01 > r {
