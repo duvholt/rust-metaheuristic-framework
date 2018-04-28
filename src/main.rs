@@ -6,14 +6,8 @@ extern crate serde_json;
 
 use ansi_term::Color::{Blue, Cyan, Green, Red};
 use clap::{App, Arg, ArgGroup, ArgMatches};
-use rustoa::algorithms::amo;
-use rustoa::algorithms::da;
-use rustoa::algorithms::dummy;
-use rustoa::algorithms::ewa;
-use rustoa::algorithms::loa;
-use rustoa::algorithms::mopso;
-use rustoa::algorithms::pso;
-use rustoa::algorithms::sa;
+use rustoa::algorithms;
+use rustoa::algorithms::{AlgorithmSubCommand, AlgorithmType};
 use rustoa::config::{AlgorithmInfo, CommonConfig};
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
 use rustoa::problems;
@@ -27,13 +21,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::stdout;
 use std::process;
-
-type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
-enum AlgorithmType {
-    Single(AlgorithmRun<f64>),
-    Multi(AlgorithmRun<Vec<f64>>),
-}
 
 fn write_solutions(
     filename: &str,
@@ -279,44 +266,7 @@ fn run_algorithm(
 
 fn start_algorithm() -> Result<(), &'static str> {
     let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
-    algorithms.insert(
-        "da",
-        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
-    );
-    algorithms.insert(
-        "dummy",
-        (
-            dummy::subcommand,
-            AlgorithmType::Single(dummy::run_subcommand),
-        ),
-    );
-    algorithms.insert(
-        "ewa",
-        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
-    );
-    algorithms.insert(
-        "pso",
-        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
-    );
-    algorithms.insert(
-        "sa",
-        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
-    );
-    algorithms.insert(
-        "loa",
-        (loa::subcommand, AlgorithmType::Single(loa::run_subcommand)),
-    );
-    algorithms.insert(
-        "mopso",
-        (
-            mopso::subcommand,
-            AlgorithmType::Multi(mopso::run_subcommand),
-        ),
-    );
-    algorithms.insert(
-        "amo",
-        (amo::subcommand, AlgorithmType::Single(amo::run_subcommand)),
-    );
+    algorithms::add_algorithms(&mut algorithms);
 
     let mut test_functions_map = HashMap::new();
     // Single-objective
