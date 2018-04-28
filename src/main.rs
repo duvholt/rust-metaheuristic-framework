@@ -16,9 +16,12 @@ use rustoa::algorithms::pso;
 use rustoa::algorithms::sa;
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
+use rustoa::problems;
+use rustoa::problems::multi::dtlz;
+use rustoa::problems::multi::zdt;
+use rustoa::problems::single::cec2014;
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
-use rustoa::testfunctions;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -407,104 +410,74 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Single-objective
     test_functions_map.insert(
         "rosenbrock",
-        TestFunctionVar::Single(testfunctions::rosenbrock),
+        TestFunctionVar::Single(problems::single::cec2014::rosenbrock),
     );
-    test_functions_map.insert("zakharov", TestFunctionVar::Single(testfunctions::zakharov));
-    test_functions_map.insert("ackley", TestFunctionVar::Single(testfunctions::ackley));
+    test_functions_map.insert(
+        "zakharov",
+        TestFunctionVar::Single(problems::single::misc::zakharov),
+    );
+    test_functions_map.insert("ackley", TestFunctionVar::Single(cec2014::ackley));
     test_functions_map.insert(
         "himmelblau",
-        TestFunctionVar::Single(testfunctions::himmelblau),
+        TestFunctionVar::Single(problems::single::misc::himmelblau),
     );
-    test_functions_map.insert("sphere", TestFunctionVar::Single(testfunctions::sphere));
     test_functions_map.insert(
-        "rastrigin",
-        TestFunctionVar::Single(testfunctions::rastrigin),
+        "sphere",
+        TestFunctionVar::Single(problems::single::misc::sphere),
     );
+    test_functions_map.insert("rastrigin", TestFunctionVar::Single(cec2014::rastrigin));
     test_functions_map.insert(
         "hyper-ellipsoid",
-        TestFunctionVar::Single(testfunctions::axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(problems::single::misc::axis_parallel_hyper_ellipsoid),
     );
     test_functions_map.insert(
         "moved-hyper-ellipsoid",
-        TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
+        TestFunctionVar::Single(problems::single::misc::moved_axis_parallel_hyper_ellipsoid),
     );
     test_functions_map.insert(
         "high-elliptic",
-        TestFunctionVar::Single(testfunctions::high_elliptic),
+        TestFunctionVar::Single(cec2014::high_elliptic),
+    );
+    test_functions_map.insert("bent-cigar", TestFunctionVar::Single(cec2014::bent_cigar));
+    test_functions_map.insert("griewank", TestFunctionVar::Single(cec2014::griewank));
+    test_functions_map.insert("schwefel", TestFunctionVar::Single(cec2014::schwefel));
+    test_functions_map.insert("katsuura", TestFunctionVar::Single(cec2014::katsuura));
+    test_functions_map.insert("weierstrass", TestFunctionVar::Single(cec2014::weierstrass));
+    test_functions_map.insert("happycat", TestFunctionVar::Single(cec2014::happycat));
+    test_functions_map.insert("hgbat", TestFunctionVar::Single(cec2014::hgbat));
+    test_functions_map.insert(
+        "levy05",
+        TestFunctionVar::Single(problems::single::misc::levy05),
     );
     test_functions_map.insert(
-        "bent-cigar",
-        TestFunctionVar::Single(testfunctions::bent_cigar),
+        "easom",
+        TestFunctionVar::Single(problems::single::misc::easom),
     );
-    test_functions_map.insert("griewank", TestFunctionVar::Single(testfunctions::griewank));
-    test_functions_map.insert("schwefel", TestFunctionVar::Single(testfunctions::schwefel));
-    test_functions_map.insert("katsuura", TestFunctionVar::Single(testfunctions::katsuura));
-    test_functions_map.insert(
-        "weierstrass",
-        TestFunctionVar::Single(testfunctions::weierstrass),
-    );
-    test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
-    test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
-    test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
-    test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
-    test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
+    test_functions_map.insert("discus", TestFunctionVar::Single(cec2014::discus));
     test_functions_map.insert(
         "griewank-rosenbrock",
-        TestFunctionVar::Single(testfunctions::griewank_rosenbrock),
+        TestFunctionVar::Single(cec2014::griewank_rosenbrock),
     );
     test_functions_map.insert(
         "expanded-schaffer6",
-        TestFunctionVar::Single(testfunctions::expanded_schaffer6),
+        TestFunctionVar::Single(cec2014::expanded_schaffer6),
     );
     // Multi-objective
     test_functions_map.insert(
         "schaffer1",
-        TestFunctionVar::Multi(testfunctions::schaffer1, "schaffer1-2d"),
+        TestFunctionVar::Multi(problems::multi::misc::schaffer1, "schaffer1-2d"),
     );
-    test_functions_map.insert(
-        "zdt1",
-        TestFunctionVar::Multi(testfunctions::zdt1, "zdt1-2d"),
-    );
-    test_functions_map.insert(
-        "zdt2",
-        TestFunctionVar::Multi(testfunctions::zdt2, "zdt2-2d"),
-    );
-    test_functions_map.insert(
-        "zdt3",
-        TestFunctionVar::Multi(testfunctions::zdt3, "zdt3-2d"),
-    );
-    test_functions_map.insert(
-        "zdt6",
-        TestFunctionVar::Multi(testfunctions::zdt6, "zdt6-2d"),
-    );
-    test_functions_map.insert(
-        "dtlz1",
-        TestFunctionVar::Multi(testfunctions::dtlz1, "dtlz1-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz2",
-        TestFunctionVar::Multi(testfunctions::dtlz2, "dtlz2-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz3",
-        TestFunctionVar::Multi(testfunctions::dtlz3, "dtlz3-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz4",
-        TestFunctionVar::Multi(testfunctions::dtlz4, "dtlz4-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz5",
-        TestFunctionVar::Multi(testfunctions::dtlz5, "dtlz5-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz6",
-        TestFunctionVar::Multi(testfunctions::dtlz6, "dtlz6-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz7",
-        TestFunctionVar::Multi(testfunctions::dtlz7, "dtlz7-3d"),
-    );
+    test_functions_map.insert("zdt1", TestFunctionVar::Multi(zdt::zdt1, "zdt1-2d"));
+    test_functions_map.insert("zdt2", TestFunctionVar::Multi(zdt::zdt2, "zdt2-2d"));
+    test_functions_map.insert("zdt3", TestFunctionVar::Multi(zdt::zdt3, "zdt3-2d"));
+    test_functions_map.insert("zdt6", TestFunctionVar::Multi(zdt::zdt6, "zdt6-2d"));
+    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(dtlz::dtlz1, "dtlz1-3d"));
+    test_functions_map.insert("dtlz2", TestFunctionVar::Multi(dtlz::dtlz2, "dtlz2-3d"));
+    test_functions_map.insert("dtlz3", TestFunctionVar::Multi(dtlz::dtlz3, "dtlz3-3d"));
+    test_functions_map.insert("dtlz4", TestFunctionVar::Multi(dtlz::dtlz4, "dtlz4-3d"));
+    test_functions_map.insert("dtlz5", TestFunctionVar::Multi(dtlz::dtlz5, "dtlz5-3d"));
+    test_functions_map.insert("dtlz6", TestFunctionVar::Multi(dtlz::dtlz6, "dtlz6-3d"));
+    test_functions_map.insert("dtlz7", TestFunctionVar::Multi(dtlz::dtlz7, "dtlz7-3d"));
 
     let mut test_suites = HashMap::new();
     test_suites.insert(
