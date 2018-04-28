@@ -7,3 +7,9 @@ pub struct CommonConfig {
     pub dimensions: usize,
     pub population: usize,
 }
+
+pub struct AlgorithmInfo {
+    pub number: usize,
+    pub scale: f64,
+    pub add: f64,
+}

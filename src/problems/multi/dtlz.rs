@@ -1,4 +1,31 @@
+use fitness_evaluation::TestFunctionVar;
+use std::collections::HashMap;
 use std::f64::consts;
+
+pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFunctionVar>) {
+    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(dtlz1, "dtlz1-3d"));
+    test_functions_map.insert("dtlz2", TestFunctionVar::Multi(dtlz2, "dtlz2-3d"));
+    test_functions_map.insert("dtlz3", TestFunctionVar::Multi(dtlz3, "dtlz3-3d"));
+    test_functions_map.insert("dtlz4", TestFunctionVar::Multi(dtlz4, "dtlz4-3d"));
+    test_functions_map.insert("dtlz5", TestFunctionVar::Multi(dtlz5, "dtlz5-3d"));
+    test_functions_map.insert("dtlz6", TestFunctionVar::Multi(dtlz6, "dtlz6-3d"));
+    test_functions_map.insert("dtlz7", TestFunctionVar::Multi(dtlz7, "dtlz7-3d"));
+}
+
+pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
+    test_suites.insert(
+        "dtlz",
+        vec![
+            "dtlz1".to_string(),
+            "dtlz2".to_string(),
+            "dtlz3".to_string(),
+            "dtlz4".to_string(),
+            "dtlz5".to_string(),
+            "dtlz6".to_string(),
+            "dtlz7".to_string(),
+        ],
+    );
+}
 
 fn dtlz1g(x: &Vec<f64>, m: usize) -> f64 {
     let k = x.len() - m + 1;

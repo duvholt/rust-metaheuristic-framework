@@ -1,4 +1,134 @@
+use config::AlgorithmInfo;
+use fitness_evaluation::TestFunctionVar;
+use std::collections::HashMap;
 use std::f64::consts;
+
+pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFunctionVar>) {
+    test_functions_map.insert("rosenbrock", TestFunctionVar::Single(rosenbrock));
+    test_functions_map.insert("high-elliptic", TestFunctionVar::Single(high_elliptic));
+    test_functions_map.insert("bent-cigar", TestFunctionVar::Single(bent_cigar));
+    test_functions_map.insert("griewank", TestFunctionVar::Single(griewank));
+    test_functions_map.insert("schwefel", TestFunctionVar::Single(schwefel));
+    test_functions_map.insert("ackley", TestFunctionVar::Single(ackley));
+    test_functions_map.insert("rastrigin", TestFunctionVar::Single(rastrigin));
+    test_functions_map.insert("katsuura", TestFunctionVar::Single(katsuura));
+    test_functions_map.insert("weierstrass", TestFunctionVar::Single(weierstrass));
+    test_functions_map.insert("happycat", TestFunctionVar::Single(happycat));
+    test_functions_map.insert("hgbat", TestFunctionVar::Single(hgbat));
+    test_functions_map.insert("discus", TestFunctionVar::Single(discus));
+    test_functions_map.insert(
+        "griewank-rosenbrock",
+        TestFunctionVar::Single(griewank_rosenbrock),
+    );
+    test_functions_map.insert(
+        "expanded-schaffer6",
+        TestFunctionVar::Single(expanded_schaffer6),
+    );
+}
+
+pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
+    test_suites.insert(
+        "cec2014",
+        vec![
+            "high-elliptic".to_string(),
+            "bent-cigar".to_string(),
+            "discus".to_string(),
+            "rosenbrock".to_string(),
+            "ackley".to_string(),
+            "weierstrass".to_string(),
+            "griewank".to_string(),
+            "rastrigin".to_string(),
+            "schwefel".to_string(),
+            "katsuura".to_string(),
+            "happycat".to_string(),
+            "hgbat".to_string(),
+            "griewank-rosenbrock".to_string(),
+            "expanded-schaffer6".to_string(),
+        ],
+    );
+}
+
+pub fn algorithm_shift_info(name: &str) -> Option<AlgorithmInfo> {
+    match name {
+        "high-elliptic" => Some(AlgorithmInfo {
+            number: 1,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "bent-cigar" => Some(AlgorithmInfo {
+            number: 2,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "discus" => Some(AlgorithmInfo {
+            number: 3,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "rosenbrock" => Some(AlgorithmInfo {
+            number: 4,
+            scale: 2.048 / 100.0,
+            add: 1.0,
+        }),
+        "ackley" => Some(AlgorithmInfo {
+            number: 5,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "weierstrass" => Some(AlgorithmInfo {
+            number: 6,
+            scale: 0.5 / 100.0,
+            add: 0.0,
+        }),
+        "griewank" => Some(AlgorithmInfo {
+            number: 7,
+            scale: 600.0 / 100.0,
+            add: 0.0,
+        }),
+        // "rastrigin" => Some(AlgorithmInfo{
+        //     number: 8, scale: 5.12 / 100.0, add: 0.0
+        // }),
+        "rastrigin" => Some(AlgorithmInfo {
+            number: 9,
+            scale: 5.12 / 100.0,
+            add: 0.0,
+        }),
+        // "schwefel" => Some(AlgorithmInfo{
+        //     number: 10, scale: 1000.0 / 100.0, add: 0.0
+        // }),
+        "schwefel" => Some(AlgorithmInfo {
+            number: 11,
+            scale: 1000.0 / 100.0,
+            add: 0.0,
+        }),
+        "katsuura" => Some(AlgorithmInfo {
+            number: 12,
+            scale: 5.0 / 100.0,
+            add: 0.0,
+        }),
+        "happycat" => Some(AlgorithmInfo {
+            number: 13,
+            scale: 5.0 / 100.0,
+            add: -1.0,
+        }),
+        "hgbat" => Some(AlgorithmInfo {
+            number: 14,
+            scale: 5.0 / 100.0,
+            add: -1.0,
+        }),
+        "griewank-rosenbrock" => Some(AlgorithmInfo {
+            number: 15,
+            scale: 5.0 / 100.0,
+            add: 1.0,
+        }),
+        "expanded-schaffer6" => Some(AlgorithmInfo {
+            number: 16,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        _ => None,
+    }
+}
 
 pub fn ackley(x: &Vec<f64>) -> f64 {
     let a = 20.0;

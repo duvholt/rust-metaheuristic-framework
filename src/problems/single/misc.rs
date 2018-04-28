@@ -1,4 +1,22 @@
+use fitness_evaluation::TestFunctionVar;
+use std::collections::HashMap;
 use std::f64::consts;
+
+pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFunctionVar>) {
+    test_functions_map.insert("zakharov", TestFunctionVar::Single(zakharov));
+    test_functions_map.insert("himmelblau", TestFunctionVar::Single(himmelblau));
+    test_functions_map.insert("sphere", TestFunctionVar::Single(sphere));
+    test_functions_map.insert(
+        "hyper-ellipsoid",
+        TestFunctionVar::Single(axis_parallel_hyper_ellipsoid),
+    );
+    test_functions_map.insert(
+        "moved-hyper-ellipsoid",
+        TestFunctionVar::Single(moved_axis_parallel_hyper_ellipsoid),
+    );
+    test_functions_map.insert("levy05", TestFunctionVar::Single(levy05));
+    test_functions_map.insert("easom", TestFunctionVar::Single(easom));
+}
 
 pub fn zakharov(x: &Vec<f64>) -> f64 {
     let mut sum1 = 0.0;
