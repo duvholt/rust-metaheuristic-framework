@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use itertools::Itertools;
-use position::random_position;
+use operators::position::random_position;
 use rand::distributions::normal::StandardNormal;
 use rand::{weak_rng, Rng};
 use solution::Solution;

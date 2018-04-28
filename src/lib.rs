@@ -17,16 +17,12 @@ extern crate statistical;
 extern crate test;
 
 pub mod algorithms;
-pub mod archive;
 pub mod config;
-pub mod crossover;
 pub mod distribution;
-pub mod domination;
 pub mod fitness_evaluation;
 pub mod multiobjective;
-pub mod position;
+pub mod operators;
 pub mod problems;
-pub mod selection;
 pub mod solution;
 pub mod statistics;
 pub mod testing;

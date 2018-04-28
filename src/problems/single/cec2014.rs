@@ -1,4 +1,4 @@
-use config::AlgorithmInfo;
+use algorithms::AlgorithmInfo;
 use fitness_evaluation::TestFunctionVar;
 use std::collections::HashMap;
 use std::f64::consts;

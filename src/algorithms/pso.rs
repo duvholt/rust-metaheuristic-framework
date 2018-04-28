@@ -1,7 +1,7 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use position::random_position;
+use operators::position::random_position;
 use rand::{weak_rng, Rng};
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use std::cmp::Ordering;

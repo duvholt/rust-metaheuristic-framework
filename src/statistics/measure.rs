@@ -1,4 +1,4 @@
-use position::euclidean_distance;
+use operators::position::euclidean_distance;
 use std::f64::INFINITY;
 
 fn distance_closest_point_to_front(point: &[f64], front: &[Vec<f64>]) -> f64 {

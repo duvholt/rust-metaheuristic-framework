@@ -1,9 +1,9 @@
-use archive::Archive;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use domination::dominates;
 use fitness_evaluation::FitnessEvaluator;
-use position::random_position;
+use multiobjective::archive::Archive;
+use multiobjective::domination::dominates;
+use operators::position::random_position;
 use rand::{weak_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 use std::hash;

@@ -1,6 +1,6 @@
-use domination::find_non_dominated;
+use multiobjective::domination::find_non_dominated;
+use operators::selection::roulette_wheel;
 use rand::{weak_rng, Rng};
-use selection::roulette_wheel;
 use solution::Solution;
 use std::collections::{HashMap, HashSet};
 use std::f64::INFINITY;

@@ -61,3 +61,9 @@ pub fn add_algorithms(algorithms: &mut HashMap<&str, (AlgorithmSubCommand, Algor
         (amo::subcommand, AlgorithmType::Single(amo::run_subcommand)),
     );
 }
+
+pub struct AlgorithmInfo {
+    pub number: usize,
+    pub scale: f64,
+    pub add: f64,
+}
