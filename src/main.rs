@@ -197,8 +197,101 @@ fn arguments(
                 .long("json")
                 .help("Output json data about run"),
         )
+        .arg(
+            Arg::with_name("shift")
+                .long("sr")
+                .help("Shift and rotate functions (requires data files)"),
+        )
         .subcommands(subcommands)
         .get_matches()
+}
+
+struct AlgorithmInfo {
+    number: usize,
+    scale: f64,
+    add: f64,
+}
+
+fn algorithm_shift_info(name: &str) -> Option<AlgorithmInfo> {
+    match name {
+        "high-elliptic" => Some(AlgorithmInfo {
+            number: 1,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "bent-cigar" => Some(AlgorithmInfo {
+            number: 2,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "discus" => Some(AlgorithmInfo {
+            number: 3,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "rosenbrock" => Some(AlgorithmInfo {
+            number: 4,
+            scale: 2.048 / 100.0,
+            add: 1.0,
+        }),
+        "ackley" => Some(AlgorithmInfo {
+            number: 5,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        "weierstrass" => Some(AlgorithmInfo {
+            number: 6,
+            scale: 0.5 / 100.0,
+            add: 0.0,
+        }),
+        "griewank" => Some(AlgorithmInfo {
+            number: 7,
+            scale: 600.0 / 100.0,
+            add: 0.0,
+        }),
+        // "rastrigin" => Some(AlgorithmInfo{
+        //     number: 8, scale: 5.12 / 100.0, add: 0.0
+        // }),
+        "rastrigin" => Some(AlgorithmInfo {
+            number: 9,
+            scale: 5.12 / 100.0,
+            add: 0.0,
+        }),
+        // "schwefel" => Some(AlgorithmInfo{
+        //     number: 10, scale: 1000.0 / 100.0, add: 0.0
+        // }),
+        "schwefel" => Some(AlgorithmInfo {
+            number: 11,
+            scale: 1000.0 / 100.0,
+            add: 0.0,
+        }),
+        "katsuura" => Some(AlgorithmInfo {
+            number: 12,
+            scale: 5.0 / 100.0,
+            add: 0.0,
+        }),
+        "happycat" => Some(AlgorithmInfo {
+            number: 13,
+            scale: 5.0 / 100.0,
+            add: -1.0,
+        }),
+        "hgbat" => Some(AlgorithmInfo {
+            number: 14,
+            scale: 5.0 / 100.0,
+            add: -1.0,
+        }),
+        "griewank-rosenbrock" => Some(AlgorithmInfo {
+            number: 15,
+            scale: 5.0 / 100.0,
+            add: 1.0,
+        }),
+        "expanded-schaffer6" => Some(AlgorithmInfo {
+            number: 16,
+            scale: 1.0,
+            add: 0.0,
+        }),
+        _ => None,
+    }
 }
 
 fn run_algorithm(
@@ -208,7 +301,7 @@ fn run_algorithm(
     sampler: &mut Sampler,
     common: &CommonConfig,
     number_of_runs: usize,
-    algorithm_data: Option<&(usize, f64)>,
+    algorithm_info: Option<AlgorithmInfo>,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
     for run in 0..number_of_runs {
         println!("Starting run #{}", Blue.paint(run.to_string()));
@@ -219,17 +312,16 @@ fn run_algorithm(
                 let single_test_function = get_single(test_function)?;
                 let mut fitness_evaluator =
                     FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
-                if let Some(&(algorithm_number, input_scale)) = algorithm_data {
+                if let Some(ref info) = algorithm_info {
+                    let algorithm_number = info.number;
                     fitness_evaluator
                         .read_shifted(algorithm_number, common.dimensions)
                         .unwrap();
                     fitness_evaluator
                         .read_rotate(algorithm_number, common.dimensions)
                         .unwrap();
-                    if algorithm_number > 14 {
-                        fitness_evaluator.add_to_position = 1.0;
-                    }
-                    fitness_evaluator.input_scale = input_scale;
+                    fitness_evaluator.add_to_position = info.add;
+                    fitness_evaluator.input_scale = info.scale;
                 }
                 (
                     run(&common, &fitness_evaluator, sub_m),
@@ -480,24 +572,6 @@ fn start_algorithm() -> Result<(), &'static str> {
         ],
     );
 
-    let mut shift_rotate_number = HashMap::new();
-    shift_rotate_number.insert("high-elliptic", (1, 1.0));
-    shift_rotate_number.insert("bent-cigar", (2, 1.0));
-    shift_rotate_number.insert("discus", (3, 1.0));
-    shift_rotate_number.insert("rosenbrock", (4, 2.048 / 100.0));
-    shift_rotate_number.insert("ackley", (5, 1.0));
-    shift_rotate_number.insert("weierstrass", (6, 0.5 / 100.0));
-    shift_rotate_number.insert("griewank", (7, 600.0 / 100.0));
-    // shift_rotate_number.insert("rastrigin", (8, 5.12 / 100.0));
-    shift_rotate_number.insert("rastrigin", (9, 5.12 / 100.0));
-    // shift_rotate_number.insert("schwefel", (10, 1000.0 / 100.0));
-    shift_rotate_number.insert("schwefel", (11, 1000.0 / 100.0));
-    shift_rotate_number.insert("katsuura", (12, 5.0 / 100.0));
-    shift_rotate_number.insert("happycat", (13, 5.0 / 100.0));
-    shift_rotate_number.insert("hgbat", (14, 5.0 / 100.0));
-    shift_rotate_number.insert("griewank-rosenbrock", (15, 5.0 / 100.0));
-    shift_rotate_number.insert("expanded-schaffer6", (16, 1.0));
-
     let matches = arguments(&test_functions_map, &algorithms, &test_suites);
 
     // Test function
@@ -586,7 +660,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             sampler_mode.clone(),
             sampler_objective.clone(),
         );
-        let algorithm_number = shift_rotate_number.get(test_function_name.as_str());
+        let algorithm_info = if matches.is_present("shift") {
+            algorithm_shift_info(test_function_name.as_str())
+        } else {
+            None
+        };
 
         let solutions = run_algorithm(
             &run_subcommand,
@@ -595,7 +673,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             &mut sampler,
             &common,
             number_of_runs,
-            algorithm_number,
+            algorithm_info,
         )?;
 
         let mut json_sample = sampler.to_json();
