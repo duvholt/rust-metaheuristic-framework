@@ -265,6 +265,13 @@ fn mutate_population(
         .collect()
 }
 
+fn non_dominated_population(population: &Vec<Animal>) -> Vec<Animal> {
+    find_non_dominated(&population)
+        .into_iter()
+        .map(|i| population[i].clone())
+        .collect()
+}
+
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
     let solutions = vec![];
     let mut population: Vec<Animal> =
@@ -277,14 +284,14 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
 
         fitness_evaluator
             .sampler
-            .population_sample_multi(i, &population);
+            .population_sample_multi(i, &non_dominated_population(&population));
         if fitness_evaluator.end_criteria() {
             break;
         }
     }
     fitness_evaluator
         .sampler
-        .population_sample_multi(config.iterations, &population);
+        .population_sample_multi(config.iterations, &non_dominated_population(&population));
     solutions
 }
 
