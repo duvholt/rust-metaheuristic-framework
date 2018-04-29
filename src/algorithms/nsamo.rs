@@ -1,12 +1,12 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use multiobjective::domination::select_first;
+use multiobjective::domination::{find_non_dominated, select_first};
 use multiobjective::non_dominated_sorting::sort;
 use operators::mutation;
 use operators::position::random_position;
 use rand::distributions::normal::StandardNormal;
-use rand::{weak_rng, Rng};
+use rand::{seq, weak_rng, Rng};
 use solution::Solution;
 use solution::SolutionJSON;
 use std::hash;
@@ -125,7 +125,7 @@ fn animal_replacement(
     config: &Config,
 ) -> Vec<Animal> {
     let new_population: Vec<Animal> = {
-        let best_animal = find_best_animal(&population);
+        let best_animal = find_best_animal(&population, &mut rng);
         let probabilities = find_probabilities(&population);
         population
             .iter()
@@ -241,11 +241,10 @@ fn generate_random_animal(
         position,
     }
 }
-fn find_best_animal(population: &Vec<Animal>) -> &Animal {
-    population
-        .iter()
-        .min_by(|a, b| a.fitness.partial_cmp(&b.fitness).unwrap())
-        .unwrap()
+fn find_best_animal(population: &Vec<Animal>, mut rng: impl Rng) -> &Animal {
+    let lol = find_non_dominated(&population);
+    let index = seq::sample_iter(&mut rng, lol.into_iter(), 1).unwrap();
+    &population[index[0]]
 }
 
 fn mutate_population(
