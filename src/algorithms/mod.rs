@@ -65,7 +65,7 @@ pub fn add_algorithms(algorithms: &mut HashMap<&str, (AlgorithmSubCommand, Algor
         "nsamo",
         (
             nsamo::subcommand,
-            AlgorithmType::Single(nsamo::run_subcommand),
+            AlgorithmType::Multi(nsamo::run_subcommand),
         ),
     );
 }

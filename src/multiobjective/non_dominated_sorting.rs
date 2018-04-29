@@ -57,7 +57,7 @@ fn crowding_comparison(
     }
 }
 
-pub fn sort<S>(solutions: Vec<S>) -> Vec<S>
+pub fn sort<S>(solutions: Vec<S>) -> Vec<(usize, S)>
 where
     S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
 {
@@ -74,11 +74,12 @@ where
     }
 
     izip!(solutions, distances, ranks)
-        .sorted_by(|(_, distance1, rank1), (_, distance2, rank2)| {
+        .enumerate()
+        .sorted_by(|(_, (_, distance1, rank1)), (_, (_, distance2, rank2))| {
             crowding_comparison((*distance1, *rank1), (*distance2, *rank2))
         })
         .into_iter()
-        .map(|(solution, _, _)| solution)
+        .map(|(i, (solution, _, _))| (i, solution))
         .collect()
 }
 
@@ -160,7 +161,7 @@ mod tests {
 
         let indices: Vec<_> = solutions
             .iter()
-            .map(|solution| clone_solutions.iter().position(|s| solution == s).unwrap())
+            .map(|(_, solution)| clone_solutions.iter().position(|s| solution == s).unwrap())
             .collect();
         assert_eq!(indices, vec![0, 9, 10, 11, 7, 8, 4, 6, 1, 2, 5, 3]);
     }
