@@ -1,7 +1,9 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
+use multiobjective::domination::select_first;
 use multiobjective::non_dominated_sorting::sort;
+use operators::mutation;
 use operators::position::random_position;
 use rand::distributions::normal::StandardNormal;
 use rand::{weak_rng, Rng};
@@ -246,12 +248,42 @@ fn find_best_animal(population: &Vec<Animal>) -> &Animal {
         .unwrap()
 }
 
+fn mutate_population(
+    population: Vec<Animal>,
+    iteration: i64,
+    mut rng: impl Rng,
+    fitness_evaluator: &FitnessEvaluator<Vec<f64>>,
+    config: &Config,
+) -> Vec<Animal> {
+    population
+        .into_iter()
+        .map(|animal| {
+            let position = mutation::one_dimension(
+                &mut rng,
+                &animal.position,
+                config.lower_bound,
+                config.upper_bound,
+                iteration,
+                config.iterations,
+                0.1,
+            );
+            let fitness = fitness_evaluator.calculate_fitness(&position);
+            if select_first(&animal.fitness, &fitness, &mut rng) {
+                animal
+            } else {
+                Animal { position, fitness }
+            }
+        })
+        .collect()
+}
+
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
     let solutions = vec![];
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut rng = weak_rng();
     for i in 0..config.iterations {
+        population = mutate_population(population, i, &mut rng, &fitness_evaluator, &config);
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
         population = animal_replacement(population, &mut rng, &fitness_evaluator, &config);
 
