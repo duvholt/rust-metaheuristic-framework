@@ -91,23 +91,19 @@ fn animal_migration(
         .enumerate()
         .map(|(i, current_animal)| {
             let mut moved_position = Vec::with_capacity(config.dimensions);
-            let mut out_of_bounds = false;
             let StandardNormal(gaussian) = rng.gen();
             for d in 0..config.dimensions {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 let index = get_random_neighbor_index(index_offset, population.len());
-                let pos_d = current_animal.position[d]
+                let mut pos_d = current_animal.position[d]
                     + gaussian * (population[index].position[d] - current_animal.position[d]);
-                if pos_d > config.upper_bound || pos_d < config.lower_bound {
-                    out_of_bounds = true;
-                    break;
+                if pos_d > config.upper_bound {
+                    pos_d = config.upper_bound;
+                } else if pos_d < config.lower_bound {
+                    pos_d = config.lower_bound;
                 }
                 moved_position.push(pos_d);
-            }
-            if out_of_bounds {
-                moved_position =
-                    random_position(config.lower_bound, config.upper_bound, config.dimensions);
             }
             Animal {
                 fitness: fitness_evaluator.calculate_fitness(&moved_position),
@@ -133,7 +129,6 @@ fn animal_replacement(
             .map(|(i, current_animal)| {
                 let mut new_position = Vec::with_capacity(config.dimensions);
                 let mut changed = false;
-                let mut out_of_bounds = false;
                 for d in 0..config.dimensions {
                     if rng.next_f64() > probabilities[i] {
                         changed = true;
@@ -142,11 +137,12 @@ fn animal_replacement(
                         let r2 = population[r.1].position[d];
                         let best = best_animal.position[d];
                         let current = current_animal.position[d];
-                        let pos_d = r1 + rng.next_f64() * (best - current)
+                        let mut pos_d = r1 + rng.next_f64() * (best - current)
                             + rng.next_f64() * (r2 - current);
-                        if pos_d > config.upper_bound || pos_d < config.lower_bound {
-                            out_of_bounds = true;
-                            break;
+                        if pos_d > config.upper_bound {
+                            pos_d = config.upper_bound;
+                        } else if pos_d < config.lower_bound {
+                            pos_d = config.lower_bound;
                         }
                         new_position.push(pos_d);
                     } else {
@@ -154,13 +150,6 @@ fn animal_replacement(
                     }
                 }
                 let fitness = if changed {
-                    if out_of_bounds {
-                        new_position = random_position(
-                            config.lower_bound,
-                            config.upper_bound,
-                            config.dimensions,
-                        );
-                    }
                     fitness_evaluator.calculate_fitness(&new_position)
                 } else {
                     current_animal.fitness.clone()
@@ -412,7 +401,6 @@ mod tests {
         let rng = create_seedable_rng();
         let next_generation = animal_migration(population, rng, &fitness_evaluator, &config);
 
-        println!("{:#?}", next_generation);
         assert_eq!(next_generation.len(), 4);
         let fitness: Vec<_> = next_generation
             .into_iter()
@@ -420,7 +408,8 @@ mod tests {
             .collect();
         assert!(fitness.contains(&vec![1.0, 2.0]));
         assert!(fitness.contains(&vec![2.0, 2.1]));
-        assert!(fitness.contains(&vec![1.2352607277616245, 2.1852891091642435]));
+        assert!(fitness.contains(&vec![3.0, 2.3]));
+        assert!(fitness.contains(&vec![3.0, 2.0433037454089833]));
     }
 
     #[ignore]
