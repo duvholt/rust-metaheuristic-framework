@@ -1,4 +1,4 @@
-use domination::dominates;
+use multiobjective::domination::dominates;
 use solution::Solution;
 use std::cell::Cell;
 use std::collections::HashSet;

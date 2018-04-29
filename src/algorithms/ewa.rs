@@ -2,9 +2,9 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
-use position::{limit_position_random, random_position};
+use operators::position::{limit_position_random, random_position};
+use operators::selection::roulette_wheel;
 use rand::{weak_rng, Rng};
-use selection::roulette_wheel;
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use std::f64::EPSILON;
 

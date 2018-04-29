@@ -1,11 +1,11 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
-use crossover::uniform;
 use fitness_evaluation::FitnessEvaluator;
-use position::{limit_position, perpendicular_position, random_position};
+use operators::crossover::uniform;
+use operators::position::{limit_position, perpendicular_position, random_position};
+use operators::selection::tournament_selection;
 use rand::distributions::{IndependentSample, Normal};
 use rand::{seq, weak_rng, Rng};
-use selection::tournament_selection;
 use solution::{Solution, SolutionJSON};
 use std::cmp::max;
 use std::cmp::Ordering;

@@ -6,31 +6,21 @@ extern crate serde_json;
 
 use ansi_term::Color::{Blue, Cyan, Green, Red};
 use clap::{App, Arg, ArgGroup, ArgMatches};
-use rustoa::algorithms::amo;
-use rustoa::algorithms::da;
-use rustoa::algorithms::dummy;
-use rustoa::algorithms::ewa;
-use rustoa::algorithms::loa;
-use rustoa::algorithms::mopso;
-use rustoa::algorithms::pso;
-use rustoa::algorithms::sa;
+use rustoa::algorithms;
+use rustoa::algorithms::{AlgorithmInfo, AlgorithmSubCommand, AlgorithmType};
 use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
+use rustoa::problems;
+use rustoa::problems::multi::dtlz;
+use rustoa::problems::multi::zdt;
+use rustoa::problems::single::cec2014;
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
 use rustoa::statistics::sampler::{Sampler, SamplerMode};
-use rustoa::testfunctions;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::stdout;
 use std::process;
-
-type AlgorithmSubCommand = fn(&str) -> App<'static, 'static>;
-type AlgorithmRun<S> = fn(&CommonConfig, &FitnessEvaluator<S>, &ArgMatches) -> Vec<SolutionJSON>;
-enum AlgorithmType {
-    Single(AlgorithmRun<f64>),
-    Multi(AlgorithmRun<Vec<f64>>),
-}
 
 fn write_solutions(
     filename: &str,
@@ -206,94 +196,6 @@ fn arguments(
         .get_matches()
 }
 
-struct AlgorithmInfo {
-    number: usize,
-    scale: f64,
-    add: f64,
-}
-
-fn algorithm_shift_info(name: &str) -> Option<AlgorithmInfo> {
-    match name {
-        "high-elliptic" => Some(AlgorithmInfo {
-            number: 1,
-            scale: 1.0,
-            add: 0.0,
-        }),
-        "bent-cigar" => Some(AlgorithmInfo {
-            number: 2,
-            scale: 1.0,
-            add: 0.0,
-        }),
-        "discus" => Some(AlgorithmInfo {
-            number: 3,
-            scale: 1.0,
-            add: 0.0,
-        }),
-        "rosenbrock" => Some(AlgorithmInfo {
-            number: 4,
-            scale: 2.048 / 100.0,
-            add: 1.0,
-        }),
-        "ackley" => Some(AlgorithmInfo {
-            number: 5,
-            scale: 1.0,
-            add: 0.0,
-        }),
-        "weierstrass" => Some(AlgorithmInfo {
-            number: 6,
-            scale: 0.5 / 100.0,
-            add: 0.0,
-        }),
-        "griewank" => Some(AlgorithmInfo {
-            number: 7,
-            scale: 600.0 / 100.0,
-            add: 0.0,
-        }),
-        // "rastrigin" => Some(AlgorithmInfo{
-        //     number: 8, scale: 5.12 / 100.0, add: 0.0
-        // }),
-        "rastrigin" => Some(AlgorithmInfo {
-            number: 9,
-            scale: 5.12 / 100.0,
-            add: 0.0,
-        }),
-        // "schwefel" => Some(AlgorithmInfo{
-        //     number: 10, scale: 1000.0 / 100.0, add: 0.0
-        // }),
-        "schwefel" => Some(AlgorithmInfo {
-            number: 11,
-            scale: 1000.0 / 100.0,
-            add: 0.0,
-        }),
-        "katsuura" => Some(AlgorithmInfo {
-            number: 12,
-            scale: 5.0 / 100.0,
-            add: 0.0,
-        }),
-        "happycat" => Some(AlgorithmInfo {
-            number: 13,
-            scale: 5.0 / 100.0,
-            add: -1.0,
-        }),
-        "hgbat" => Some(AlgorithmInfo {
-            number: 14,
-            scale: 5.0 / 100.0,
-            add: -1.0,
-        }),
-        "griewank-rosenbrock" => Some(AlgorithmInfo {
-            number: 15,
-            scale: 5.0 / 100.0,
-            add: 1.0,
-        }),
-        "expanded-schaffer6" => Some(AlgorithmInfo {
-            number: 16,
-            scale: 1.0,
-            add: 0.0,
-        }),
-        _ => None,
-    }
-}
-
 fn run_algorithm(
     algorithm: &AlgorithmType,
     sub_m: &ArgMatches,
@@ -364,213 +266,22 @@ fn run_algorithm(
 
 fn start_algorithm() -> Result<(), &'static str> {
     let mut algorithms: HashMap<&str, (AlgorithmSubCommand, AlgorithmType)> = HashMap::new();
-    algorithms.insert(
-        "da",
-        (da::subcommand, AlgorithmType::Single(da::run_subcommand)),
-    );
-    algorithms.insert(
-        "dummy",
-        (
-            dummy::subcommand,
-            AlgorithmType::Single(dummy::run_subcommand),
-        ),
-    );
-    algorithms.insert(
-        "ewa",
-        (ewa::subcommand, AlgorithmType::Single(ewa::run_subcommand)),
-    );
-    algorithms.insert(
-        "pso",
-        (pso::subcommand, AlgorithmType::Single(pso::run_subcommand)),
-    );
-    algorithms.insert(
-        "sa",
-        (sa::subcommand, AlgorithmType::Single(sa::run_subcommand)),
-    );
-    algorithms.insert(
-        "loa",
-        (loa::subcommand, AlgorithmType::Single(loa::run_subcommand)),
-    );
-    algorithms.insert(
-        "mopso",
-        (
-            mopso::subcommand,
-            AlgorithmType::Multi(mopso::run_subcommand),
-        ),
-    );
-    algorithms.insert(
-        "amo",
-        (amo::subcommand, AlgorithmType::Single(amo::run_subcommand)),
-    );
+    algorithms::add_algorithms(&mut algorithms);
 
     let mut test_functions_map = HashMap::new();
     // Single-objective
-    test_functions_map.insert(
-        "rosenbrock",
-        TestFunctionVar::Single(testfunctions::rosenbrock),
-    );
-    test_functions_map.insert("zakharov", TestFunctionVar::Single(testfunctions::zakharov));
-    test_functions_map.insert("ackley", TestFunctionVar::Single(testfunctions::ackley));
-    test_functions_map.insert(
-        "himmelblau",
-        TestFunctionVar::Single(testfunctions::himmelblau),
-    );
-    test_functions_map.insert("sphere", TestFunctionVar::Single(testfunctions::sphere));
-    test_functions_map.insert(
-        "rastrigin",
-        TestFunctionVar::Single(testfunctions::rastrigin),
-    );
-    test_functions_map.insert(
-        "hyper-ellipsoid",
-        TestFunctionVar::Single(testfunctions::axis_parallel_hyper_ellipsoid),
-    );
-    test_functions_map.insert(
-        "moved-hyper-ellipsoid",
-        TestFunctionVar::Single(testfunctions::moved_axis_parallel_hyper_ellipsoid),
-    );
-    test_functions_map.insert(
-        "high-elliptic",
-        TestFunctionVar::Single(testfunctions::high_elliptic),
-    );
-    test_functions_map.insert(
-        "bent-cigar",
-        TestFunctionVar::Single(testfunctions::bent_cigar),
-    );
-    test_functions_map.insert("griewank", TestFunctionVar::Single(testfunctions::griewank));
-    test_functions_map.insert("schwefel", TestFunctionVar::Single(testfunctions::schwefel));
-    test_functions_map.insert("katsuura", TestFunctionVar::Single(testfunctions::katsuura));
-    test_functions_map.insert(
-        "weierstrass",
-        TestFunctionVar::Single(testfunctions::weierstrass),
-    );
-    test_functions_map.insert("happycat", TestFunctionVar::Single(testfunctions::happycat));
-    test_functions_map.insert("hgbat", TestFunctionVar::Single(testfunctions::hgbat));
-    test_functions_map.insert("levy05", TestFunctionVar::Single(testfunctions::levy05));
-    test_functions_map.insert("easom", TestFunctionVar::Single(testfunctions::easom));
-    test_functions_map.insert("discus", TestFunctionVar::Single(testfunctions::discus));
-    test_functions_map.insert(
-        "griewank-rosenbrock",
-        TestFunctionVar::Single(testfunctions::griewank_rosenbrock),
-    );
-    test_functions_map.insert(
-        "expanded-schaffer6",
-        TestFunctionVar::Single(testfunctions::expanded_schaffer6),
-    );
+    problems::single::misc::add_test_functions(&mut test_functions_map);
+    cec2014::add_test_functions(&mut test_functions_map);
     // Multi-objective
-    test_functions_map.insert(
-        "schaffer1",
-        TestFunctionVar::Multi(testfunctions::schaffer1, "schaffer1-2d"),
-    );
-    test_functions_map.insert(
-        "zdt1",
-        TestFunctionVar::Multi(testfunctions::zdt1, "zdt1-2d"),
-    );
-    test_functions_map.insert(
-        "zdt2",
-        TestFunctionVar::Multi(testfunctions::zdt2, "zdt2-2d"),
-    );
-    test_functions_map.insert(
-        "zdt3",
-        TestFunctionVar::Multi(testfunctions::zdt3, "zdt3-2d"),
-    );
-    test_functions_map.insert(
-        "zdt6",
-        TestFunctionVar::Multi(testfunctions::zdt6, "zdt6-2d"),
-    );
-    test_functions_map.insert(
-        "dtlz1",
-        TestFunctionVar::Multi(testfunctions::dtlz1, "dtlz1-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz2",
-        TestFunctionVar::Multi(testfunctions::dtlz2, "dtlz2-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz3",
-        TestFunctionVar::Multi(testfunctions::dtlz3, "dtlz3-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz4",
-        TestFunctionVar::Multi(testfunctions::dtlz4, "dtlz4-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz5",
-        TestFunctionVar::Multi(testfunctions::dtlz5, "dtlz5-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz6",
-        TestFunctionVar::Multi(testfunctions::dtlz6, "dtlz6-3d"),
-    );
-    test_functions_map.insert(
-        "dtlz7",
-        TestFunctionVar::Multi(testfunctions::dtlz7, "dtlz7-3d"),
-    );
+    problems::multi::misc::add_test_functions(&mut test_functions_map);
+    dtlz::add_test_functions(&mut test_functions_map);
+    zdt::add_test_functions(&mut test_functions_map);
 
     let mut test_suites = HashMap::new();
-    test_suites.insert(
-        "zdt",
-        vec![
-            "zdt1".to_string(),
-            "zdt2".to_string(),
-            "zdt3".to_string(),
-            "zdt6".to_string(),
-        ],
-    );
-    test_suites.insert(
-        "dtlz",
-        vec![
-            "dtlz1".to_string(),
-            "dtlz2".to_string(),
-            "dtlz3".to_string(),
-            "dtlz4".to_string(),
-            "dtlz5".to_string(),
-            "dtlz6".to_string(),
-            "dtlz7".to_string(),
-        ],
-    );
-    test_suites.insert(
-        "cec2014",
-        vec![
-            "high-elliptic".to_string(),
-            "bent-cigar".to_string(),
-            "discus".to_string(),
-            "rosenbrock".to_string(),
-            "ackley".to_string(),
-            "weierstrass".to_string(),
-            "griewank".to_string(),
-            "rastrigin".to_string(),
-            "schwefel".to_string(),
-            "katsuura".to_string(),
-            "happycat".to_string(),
-            "hgbat".to_string(),
-            "griewank-rosenbrock".to_string(),
-            "expanded-schaffer6".to_string(),
-        ],
-    );
-    test_suites.insert(
-        "single",
-        vec![
-            "high-elliptic".to_string(),
-            "bent-cigar".to_string(),
-            "discus".to_string(),
-            "rosenbrock".to_string(),
-            "ackley".to_string(),
-            "weierstrass".to_string(),
-            "griewank".to_string(),
-            "rastrigin".to_string(),
-            "schwefel".to_string(),
-            "katsuura".to_string(),
-            "happycat".to_string(),
-            "hgbat".to_string(),
-            "griewank-rosenbrock".to_string(),
-            "expanded-schaffer6".to_string(),
-            "zakharov".to_string(),
-            "hyper-ellipsoid".to_string(),
-            "moved-hyper-ellipsoid".to_string(),
-            "easom".to_string(),
-            "sphere".to_string(),
-        ],
-    );
+    zdt::add_test_suite(&mut test_suites);
+    dtlz::add_test_suite(&mut test_suites);
+    cec2014::add_test_suite(&mut test_suites);
+    problems::single::add_test_suite(&mut test_suites);
 
     let matches = arguments(&test_functions_map, &algorithms, &test_suites);
 
@@ -661,7 +372,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             sampler_objective.clone(),
         );
         let algorithm_info = if matches.is_present("shift") {
-            algorithm_shift_info(test_function_name.as_str())
+            cec2014::algorithm_shift_info(test_function_name.as_str())
         } else {
             None
         };
