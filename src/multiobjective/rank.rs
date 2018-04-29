@@ -33,6 +33,10 @@ impl Domination {
     fn dominated_by(&self) -> usize {
         self.dominated_by.get()
     }
+
+    fn dominates(&self, solution: &usize) -> bool {
+        self.dominates.contains(solution)
+    }
 }
 
 fn calculate_domation_count<S>(solutions: &[S]) -> Vec<Domination>
@@ -48,6 +52,11 @@ where
             if dominates(&solution1.fitness(), &solution2.fitness()) {
                 dominations[i].add(j);
                 dominations[j].increment();
+            } else if &solution1.fitness() == &solution2.fitness() {
+                if !dominations[j].dominates(&i) {
+                    dominations[i].add(j);
+                    dominations[j].increment();
+                }
             }
         }
     }
@@ -155,6 +164,25 @@ mod tests {
                 vec![7, 8, 6, 1, 4].into_iter().collect(),
                 vec![2, 5, 3].into_iter().collect(),
             ]
+        );
+    }
+
+    #[test]
+    fn test_calculates_ranks_with_equal_fitness() {
+        let solutions = vec_to_multi_solution(vec![
+            vec![6.0, 1.0], // 1, rank 0
+            vec![6.0, 1.0], // 2, rank 1
+        ]);
+
+        let fronts = calculate_fronts(&solutions);
+
+        let fronts_hashset = fronts
+            .into_iter()
+            .map(|front| front.into_iter().collect())
+            .collect::<Vec<HashSet<_>>>();
+        assert_eq!(
+            fronts_hashset,
+            vec![vec![0].into_iter().collect(), vec![1].into_iter().collect()]
         );
     }
 }
