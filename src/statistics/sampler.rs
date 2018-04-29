@@ -4,7 +4,7 @@ use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
 use statistics::fronts::{front_min_max, normalize_front};
-use statistics::measure::igd;
+use statistics::measure::{gd, igd};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::io::Write;
@@ -216,16 +216,23 @@ impl Sampler {
         igd(&front, &self.pareto_front.clone().unwrap())
     }
 
-    fn print_igd(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
+    fn calculate_gd(&self, front: &Vec<Vec<f64>>) -> f64 {
+        let front = normalize_front(&front, &self.min_max_front.clone().unwrap());
+        gd(&front, &self.pareto_front.clone().unwrap())
+    }
+
+    fn print_multi_measures(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
         let front = generation
             .iter()
             .map(|solution| solution.fitness.clone())
             .collect();
         let igd_value = self.calculate_igd(&front);
+        let gd_value = self.calculate_gd(&front);
         write!(
             &mut writer,
-            "IGD: {}\n",
-            Green.paint(format!("{:10.4e}", igd_value))
+            "IGD: {}\nGD: {}\n",
+            Green.paint(format!("{:10.4e}", igd_value)),
+            Green.paint(format!("{:10.4e}", gd_value)),
         ).unwrap();
     }
 
@@ -244,7 +251,7 @@ impl Sampler {
                     Sampler::print_best_position(&mut writer, &generation);
                 }
                 Objective::Multi => {
-                    self.print_igd(&mut writer, &generation);
+                    self.print_multi_measures(&mut writer, &generation);
                 }
             }
         }
@@ -263,7 +270,7 @@ impl Sampler {
                 Sampler::print_best_position(&mut writer, &self.solutions.borrow());
             }
             Objective::Multi => {
-                self.print_igd(&mut writer, &self.solutions.borrow());
+                self.print_multi_measures(&mut writer, &self.solutions.borrow());
             }
         }
     }
@@ -586,8 +593,11 @@ mod tests {
         assert_eq!(
             output,
             format!(
-                "Mode: Evolution with 10 samples\n[ 0] IGD: {}\n",
-                Green.paint(" 2.0412e-1")
+                "Mode: Evolution with 10 samples\n\
+                 [ 0] IGD: {}\n\
+                 GD: {}\n",
+                Green.paint(" 2.0412e-1"),
+                Green.paint(" 4.0825e-1"),
             )
         );
     }
@@ -654,8 +664,11 @@ mod tests {
         assert_eq!(
             output,
             format!(
-                "Mode: Last Generation\nIGD: {}\n",
-                Green.paint(" 2.0412e-1")
+                "Mode: Last Generation\n\
+                 IGD: {}\n\
+                 GD: {}\n",
+                Green.paint(" 2.0412e-1"),
+                Green.paint(" 4.0825e-1"),
             )
         );
     }

@@ -24,6 +24,14 @@ pub fn igd(approx_set: &Vec<Vec<f64>>, pareto_set: &Vec<Vec<f64>>) -> f64 {
         .powf(1.0 / 2.0) / pareto_set.len() as f64
 }
 
+pub fn gd(approx_set: &Vec<Vec<f64>>, pareto_set: &Vec<Vec<f64>>) -> f64 {
+    approx_set
+        .iter()
+        .map(|pareto_point| distance_closest_point_to_front(pareto_point, &pareto_set).powi(2))
+        .sum::<f64>()
+        .powf(1.0 / 2.0) / pareto_set.len() as f64
+}
+
 fn surface_unchanged_to(front: &Vec<Vec<f64>>, objective: usize) -> f64 {
     let mut min = front[0][objective];
     for i in 1..front.len() {
@@ -141,5 +149,35 @@ mod tests {
         let volume = hyper_volume(&front);
 
         assert_eq!(volume, 0.6661601248750002);
+    }
+
+    #[test]
+    fn calculates_gd_symmetric() {
+        let approx_front = vec![vec![2.0, 4.0], vec![3.0, 3.0], vec![4.0, 2.0]];
+        let front = vec![vec![1.0, 3.0], vec![2.0, 2.0], vec![3.0, 1.0]];
+
+        let gd_score = gd(&approx_front, &front);
+
+        assert_approx_eq!(gd_score, (6.0_f64).sqrt() / front.len() as f64);
+    }
+
+    #[test]
+    fn calculates_gd_asymmetric() {
+        let approx_front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
+        let front = vec![vec![0.0, 4.0], vec![1.0, 2.0], vec![4.0, 0.0]];
+
+        let gd_score = gd(&approx_front, &front);
+
+        assert_approx_eq!(gd_score, (17.0_f64).sqrt() / front.len() as f64);
+    }
+
+    #[test]
+    fn calculates_gd_equal() {
+        let approx_front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
+        let front = vec![vec![0.0, 6.0], vec![3.0, 4.0], vec![6.0, 1.0]];
+
+        let gd_score = gd(&approx_front, &front);
+
+        assert_approx_eq!(gd_score, 0.0);
     }
 }
