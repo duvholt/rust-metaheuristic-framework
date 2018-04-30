@@ -5,8 +5,9 @@ use multiobjective::domination::{find_non_dominated, select_first};
 use multiobjective::non_dominated_sorting::sort;
 use operators::mutation;
 use operators::position::random_position;
+use operators::selection::tournament_selection_crowding;
 use rand::distributions::normal::StandardNormal;
-use rand::{seq, weak_rng, Rng};
+use rand::{weak_rng, Rng};
 use solution::Solution;
 use solution::SolutionJSON;
 use std::hash;
@@ -230,10 +231,14 @@ fn generate_random_animal(
         position,
     }
 }
+
 fn find_best_animal(population: &Vec<Animal>, mut rng: impl Rng) -> &Animal {
-    let lol = find_non_dominated(&population);
-    let index = seq::sample_iter(&mut rng, lol.into_iter(), 1).unwrap();
-    &population[index[0]]
+    let non_dominated = find_non_dominated(&population)
+        .into_iter()
+        .map(|i| population[i].clone())
+        .collect::<Vec<_>>();
+    let index = tournament_selection_crowding(&non_dominated, 2, &mut rng);
+    &population[index]
 }
 
 fn mutate_population(
