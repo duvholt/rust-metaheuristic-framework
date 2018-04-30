@@ -1,3 +1,4 @@
+use rand::Rng;
 use solution::Solution;
 use std::collections::HashSet;
 
@@ -11,6 +12,16 @@ pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
         }
     }
     return !equal;
+}
+
+pub fn select_first(a: &Vec<f64>, b: &Vec<f64>, rng: &mut impl Rng) -> bool {
+    if dominates(&a, &b) {
+        return true;
+    } else if dominates(b, a) {
+        return false;
+    } else {
+        return rng.gen();
+    }
 }
 
 pub fn find_non_dominated<M>(solutions: &[M]) -> HashSet<usize>
@@ -42,6 +53,7 @@ where
 mod tests {
     use super::*;
     use test::Bencher;
+    use testing::utils::create_rng;
 
     #[test]
     fn dominates_all() {
@@ -142,6 +154,39 @@ mod tests {
         let non_dominated_indexes = find_non_dominated(&solutions);
 
         assert_eq!(non_dominated_indexes.len(), 1);
+    }
+
+    #[test]
+    fn selects_first_when_dominating() {
+        let fitness1 = vec![0.3, 0.2, 0.6];
+        let fitness2 = vec![0.4, 0.2, 0.7];
+        let mut rng = create_rng();
+
+        let result = select_first(&fitness1, &fitness2, &mut rng);
+
+        assert!(result);
+    }
+
+    #[test]
+    fn selects_second_when_dominated() {
+        let fitness1 = vec![0.3, 0.2, 0.6];
+        let fitness2 = vec![0.4, 0.2, 0.7];
+        let mut rng = create_rng();
+
+        let result = select_first(&fitness1, &fitness2, &mut rng);
+
+        assert!(result);
+    }
+
+    #[test]
+    fn selects_random_when_non_dominated() {
+        let fitness1 = vec![0.3, 0.2, 0.6];
+        let fitness2 = vec![0.2, 0.2, 0.7];
+        let mut rng = create_rng();
+
+        let result = select_first(&fitness1, &fitness2, &mut rng);
+
+        assert!(!result);
     }
 
     #[ignore]
