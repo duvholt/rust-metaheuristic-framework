@@ -270,18 +270,48 @@ fn generate_random_animal(
     }
 }
 
+fn mutate_population(
+    population: Vec<Animal>,
+    iteration: i64,
+    mut rng: impl Rng,
+    fitness_evaluator: &FitnessEvaluator<Vec<f64>>,
+    config: &Config,
+) -> Vec<Animal> {
+    population
+        .into_iter()
+        .map(|animal| {
+            let position = mutation::one_dimension(
+                &mut rng,
+                &animal.position,
+                config.lower_bound,
+                config.upper_bound,
+                iteration,
+                config.iterations,
+                0.1,
+            );
+            let fitness = fitness_evaluator.calculate_fitness(&position);
+            if select_first(&animal.fitness, &fitness, &mut rng) {
+                animal
+            } else {
+                Animal { position, fitness }
+            }
+        })
+        .collect()
+}
+
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
     let mut archive = Archive::new(config.archive_size, config.divisions);
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut rng = weak_rng();
+    archive.update(&population);
     for i in 0..config.iterations {
-        archive.update(&population);
+        population = mutate_population(population, i, &mut rng, fitness_evaluator, &config);
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config, &archive);
         archive.update(&population);
         population =
             animal_replacement(population, &mut rng, &fitness_evaluator, &config, &archive);
-
+        archive.update(&population);
         fitness_evaluator
             .sampler
             .population_sample_multi(i, &archive.get_population());
