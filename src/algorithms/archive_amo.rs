@@ -112,7 +112,6 @@ fn animal_migration(
     mut rng: impl Rng,
     fitness_evaluator: &FitnessEvaluator<Vec<f64>>,
     config: &Config,
-    archive: &Archive<Animal>,
 ) -> Vec<Animal> {
     let moved_animals: Vec<Animal> = population
         .iter()
@@ -123,9 +122,9 @@ fn animal_migration(
             for d in 0..config.dimensions {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
-                // let index = get_random_neighbor_index(index_offset, population.len());
+                let index = get_random_neighbor_index(index_offset, population.len());
                 let mut pos_d = current_animal.position[d]
-                    + gaussian * (archive.select_leader().position[d] - current_animal.position[d]);
+                    + gaussian * (population[index].position[d] - current_animal.position[d]);
                 if pos_d > config.upper_bound {
                     pos_d = config.upper_bound;
                 } else if pos_d < config.lower_bound {
@@ -151,7 +150,7 @@ fn animal_replacement(
 ) -> Vec<Animal> {
     let new_population: Vec<Animal> = {
         let best_animal = archive.select_leader();
-        let probabilities = find_probabilities(&population, &archive);
+        let probabilities = find_probabilities(&population);
         population
             .iter()
             .enumerate()
@@ -192,7 +191,7 @@ fn animal_replacement(
     find_best_solutions(population, new_population, rng)
 }
 
-fn find_probabilities(solutions: &Vec<Animal>, archive: &Archive<Animal>) -> Vec<f64> {
+fn find_probabilities(solutions: &Vec<Animal>) -> Vec<f64> {
     let sorted: Vec<_> = sort(solutions.clone())
         .into_iter()
         .map(|(i, _)| i)
@@ -308,7 +307,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
     archive.update(&population);
     for i in 0..config.iterations {
         population = mutate_population(population, i, &mut rng, fitness_evaluator, &config);
-        population = animal_migration(population, &mut rng, &fitness_evaluator, &config, &archive);
+        population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
         archive.update(&population);
         population =
             animal_replacement(population, &mut rng, &fitness_evaluator, &config, &archive);
@@ -442,12 +441,8 @@ mod tests {
         ];
         archive.update(&population);
         let rng = create_seedable_rng();
-        let next_generation =
-            animal_migration(population, rng, &fitness_evaluator, &config, &archive);
-        assert_eq!(
-            next_generation[2].fitness,
-            vec![1.2886916360598903, 2.0433037454089833]
-        );
+        let next_generation = animal_migration(population, rng, &fitness_evaluator, &config);
+        assert_eq!(next_generation[2].fitness, vec![3.0, 2.0433037454089833]);
     }
 
     #[ignore]

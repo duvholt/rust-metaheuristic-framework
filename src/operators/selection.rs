@@ -1,4 +1,3 @@
-use multiobjective::non_dominated_sorting::crowding_distance;
 use rand::{seq, weak_rng, Rng};
 use solution::Solution;
 use std::cmp::{min, Ordering};
