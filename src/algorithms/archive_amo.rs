@@ -1,13 +1,14 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use itertools::Itertools;
 use multiobjective::archive::Archive;
-use multiobjective::domination::dominates;
+use multiobjective::domination::{dominates, select_first};
+use multiobjective::non_dominated_sorting::sort;
+use operators::mutation;
 use operators::position::random_position;
 use rand::distributions::normal::StandardNormal;
 use rand::{weak_rng, Rng};
-use solution::{multi_solutions_to_json, Solution, SolutionJSON};
+use solution::{Solution, SolutionJSON};
 use std::hash;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
@@ -118,23 +119,19 @@ fn animal_migration(
         .enumerate()
         .map(|(i, current_animal)| {
             let mut moved_position = Vec::with_capacity(config.dimensions);
-            let mut out_of_bounds = false;
             let StandardNormal(gaussian) = rng.gen();
             for d in 0..config.dimensions {
                 let mut index_offset =
                     rng.gen_range(i as i64 - config.radius, i as i64 + config.radius) as i64;
                 // let index = get_random_neighbor_index(index_offset, population.len());
-                let pos_d = current_animal.position[d]
+                let mut pos_d = current_animal.position[d]
                     + gaussian * (archive.select_leader().position[d] - current_animal.position[d]);
-                if pos_d > config.upper_bound || pos_d < config.lower_bound {
-                    out_of_bounds = true;
-                    break;
+                if pos_d > config.upper_bound {
+                    pos_d = config.upper_bound;
+                } else if pos_d < config.lower_bound {
+                    pos_d = config.lower_bound;
                 }
                 moved_position.push(pos_d);
-            }
-            if out_of_bounds {
-                moved_position =
-                    random_position(config.lower_bound, config.upper_bound, config.dimensions);
             }
             Animal {
                 fitness: fitness_evaluator.calculate_fitness(&moved_position),
@@ -162,7 +159,6 @@ fn animal_replacement(
                 let mut new_position = Vec::with_capacity(config.dimensions);
                 let mut fitness = current_animal.fitness.clone();
                 let mut changed = false;
-                let mut out_of_bounds = false;
                 for d in 0..config.dimensions {
                     if rng.next_f64() > probabilities[i] {
                         changed = true;
@@ -170,11 +166,12 @@ fn animal_replacement(
                         let r2 = archive.select_leader().position[d];
                         let best = best_animal.position[d];
                         let current = current_animal.position[d];
-                        let pos_d = r1 + rng.next_f64() * (best - current)
+                        let mut pos_d = r1 + rng.next_f64() * (best - current)
                             + rng.next_f64() * (r2 - current);
-                        if pos_d > config.upper_bound || pos_d < config.lower_bound {
-                            out_of_bounds = true;
-                            break;
+                        if pos_d > config.upper_bound {
+                            pos_d = config.upper_bound;
+                        } else if pos_d < config.lower_bound {
+                            pos_d = config.lower_bound;
                         }
                         new_position.push(pos_d);
                     } else {
@@ -182,13 +179,6 @@ fn animal_replacement(
                     }
                 }
                 if changed {
-                    if out_of_bounds {
-                        new_position = random_position(
-                            config.lower_bound,
-                            config.upper_bound,
-                            config.dimensions,
-                        );
-                    }
                     fitness = fitness_evaluator.calculate_fitness(&new_position);
                 }
                 Animal {
@@ -358,7 +348,7 @@ mod tests {
         let population = vec![
             Animal {
                 position: vec![0.1, 0.2],
-                fitness: vec![0.1, 0.2]
+                fitness: vec![0.1, 0.2],
             },
             Animal {
                 position: vec![2.0, 2.1],
@@ -375,7 +365,8 @@ mod tests {
         ];
         archive.update(&population);
         let rng = create_seedable_rng();
-        let new_population = animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
+        let new_population =
+            animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
         assert_eq!(new_population[1].fitness, vec![-2.4747324293443866, 2.1]);
         assert_eq!(new_population[2].fitness, vec![3.0, 2.3]);
@@ -409,8 +400,12 @@ mod tests {
         ];
         archive.update(&population);
         let rng = create_seedable_rng();
-        let next_generation = animal_migration(population, rng, &fitness_evaluator, &config, &archive);
-        assert_eq!(next_generation[2].fitness, vec![1.2886916360598903, 2.0433037454089833]);
+        let next_generation =
+            animal_migration(population, rng, &fitness_evaluator, &config, &archive);
+        assert_eq!(
+            next_generation[2].fitness,
+            vec![1.2886916360598903, 2.0433037454089833]
+        );
     }
 
     #[ignore]
