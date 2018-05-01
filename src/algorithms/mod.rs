@@ -5,11 +5,11 @@ use solution::SolutionJSON;
 use std::collections::HashMap;
 
 pub mod amo;
+pub mod archive_amo;
 pub mod da;
 pub mod dummy;
 pub mod ewa;
 pub mod loa;
-pub mod archive_amo;
 pub mod mopso;
 pub mod nsamo;
 pub mod pso;

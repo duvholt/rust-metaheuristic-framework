@@ -192,7 +192,15 @@ fn animal_replacement(
 }
 
 fn find_probabilities(solutions: &Vec<Animal>, archive: &Archive<Animal>) -> Vec<f64> {
-    vec![0.5; solutions.len()]
+    let sorted: Vec<_> = sort(solutions.clone())
+        .into_iter()
+        .map(|(i, _)| i)
+        .collect();
+    let mut probabilities = vec![0.0; solutions.len()];
+    for i in 0..solutions.len() {
+        probabilities[sorted[i]] = (solutions.len() - i) as f64 / solutions.len() as f64;
+    }
+    probabilities
 }
 
 fn find_best_solutions(
@@ -368,9 +376,12 @@ mod tests {
         let new_population =
             animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
-        assert_eq!(new_population[1].fitness, vec![-2.4747324293443866, 2.1]);
-        assert_eq!(new_population[2].fitness, vec![3.0, 2.3]);
-        assert_eq!(new_population[3].fitness, vec![4.0, 2.6]);
+        assert_eq!(new_population[1].fitness, vec![2.0, 2.1]);
+        assert_eq!(new_population[2].fitness, vec![-3.8298547605782747, 2.3]);
+        assert_eq!(
+            new_population[3].fitness,
+            vec![-0.7934158520177446, -1.0886939056085334]
+        );
     }
 
     #[test]
