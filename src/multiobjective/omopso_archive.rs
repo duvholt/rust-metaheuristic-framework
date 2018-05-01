@@ -46,7 +46,7 @@ where
             .iter()
             .cloned()
             .enumerate()
-            .sorted_by(|(_, distance), (_, distance2)| distance.partial_cmp(&distance2).unwrap());
+            .sorted_by(|(_, distance), (_, distance2)| distance2.partial_cmp(&distance).unwrap());
         let set: HashSet<_> = distance
             .into_iter()
             .take(self.archive_size)
