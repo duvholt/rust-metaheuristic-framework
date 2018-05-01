@@ -1,9 +1,9 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use multiobjective::archive::Archive;
 use multiobjective::domination::{dominates, select_first};
 use multiobjective::non_dominated_sorting::sort;
+use multiobjective::omopso_archive::Archive;
 use operators::mutation;
 use operators::position::random_position;
 use rand::distributions::normal::StandardNormal;
@@ -300,7 +300,7 @@ fn mutate_population(
 }
 
 pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Vec<SolutionJSON> {
-    let mut archive = Archive::new(config.archive_size, config.divisions);
+    let mut archive = Archive::new(config.archive_size);
     let mut population: Vec<Animal> =
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut rng = weak_rng();
@@ -381,7 +381,7 @@ mod tests {
         let config = create_config();
         let sampler = create_sampler_multi();
         let fitness_evaluator = &create_evaluator_multi(&sampler);
-        let mut archive = Archive::new(config.archive_size, config.divisions);
+        let mut archive = Archive::new(config.archive_size);
 
         let population = vec![
             Animal {
@@ -419,7 +419,7 @@ mod tests {
         let config = create_config();
         let sampler = create_sampler_multi();
         let fitness_evaluator = &create_evaluator_multi(&sampler);
-        let mut archive = Archive::new(config.archive_size, config.divisions);
+        let mut archive = Archive::new(config.archive_size);
 
         let population = vec![
             Animal {
