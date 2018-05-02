@@ -161,14 +161,6 @@ where
             .flat_map(|hypercube| hypercube.set.clone())
             .collect()
     }
-
-    pub fn get_hypercube_fitness(&self, key: &Vec<usize>) -> f64 {
-        if self.hypercube_map.contains_key(key) {
-            self.hypercube_map.get(key).unwrap().fitness
-        } else {
-            0.0
-        }
-    }
 }
 
 #[cfg(test)]
