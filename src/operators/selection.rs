@@ -1,4 +1,3 @@
-use multiobjective::non_dominated_sorting::crowding_distance;
 use rand::{seq, weak_rng, Rng};
 use solution::Solution;
 use std::cmp::{min, Ordering};
@@ -46,6 +45,7 @@ pub fn tournament_selection_crowding<S>(
     population: &[S],
     tournament_size: usize,
     mut rng: impl Rng,
+    distances: &Vec<f64>,
 ) -> usize
 where
     S: Solution<Vec<f64>> + Debug + Clone,
@@ -54,21 +54,10 @@ where
     let selected =
         seq::sample_iter(&mut rng, population.iter().enumerate(), tournament_size).unwrap();
     let indices: Vec<usize> = selected.iter().map(|(i, _)| *i).collect();
-    let distances: Vec<_> = crowding_distance(&selected
-        .into_iter()
-        .map(|(_, s)| s)
-        .cloned()
-        .collect::<Vec<_>>());
     indices
         .into_iter()
-        .zip(distances)
-        .min_by(
-            |(_, distance1): &(usize, f64), (_, distance2): &(usize, f64)| {
-                distance1.partial_cmp(&distance2).unwrap()
-            },
-        )
+        .max_by(|&i, &j| distances[i].partial_cmp(&distances[j]).unwrap())
         .unwrap()
-        .0
 }
 
 #[cfg(test)]

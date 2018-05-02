@@ -5,6 +5,7 @@ use solution::SolutionJSON;
 use std::collections::HashMap;
 
 pub mod amo;
+pub mod archive_amo;
 pub mod da;
 pub mod dummy;
 pub mod ewa;
@@ -66,6 +67,13 @@ pub fn add_algorithms(algorithms: &mut HashMap<&str, (AlgorithmSubCommand, Algor
         (
             nsamo::subcommand,
             AlgorithmType::Multi(nsamo::run_subcommand),
+        ),
+    );
+    algorithms.insert(
+        "archive-amo",
+        (
+            archive_amo::subcommand,
+            AlgorithmType::Multi(archive_amo::run_subcommand),
         ),
     );
 }
