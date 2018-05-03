@@ -311,7 +311,10 @@ fn start_algorithm() -> Result<(), &'static str> {
 
     // Sampler settings
     let sampler_mode_name = value_t_or_exit!(matches, "sampler_mode", String);
-    let samples = value_t_or_exit!(matches, "samples", i64);
+    let mut samples = value_t_or_exit!(matches, "samples", i64);
+    if samples > common.iterations {
+        samples = common.iterations;
+    }
 
     let (algorithm_name, sub_m) = matches.subcommand();
     // Lookup algorithm in hashmap or panic with a message
