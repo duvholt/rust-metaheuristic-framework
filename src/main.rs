@@ -179,6 +179,7 @@ fn arguments(
             Arg::with_name("verbose")
                 .short("v")
                 .long("verbose")
+                .multiple(true)
                 .help("Verbose output"),
         )
         .arg(
@@ -300,7 +301,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Common config for all algorithms
     let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
     let common = CommonConfig {
-        verbose: matches.is_present("verbose"),
+        verbose: matches.occurrences_of("verbose"),
         evaluations: value_t_or_exit!(matches, "evaluations", i64),
         iterations: value_t_or_exit!(matches, "iterations", i64),
         upper_bound,

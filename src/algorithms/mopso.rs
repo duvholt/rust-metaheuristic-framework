@@ -106,7 +106,7 @@ pub struct Config {
     pub archive_size: usize,
     pub divisions: usize,
     pub mutation_rate: f64,
-    pub verbose: bool,
+    pub verbose: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -250,7 +250,7 @@ impl<'a> Swarm<'a> {
             let mutated_position = self.mutate(&position, pm);
             let mutated_fitness = self.calculate_fitness(&mutated_position);
             if dominates(&mutated_fitness, &fitness) {
-                if self.config.verbose {
+                if self.config.verbose >= 3 {
                     println!(
                         "Improved solution with mutation. old: {:?} new: {:?}",
                         fitness, mutated_fitness
@@ -259,7 +259,7 @@ impl<'a> Swarm<'a> {
                 position = mutated_position;
                 fitness = mutated_fitness;
             } else if rng.next_f64() > 0.5 && !dominates(&fitness, &mutated_fitness) {
-                if self.config.verbose {
+                if self.config.verbose >= 3 {
                     println!(
                         "Randomly selected mutation. old: {:?} new: {:?}",
                         fitness, mutated_fitness
@@ -305,7 +305,7 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
     swarm.population = swarm.generate_population(config.population);
     let mut i = 0;
     while i < config.iterations {
-        if config.verbose {
+        if config.verbose >= 3 {
             println!(
                 "Iteration {} Archive size {}",
                 i,
@@ -347,7 +347,7 @@ mod tests {
             c2: 2.0,
             inertia: 1.1,
             mutation_rate: 0.5,
-            verbose: false,
+            verbose: 0,
         }
     }
 
