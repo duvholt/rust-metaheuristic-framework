@@ -6,7 +6,10 @@ use std::f64::INFINITY;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-pub fn sort_on_objective(solutions: &[impl Solution<Vec<f64>>], objective: usize) -> Vec<usize> {
+pub fn sort_on_objective(
+    solutions: &Vec<&impl Solution<Vec<f64>>>,
+    objective: usize,
+) -> Vec<usize> {
     solutions
         .iter()
         .enumerate()
@@ -27,7 +30,7 @@ pub fn sort_on_objective(solutions: &[impl Solution<Vec<f64>>], objective: usize
         .collect()
 }
 
-pub fn crowding_distance(solutions: &[impl Solution<Vec<f64>>]) -> Vec<f64> {
+pub fn crowding_distance(solutions: &Vec<&impl Solution<Vec<f64>>>) -> Vec<f64> {
     let mut distances = vec![0.0; solutions.len()];
     let objectives = solutions[0].fitness().len();
     for objective in 0..objectives {
@@ -89,7 +92,7 @@ where
     let mut ranks = vec![0; solutions.len()];
     let fronts = calculate_fronts(&solutions);
     for (rank, front) in fronts.into_iter().enumerate() {
-        let front_solutions: Vec<_> = front.iter().map(|i| solutions[*i].clone()).collect();
+        let front_solutions: Vec<_> = front.iter().map(|&i| &solutions[i]).collect();
         let front_distances = crowding_distance(&front_solutions);
         for (i, distance) in front.into_iter().zip(front_distances) {
             distances[i] = distance;
@@ -115,7 +118,7 @@ mod tests {
             vec![4.0, 3.0],
         ]);
 
-        let indicies = sort_on_objective(&solutions, 0);
+        let indicies = sort_on_objective(&solutions.iter().collect(), 0);
 
         assert_eq!(indicies, vec![1, 3, 2, 0, 4]);
     }
@@ -130,7 +133,7 @@ mod tests {
             vec![4.0, 3.0],
         ]);
 
-        let indicies = sort_on_objective(&solutions, 1);
+        let indicies = sort_on_objective(&solutions.iter().collect(), 1);
 
         assert_eq!(indicies, vec![2, 4, 3, 1, 0]);
     }
@@ -147,7 +150,7 @@ mod tests {
             vec![5.0, 6.5],
         ]);
 
-        let distances = crowding_distance(&solutions);
+        let distances = crowding_distance(&solutions.iter().collect());
 
         assert_eq!(
             distances,

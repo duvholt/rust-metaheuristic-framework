@@ -24,7 +24,7 @@ where
     S: Solution<Vec<f64>> + Clone,
 {
     let mut fronts = vec![];
-    let sorted_indices = sort_on_objective(solutions, 0);
+    let sorted_indices = sort_on_objective(&solutions.iter().collect(), 0);
     for sorted_index in sorted_indices {
         let front_index = sequential_search_front(&solutions[sorted_index], &fronts, &solutions);
         if front_index >= fronts.len() {
