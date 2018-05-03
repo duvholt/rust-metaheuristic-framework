@@ -24,7 +24,8 @@ pub fn one_dimension(
         ub = upper_bound;
     }
     let mut mutated_position = position.to_vec();
-    mutated_position[j] = rng.gen_range(lb, ub);
+    let x_j = if lb == ub { lb } else { rng.gen_range(lb, ub) };
+    mutated_position[j] = x_j;
     mutated_position
 }
 
@@ -44,5 +45,15 @@ mod tests {
             new_position,
             vec![0.1, 0.2, 0.1362829437198798, 0.4, 0.5, 0.6]
         );
+    }
+
+    #[test]
+    fn no_mutation_when_iteration_is_near_max_iterations() {
+        let mut rng = create_rng();
+        let position = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
+
+        let new_position = one_dimension(&mut rng, &position, 0.0, 1.0, 999_999, 1_000_000, 0.1);
+
+        assert_eq!(new_position, vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6]);
     }
 }
