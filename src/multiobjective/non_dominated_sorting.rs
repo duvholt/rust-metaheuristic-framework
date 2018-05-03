@@ -6,12 +6,22 @@ use std::f64::INFINITY;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-fn sort_on_objective(solutions: &[impl Solution<Vec<f64>>], objective: usize) -> Vec<usize> {
+pub fn sort_on_objective(solutions: &[impl Solution<Vec<f64>>], objective: usize) -> Vec<usize> {
     solutions
         .iter()
         .enumerate()
-        .map(|(i, solution)| (i, solution.fitness()[objective]))
-        .sorted_by(|(_, fitness1), (_, fitness2)| fitness1.partial_cmp(&fitness2).unwrap())
+        .sorted_by(|(_, solution1), (_, solution2)| {
+            let objectives = solution1.fitness().len();
+            let mut order = Ordering::Equal;
+            let mut objective = objective;
+            while order == Ordering::Equal && objective < objectives {
+                order = solution1.fitness()[objective]
+                    .partial_cmp(&solution2.fitness()[objective])
+                    .unwrap();
+                objective += 1;
+            }
+            return order;
+        })
         .into_iter()
         .map(|(i, _)| i)
         .collect()
@@ -57,6 +67,20 @@ fn crowding_comparison(
     }
 }
 
+fn sort_on_crowding<S>(solutions: Vec<S>, distances: Vec<f64>, ranks: Vec<usize>) -> Vec<(usize, S)>
+where
+    S: Solution<Vec<f64>>,
+{
+    izip!(solutions, distances, ranks)
+        .enumerate()
+        .sorted_by(|(_, (_, distance1, rank1)), (_, (_, distance2, rank2))| {
+            crowding_comparison((*distance1, *rank1), (*distance2, *rank2))
+        })
+        .into_iter()
+        .map(|(i, (solution, _, _))| (i, solution))
+        .collect()
+}
+
 pub fn sort<S>(solutions: Vec<S>) -> Vec<(usize, S)>
 where
     S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
@@ -72,15 +96,7 @@ where
             ranks[i] = rank;
         }
     }
-
-    izip!(solutions, distances, ranks)
-        .enumerate()
-        .sorted_by(|(_, (_, distance1, rank1)), (_, (_, distance2, rank2))| {
-            crowding_comparison((*distance1, *rank1), (*distance2, *rank2))
-        })
-        .into_iter()
-        .map(|(i, (solution, _, _))| (i, solution))
-        .collect()
+    sort_on_crowding(solutions, distances, ranks)
 }
 
 #[cfg(test)]
