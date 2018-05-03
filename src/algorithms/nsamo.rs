@@ -253,7 +253,7 @@ fn mutate_population(
     population
         .into_iter()
         .map(|animal| {
-            let position = mutation::one_dimension(
+            let mutated_position = mutation::one_dimension(
                 &mut rng,
                 &animal.position,
                 config.lower_bound,
@@ -262,11 +262,15 @@ fn mutate_population(
                 config.iterations,
                 0.1,
             );
-            let fitness = fitness_evaluator.calculate_fitness(&position);
-            if select_first(&animal.fitness, &fitness, &mut rng) {
-                animal
+            if let Some(position) = mutated_position {
+                let fitness = fitness_evaluator.calculate_fitness(&position);
+                if select_first(&animal.fitness, &fitness, &mut rng) {
+                    animal
+                } else {
+                    Animal { position, fitness }
+                }
             } else {
-                Animal { position, fitness }
+                animal
             }
         })
         .collect()
