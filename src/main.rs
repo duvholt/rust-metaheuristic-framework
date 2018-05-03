@@ -207,7 +207,9 @@ fn run_algorithm(
     algorithm_info: Option<AlgorithmInfo>,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
     for run in 0..number_of_runs {
-        println!("Starting run #{}", Blue.paint(run.to_string()));
+        if common.verbose >= 1 {
+            println!("Starting run #{}", Blue.paint(run.to_string()));
+        }
 
         // Run algorithm
         let (_, evaluations) = match algorithm {
@@ -245,12 +247,13 @@ fn run_algorithm(
                 )
             }
         };
-
-        sampler.print_run_statistics(stdout());
-        println!(
-            "Number of fitness evaluations: {}",
-            Green.paint(evaluations.to_string())
-        );
+        if common.verbose >= 1 {
+            sampler.print_run_statistics(stdout());
+            println!(
+                "Number of fitness evaluations: {}",
+                Green.paint(evaluations.to_string())
+            );
+        }
 
         sampler.save_run();
 

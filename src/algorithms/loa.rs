@@ -102,7 +102,9 @@ pub fn run_subcommand(
         mating_probability: mating,
         immigate_rate: immigrate_rate,
     };
-    println!("Running LOA with {:?}", config);
+    if common.verbose >= 1 {
+        println!("Running LOA with {:?}", config);
+    }
     run(config, &function_evaluator)
 }
 

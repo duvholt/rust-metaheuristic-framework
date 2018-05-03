@@ -48,7 +48,9 @@ pub fn run_subcommand(
     let radius = value_t_or_exit!(sub_m, "radius", i64);
     let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
     let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
-    println!("Running AMO with radius: {}", radius);
+    if common.verbose >= 1 {
+        println!("Running Archive-AMO with radius: {}", radius);
+    }
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,

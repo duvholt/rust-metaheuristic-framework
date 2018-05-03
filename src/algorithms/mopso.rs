@@ -68,10 +68,12 @@ pub fn run_subcommand(
     let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
     let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
     let mutation_rate = value_t!(sub_m, "mutation_rate", f64).unwrap_or(0.1);
-    println!(
-        "Running MOPSO with C1: {}, C2: {} inertia: {}",
-        c1, c2, inertia
-    );
+    if common.verbose >= 1 {
+        println!(
+            "Running MOPSO with C1: {}, C2: {} inertia: {}",
+            c1, c2, inertia
+        );
+    }
 
     let config = Config {
         upper_bound: common.upper_bound,

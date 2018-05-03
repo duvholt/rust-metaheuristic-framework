@@ -48,10 +48,12 @@ pub fn run_subcommand(
     let beta = value_t_or_exit!(sub_m, "beta", f64);
     let similarity = value_t_or_exit!(sub_m, "similarity", f64);
     let cooling_factor = value_t_or_exit!(sub_m, "cooling_factor", f64);
-    println!(
-        "Running EWA with beta: {} similarity: {}, cooling factor: {}",
-        beta, similarity, cooling_factor
-    );
+    if common.verbose >= 1 {
+        println!(
+            "Running EWA with beta: {} similarity: {}, cooling factor: {}",
+            beta, similarity, cooling_factor
+        );
+    }
 
     let config = Config {
         upper_bound: common.upper_bound,

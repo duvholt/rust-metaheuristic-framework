@@ -14,12 +14,14 @@ pub fn subcommand(name: &str) -> App<'static, 'static> {
 }
 
 pub fn run_subcommand(
-    _common: &CommonConfig,
+    common: &CommonConfig,
     function_evaluator: &FitnessEvaluator<f64>,
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let example = value_t!(sub_m, "example", f64).unwrap_or(1.0);
-    println!("Running dummy solver with example: {}", example);
+    if common.verbose >= 1 {
+        println!("Running dummy solver with example: {}", example);
+    }
     let config = Config::new(example);
 
     run(config, &function_evaluator)

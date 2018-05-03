@@ -33,7 +33,9 @@ pub fn run_subcommand(
     sub_m: &ArgMatches,
 ) -> Vec<SolutionJSON> {
     let radius = value_t_or_exit!(sub_m, "radius", i64);
-    println!("Running NSAMO with radius: {}", radius);
+    if common.verbose >= 1 {
+        println!("Running NSAMO with radius: {}", radius);
+    }
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,

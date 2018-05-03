@@ -53,10 +53,12 @@ pub fn run_subcommand(
     let e = value_t!(sub_m, "e", f64).unwrap_or(1.1);
     let normal_seeds = value_t!(sub_m, "normal_seeds", i64).unwrap_or(100);
     let self_learning_seeds = value_t!(sub_m, "self_learning_seeds", i64).unwrap_or(1);
-    println!(
-        "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
-        r, e, normal_seeds, self_learning_seeds
-    );
+    if common.verbose >= 1 {
+        println!(
+            "Running DA with r: {} e: {} normal_seeds: {} self_learning_seeds: {}",
+            r, e, normal_seeds, self_learning_seeds
+        );
+    }
     let config = Config {
         upper_bound: common.upper_bound,
         lower_bound: common.lower_bound,
