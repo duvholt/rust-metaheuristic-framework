@@ -100,6 +100,9 @@ def plot_json_solutions(json_solutions):
     cset = ax.contour(X, Y, Z, zdir='z', offset=Z.min(), cmap=cm.jet)
 
     x, y, z = np.transpose(solutions)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('Fitness')
     ax.plot(
         x, y, z, 'o',
         mew=1, markersize=2, color='white',
