@@ -1,5 +1,5 @@
 pub struct CommonConfig {
-    pub verbose: bool,
+    pub verbose: u64,
     pub iterations: i64,
     pub evaluations: i64,
     pub upper_bound: f64,

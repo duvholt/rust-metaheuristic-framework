@@ -40,10 +40,12 @@ pub fn run_subcommand(
     let c1 = value_t!(sub_m, "c1", f64).unwrap_or(2.0);
     let c2 = value_t!(sub_m, "c2", f64).unwrap_or(2.0);
     let inertia = value_t!(sub_m, "inertia", f64).unwrap_or(1.1);
-    println!(
-        "Running PSO with C1: {}, C2: {} inertia: {}",
-        c1, c2, inertia
-    );
+    if common.verbose >= 1 {
+        println!(
+            "Running PSO with C1: {}, C2: {} inertia: {}",
+            c1, c2, inertia
+        );
+    }
 
     let config = Config {
         space: common.upper_bound,

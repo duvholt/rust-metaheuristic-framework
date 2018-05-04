@@ -34,11 +34,12 @@ pub fn run_subcommand(
 ) -> Vec<SolutionJSON> {
     let start_t = value_t!(sub_m, "start_t", f64).unwrap_or(1.0);
     let cooldown = value_t!(sub_m, "cooldown", f64).unwrap_or(0.9);
-
-    println!(
-        "Running SA with start T: {}, cooldown: {}",
-        start_t, cooldown
-    );
+    if common.verbose >= 1 {
+        println!(
+            "Running SA with start T: {}, cooldown: {}",
+            start_t, cooldown
+        );
+    }
     let config = Config::new(
         start_t,
         cooldown,

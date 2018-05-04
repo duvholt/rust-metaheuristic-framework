@@ -179,6 +179,7 @@ fn arguments(
             Arg::with_name("verbose")
                 .short("v")
                 .long("verbose")
+                .multiple(true)
                 .help("Verbose output"),
         )
         .arg(
@@ -206,7 +207,9 @@ fn run_algorithm(
     algorithm_info: Option<AlgorithmInfo>,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
     for run in 0..number_of_runs {
-        println!("Starting run #{}", Blue.paint(run.to_string()));
+        if common.verbose >= 1 {
+            println!("Starting run #{}", Blue.paint(run.to_string()));
+        }
 
         // Run algorithm
         let (_, evaluations) = match algorithm {
@@ -244,12 +247,13 @@ fn run_algorithm(
                 )
             }
         };
-
-        sampler.print_run_statistics(stdout());
-        println!(
-            "Number of fitness evaluations: {}",
-            Green.paint(evaluations.to_string())
-        );
+        if common.verbose >= 1 {
+            sampler.print_run_statistics(stdout());
+            println!(
+                "Number of fitness evaluations: {}",
+                Green.paint(evaluations.to_string())
+            );
+        }
 
         sampler.save_run();
 
@@ -300,7 +304,7 @@ fn start_algorithm() -> Result<(), &'static str> {
     // Common config for all algorithms
     let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
     let common = CommonConfig {
-        verbose: matches.is_present("verbose"),
+        verbose: matches.occurrences_of("verbose"),
         evaluations: value_t_or_exit!(matches, "evaluations", i64),
         iterations: value_t_or_exit!(matches, "iterations", i64),
         upper_bound,
