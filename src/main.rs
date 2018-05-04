@@ -202,7 +202,7 @@ fn run_algorithm(
     sub_m: &ArgMatches,
     test_function: TestFunctionVar,
     sampler: &mut Sampler,
-    common: &CommonConfig,
+    common: &mut CommonConfig,
     number_of_runs: usize,
     algorithm_info: Option<AlgorithmInfo>,
 ) -> Result<Vec<SolutionJSON>, &'static str> {
@@ -214,7 +214,7 @@ fn run_algorithm(
         // Run algorithm
         let (_, evaluations) = match algorithm {
             &AlgorithmType::Single(run) => {
-                let single_test_function = get_single(test_function)?;
+                let single_test_function = get_single(test_function.clone())?;
                 let mut fitness_evaluator =
                     FitnessEvaluator::new(single_test_function, common.evaluations, &sampler);
                 if let Some(ref info) = algorithm_info {
@@ -234,11 +234,14 @@ fn run_algorithm(
                 )
             }
             &AlgorithmType::Multi(run) => {
-                let (multi_test_function, pareto_filename) = get_multi(test_function)?;
+                let (multi_test_function, pareto_filename, lb, ub) =
+                    get_multi(test_function.clone())?;
                 sampler.set_pareto_front(read_pareto_front(&format!(
                     "optimal_solutions/{}.json",
                     pareto_filename
                 )));
+                common.multi_lower_bound = lb;
+                common.multi_upper_bound = ub;
                 let fitness_evaluator =
                     FitnessEvaluator::new(multi_test_function, common.evaluations, &sampler);
                 (
@@ -303,7 +306,7 @@ fn start_algorithm() -> Result<(), &'static str> {
 
     // Common config for all algorithms
     let upper_bound = value_t_or_exit!(matches, "upper_bound", f64);
-    let common = CommonConfig {
+    let mut common = CommonConfig {
         verbose: matches.occurrences_of("verbose"),
         evaluations: value_t_or_exit!(matches, "evaluations", i64),
         iterations: value_t_or_exit!(matches, "iterations", i64),
@@ -311,6 +314,8 @@ fn start_algorithm() -> Result<(), &'static str> {
         lower_bound: value_t!(matches, "lower_bound", f64).unwrap_or(-upper_bound),
         dimensions: value_t_or_exit!(matches, "dimensions", usize),
         population: value_t_or_exit!(matches, "population", usize),
+        multi_upper_bound: vec![],
+        multi_lower_bound: vec![],
     };
 
     // Sampler settings
@@ -389,7 +394,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             sub_m.unwrap(),
             test_function,
             &mut sampler,
-            &common,
+            &mut common,
             number_of_runs,
             algorithm_info,
         )?;

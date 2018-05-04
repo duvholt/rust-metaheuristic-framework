@@ -3,8 +3,8 @@ use rand::Rng;
 pub fn one_dimension(
     rng: &mut impl Rng,
     position: &Vec<f64>,
-    lower_bound: f64,
-    upper_bound: f64,
+    lower_bound: &Vec<f64>,
+    upper_bound: &Vec<f64>,
     iteration: i64,
     iterations: i64,
     mutation_rate: f64,
@@ -14,17 +14,17 @@ pub fn one_dimension(
     if rng.gen::<f64>() >= pm {
         return None;
     }
-    let diff_position = pm * (upper_bound - lower_bound);
     let j: usize = rng.gen_range(0, dimensions);
+    let diff_position = pm * (upper_bound[j] - lower_bound[j]);
 
     let mut lb = position[j] - diff_position;
-    if lb < lower_bound {
-        lb = lower_bound;
+    if lb < lower_bound[j] {
+        lb = lower_bound[j];
     }
 
     let mut ub = position[j] + diff_position;
-    if ub > upper_bound {
-        ub = upper_bound;
+    if ub > upper_bound[j] {
+        ub = upper_bound[j];
     }
     if lb == ub {
         return None;
@@ -45,7 +45,15 @@ mod tests {
         let mut rng = create_rng();
         let position = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
 
-        let new_position = one_dimension(&mut rng, &position, 0.0, 1.0, 0, 10, 1.0);
+        let new_position = one_dimension(
+            &mut rng,
+            &position,
+            &vec![0.0; position.len()],
+            &vec![1.0; position.len()],
+            0,
+            10,
+            1.0,
+        );
 
         assert_eq!(
             new_position,
@@ -58,7 +66,15 @@ mod tests {
         let mut rng = create_rng();
         let position = vec![0.1, 0.2, 0.3, 0.4, 0.5, 0.6];
 
-        let new_position = one_dimension(&mut rng, &position, 0.0, 1.0, 999_999, 1_000_000, 0.1);
+        let new_position = one_dimension(
+            &mut rng,
+            &position,
+            &vec![0.0; position.len()],
+            &vec![1.0; position.len()],
+            999_999,
+            1_000_000,
+            0.1,
+        );
 
         assert_eq!(new_position, None);
     }
