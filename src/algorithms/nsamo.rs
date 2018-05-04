@@ -228,7 +228,11 @@ fn generate_random_animal(
     fitness_evaluator: &FitnessEvaluator<Vec<f64>>,
     config: &Config,
 ) -> Animal {
-    let position = multi_random_position(&config.multi_lower_bound, &config.multi_upper_bound);
+    let position = multi_random_position(
+        &config.multi_lower_bound,
+        &config.multi_upper_bound,
+        config.dimensions,
+    );
     Animal {
         fitness: fitness_evaluator.calculate_fitness(&position),
         position,

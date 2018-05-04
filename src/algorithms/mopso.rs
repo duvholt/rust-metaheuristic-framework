@@ -167,6 +167,7 @@ impl<'a> Swarm<'a> {
         multi_random_position(
             &self.config.multi_lower_bound,
             &self.config.multi_upper_bound,
+            self.config.dimensions,
         )
     }
 

@@ -9,9 +9,13 @@ pub fn random_position(lower_space: f64, upper_space: f64, dimensions: usize) ->
         .collect()
 }
 
-pub fn multi_random_position(lower_bound: &Vec<f64>, upper_bound: &Vec<f64>) -> Vec<f64> {
+pub fn multi_random_position(
+    lower_bound: &Vec<f64>,
+    upper_bound: &Vec<f64>,
+    dimensions: usize,
+) -> Vec<f64> {
     let mut rng = weak_rng();
-    (0..upper_bound.len())
+    (0..dimensions)
         .map(|i| rng.gen_range::<f64>(lower_bound[i], upper_bound[i]))
         .collect()
 }
