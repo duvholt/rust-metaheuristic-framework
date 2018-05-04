@@ -398,12 +398,12 @@ mod tests {
         let new_population =
             animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
-        assert_eq!(new_population[1].fitness, vec![-1.306348201401438, 1.5661140513601106]);
-        assert_eq!(new_population[2].fitness, vec![0.1, 0.2]);
         assert_eq!(
-            new_population[3].fitness,
-            vec![2.0, 2.1]
+            new_population[1].fitness,
+            vec![-1.306348201401438, 1.5661140513601106]
         );
+        assert_eq!(new_population[2].fitness, vec![0.1, 0.2]);
+        assert_eq!(new_population[3].fitness, vec![2.0, 2.1]);
     }
 
     #[test]
