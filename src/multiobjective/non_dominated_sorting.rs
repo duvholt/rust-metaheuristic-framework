@@ -6,18 +6,31 @@ use std::f64::INFINITY;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-fn sort_on_objective(solutions: &[impl Solution<Vec<f64>>], objective: usize) -> Vec<usize> {
+pub fn sort_on_objective(
+    solutions: &Vec<&impl Solution<Vec<f64>>>,
+    objective: usize,
+) -> Vec<usize> {
     solutions
         .iter()
         .enumerate()
-        .map(|(i, solution)| (i, solution.fitness()[objective]))
-        .sorted_by(|(_, fitness1), (_, fitness2)| fitness1.partial_cmp(&fitness2).unwrap())
+        .sorted_by(|(_, solution1), (_, solution2)| {
+            let objectives = solution1.fitness().len();
+            let mut order = Ordering::Equal;
+            let mut objective = objective;
+            while order == Ordering::Equal && objective < objectives {
+                order = solution1.fitness()[objective]
+                    .partial_cmp(&solution2.fitness()[objective])
+                    .unwrap();
+                objective += 1;
+            }
+            return order;
+        })
         .into_iter()
         .map(|(i, _)| i)
         .collect()
 }
 
-pub fn crowding_distance(solutions: &[impl Solution<Vec<f64>>]) -> Vec<f64> {
+pub fn crowding_distance(solutions: &Vec<&impl Solution<Vec<f64>>>) -> Vec<f64> {
     let mut distances = vec![0.0; solutions.len()];
     let objectives = solutions[0].fitness().len();
     for objective in 0..objectives {
@@ -57,22 +70,10 @@ fn crowding_comparison(
     }
 }
 
-pub fn sort<S>(solutions: Vec<S>) -> Vec<(usize, S)>
+fn sort_on_crowding<S>(solutions: Vec<S>, distances: Vec<f64>, ranks: Vec<usize>) -> Vec<(usize, S)>
 where
-    S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
+    S: Solution<Vec<f64>>,
 {
-    let mut distances = vec![0.0; solutions.len()];
-    let mut ranks = vec![0; solutions.len()];
-    let fronts = calculate_fronts(&solutions);
-    for (rank, front) in fronts.into_iter().enumerate() {
-        let front_solutions: Vec<_> = front.iter().map(|i| solutions[*i].clone()).collect();
-        let front_distances = crowding_distance(&front_solutions);
-        for (i, distance) in front.into_iter().zip(front_distances) {
-            distances[i] = distance;
-            ranks[i] = rank;
-        }
-    }
-
     izip!(solutions, distances, ranks)
         .enumerate()
         .sorted_by(|(_, (_, distance1, rank1)), (_, (_, distance2, rank2))| {
@@ -81,6 +82,24 @@ where
         .into_iter()
         .map(|(i, (solution, _, _))| (i, solution))
         .collect()
+}
+
+pub fn sort<S>(solutions: Vec<S>) -> Vec<(usize, S)>
+where
+    S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
+{
+    let mut distances = vec![0.0; solutions.len()];
+    let mut ranks = vec![0; solutions.len()];
+    let fronts = calculate_fronts(&solutions);
+    for (rank, front) in fronts.into_iter().enumerate() {
+        let front_solutions: Vec<_> = front.iter().map(|&i| &solutions[i]).collect();
+        let front_distances = crowding_distance(&front_solutions);
+        for (i, distance) in front.into_iter().zip(front_distances) {
+            distances[i] = distance;
+            ranks[i] = rank;
+        }
+    }
+    sort_on_crowding(solutions, distances, ranks)
 }
 
 #[cfg(test)]
@@ -99,7 +118,7 @@ mod tests {
             vec![4.0, 3.0],
         ]);
 
-        let indicies = sort_on_objective(&solutions, 0);
+        let indicies = sort_on_objective(&solutions.iter().collect(), 0);
 
         assert_eq!(indicies, vec![1, 3, 2, 0, 4]);
     }
@@ -114,7 +133,7 @@ mod tests {
             vec![4.0, 3.0],
         ]);
 
-        let indicies = sort_on_objective(&solutions, 1);
+        let indicies = sort_on_objective(&solutions.iter().collect(), 1);
 
         assert_eq!(indicies, vec![2, 4, 3, 1, 0]);
     }
@@ -131,7 +150,7 @@ mod tests {
             vec![5.0, 6.5],
         ]);
 
-        let distances = crowding_distance(&solutions);
+        let distances = crowding_distance(&solutions.iter().collect());
 
         assert_eq!(
             distances,

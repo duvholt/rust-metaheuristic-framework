@@ -240,7 +240,7 @@ fn find_best_animal(population: &Vec<Animal>, mut rng: impl Rng) -> &Animal {
         .into_iter()
         .map(|i| population[i].clone())
         .collect::<Vec<_>>();
-    let distances = crowding_distance(&population);
+    let distances = crowding_distance(&population.iter().collect());
     let index = tournament_selection_crowding(&non_dominated, 2, &mut rng, &distances);
     &population[index]
 }

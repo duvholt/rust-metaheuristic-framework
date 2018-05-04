@@ -35,7 +35,7 @@ where
             .iter()
             .map(|p_i| self.solutions[*p_i].clone())
             .collect();
-        self.crowding_distance = crowding_distance(&self.solutions);
+        self.crowding_distance = crowding_distance(&self.solutions.iter().collect());
         if self.solutions.len() > self.archive_size {
             self.prune();
         }
@@ -53,7 +53,7 @@ where
             .map(|(i, _)| self.solutions[i].clone())
             .collect();
         self.solutions.retain(|solution| set.contains(solution));
-        self.crowding_distance = crowding_distance(&self.solutions);
+        self.crowding_distance = crowding_distance(&self.solutions.iter().collect());
     }
 
     pub fn select_leader(&self) -> &M {
