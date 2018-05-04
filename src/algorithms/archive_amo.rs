@@ -1,7 +1,7 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use multiobjective::domination::{dominates, select_first};
+use multiobjective::domination::select_first;
 use multiobjective::non_dominated_sorting::sort;
 use multiobjective::omopso_archive::Archive;
 use operators::mutation;
@@ -140,7 +140,7 @@ fn animal_migration(
             }
         })
         .collect();
-    find_best_solutions(population, moved_animals, rng)
+    find_best_solutions(population, moved_animals)
 }
 
 fn animal_replacement(
@@ -190,7 +190,7 @@ fn animal_replacement(
             })
             .collect()
     };
-    find_best_solutions(population, new_population, rng)
+    find_best_solutions(population, new_population)
 }
 
 fn find_probabilities(solutions: &Vec<Animal>) -> Vec<f64> {
@@ -207,27 +207,15 @@ fn find_probabilities(solutions: &Vec<Animal>) -> Vec<f64> {
 
 fn find_best_solutions(
     old_population: Vec<Animal>,
-    new_population: Vec<Animal>,
-    mut rng: impl Rng,
+    mut new_population: Vec<Animal>,
 ) -> Vec<Animal> {
-    old_population
+    let population_size = old_population.len();
+    let mut population = old_population;
+    population.append(&mut new_population);
+    sort(population)
         .into_iter()
-        .zip(new_population)
-        .map(|(old, new)| {
-            if dominates(&old.fitness, &new.fitness) {
-                old
-            } else if dominates(&new.fitness, &old.fitness) {
-                new
-            } else {
-                // If neither dominates the other select randomly
-                let r = rng.next_f64();
-                if r > 0.5 {
-                    old
-                } else {
-                    new
-                }
-            }
-        })
+        .take(population_size)
+        .map(|(_, animal)| animal)
         .collect()
 }
 
@@ -412,12 +400,12 @@ mod tests {
         let new_population =
             animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
-        assert_eq!(new_population[1].fitness, vec![2.0, 2.1]);
-        assert_eq!(new_population[2].fitness, vec![1.3356651356791132, 2.3]);
         assert_eq!(
-            new_population[3].fitness,
+            new_population[1].fitness,
             vec![-1.306348201401438, 1.5661140513601106]
         );
+        assert_eq!(new_population[2].fitness, vec![0.1, 0.2]);
+        assert_eq!(new_population[3].fitness, vec![2.0, 2.1]);
     }
 
     #[test]
