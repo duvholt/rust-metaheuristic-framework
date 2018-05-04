@@ -3,13 +3,34 @@ use std::collections::HashMap;
 use std::f64::consts;
 
 pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFunctionVar>) {
-    test_functions_map.insert("dtlz1", TestFunctionVar::Multi(dtlz1, "dtlz1-3d"));
-    test_functions_map.insert("dtlz2", TestFunctionVar::Multi(dtlz2, "dtlz2-3d"));
-    test_functions_map.insert("dtlz3", TestFunctionVar::Multi(dtlz3, "dtlz3-3d"));
-    test_functions_map.insert("dtlz4", TestFunctionVar::Multi(dtlz4, "dtlz4-3d"));
-    test_functions_map.insert("dtlz5", TestFunctionVar::Multi(dtlz5, "dtlz5-3d"));
-    test_functions_map.insert("dtlz6", TestFunctionVar::Multi(dtlz6, "dtlz6-3d"));
-    test_functions_map.insert("dtlz7", TestFunctionVar::Multi(dtlz7, "dtlz7-3d"));
+    test_functions_map.insert(
+        "dtlz1",
+        TestFunctionVar::Multi(dtlz1, "dtlz1-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz2",
+        TestFunctionVar::Multi(dtlz2, "dtlz2-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz3",
+        TestFunctionVar::Multi(dtlz3, "dtlz3-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz4",
+        TestFunctionVar::Multi(dtlz4, "dtlz4-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz5",
+        TestFunctionVar::Multi(dtlz5, "dtlz5-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz6",
+        TestFunctionVar::Multi(dtlz6, "dtlz6-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
+    test_functions_map.insert(
+        "dtlz7",
+        TestFunctionVar::Multi(dtlz7, "dtlz7-3d", vec![0.0; 30], vec![1.0; 30]),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {

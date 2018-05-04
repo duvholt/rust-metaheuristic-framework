@@ -9,6 +9,17 @@ pub fn random_position(lower_space: f64, upper_space: f64, dimensions: usize) ->
         .collect()
 }
 
+pub fn multi_random_position(
+    lower_bound: &Vec<f64>,
+    upper_bound: &Vec<f64>,
+    dimensions: usize,
+) -> Vec<f64> {
+    let mut rng = weak_rng();
+    (0..dimensions)
+        .map(|i| rng.gen_range::<f64>(lower_bound[i], upper_bound[i]))
+        .collect()
+}
+
 fn dot_product(vec1: &Vec<f64>, vec2: &Vec<f64>) -> f64 {
     vec1.iter().zip(vec2).map(|(v1, v2)| v1 * v2).sum()
 }

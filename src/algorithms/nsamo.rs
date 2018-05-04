@@ -5,7 +5,7 @@ use multiobjective::domination::{find_non_dominated, select_first};
 use multiobjective::non_dominated_sorting::crowding_distance;
 use multiobjective::non_dominated_sorting::sort;
 use operators::mutation;
-use operators::position::random_position;
+use operators::position::multi_random_position;
 use operators::selection::tournament_selection_crowding;
 use rand::distributions::normal::StandardNormal;
 use rand::{weak_rng, Rng};
@@ -37,8 +37,8 @@ pub fn run_subcommand(
         println!("Running NSAMO with radius: {}", radius);
     }
     let config = Config {
-        upper_bound: common.upper_bound,
-        lower_bound: common.lower_bound,
+        multi_upper_bound: common.multi_upper_bound.clone(),
+        multi_lower_bound: common.multi_lower_bound.clone(),
         dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
@@ -51,8 +51,8 @@ pub fn run_subcommand(
 pub struct Config {
     pub iterations: i64,
     pub population: usize,
-    pub upper_bound: f64,
-    pub lower_bound: f64,
+    pub multi_upper_bound: Vec<f64>,
+    pub multi_lower_bound: Vec<f64>,
     pub dimensions: usize,
     pub radius: i64,
 }
@@ -102,10 +102,10 @@ fn animal_migration(
                 let index = get_random_neighbor_index(index_offset, population.len());
                 let mut pos_d = current_animal.position[d]
                     + gaussian * (population[index].position[d] - current_animal.position[d]);
-                if pos_d > config.upper_bound {
-                    pos_d = config.upper_bound;
-                } else if pos_d < config.lower_bound {
-                    pos_d = config.lower_bound;
+                if pos_d > config.multi_upper_bound[d] {
+                    pos_d = config.multi_upper_bound[d];
+                } else if pos_d < config.multi_lower_bound[d] {
+                    pos_d = config.multi_lower_bound[d];
                 }
                 moved_position.push(pos_d);
             }
@@ -143,10 +143,10 @@ fn animal_replacement(
                         let current = current_animal.position[d];
                         let mut pos_d = r1 + rng.next_f64() * (best - current)
                             + rng.next_f64() * (r2 - current);
-                        if pos_d > config.upper_bound {
-                            pos_d = config.upper_bound;
-                        } else if pos_d < config.lower_bound {
-                            pos_d = config.lower_bound;
+                        if pos_d > config.multi_upper_bound[d] {
+                            pos_d = config.multi_upper_bound[d];
+                        } else if pos_d < config.multi_lower_bound[d] {
+                            pos_d = config.multi_lower_bound[d];
                         }
                         new_position.push(pos_d);
                     } else {
@@ -228,7 +228,11 @@ fn generate_random_animal(
     fitness_evaluator: &FitnessEvaluator<Vec<f64>>,
     config: &Config,
 ) -> Animal {
-    let position = random_position(config.lower_bound, config.upper_bound, config.dimensions);
+    let position = multi_random_position(
+        &config.multi_lower_bound,
+        &config.multi_upper_bound,
+        config.dimensions,
+    );
     Animal {
         fitness: fitness_evaluator.calculate_fitness(&position),
         position,
@@ -258,8 +262,8 @@ fn mutate_population(
             let mutated_position = mutation::one_dimension(
                 &mut rng,
                 &animal.position,
-                config.lower_bound,
-                config.upper_bound,
+                &config.multi_lower_bound,
+                &config.multi_upper_bound,
                 iteration,
                 config.iterations,
                 0.1,
@@ -317,8 +321,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            upper_bound: 4.0,
-            lower_bound: -4.0,
+            multi_upper_bound: vec![4.0; 2],
+            multi_lower_bound: vec![-4.0; 2],
             dimensions: 2,
             iterations: 100,
             population: 50,

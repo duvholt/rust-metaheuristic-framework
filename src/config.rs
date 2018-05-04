@@ -6,4 +6,6 @@ pub struct CommonConfig {
     pub lower_bound: f64,
     pub dimensions: usize,
     pub population: usize,
+    pub multi_upper_bound: Vec<f64>,
+    pub multi_lower_bound: Vec<f64>,
 }

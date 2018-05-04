@@ -9,10 +9,10 @@ pub type MultiTestFunction = Fn(&Vec<f64>) -> Vec<f64>;
 
 pub type SingleTestFunctionVar = fn(&Vec<f64>) -> f64;
 pub type MultiTestFunctionVar = fn(&Vec<f64>) -> Vec<f64>;
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum TestFunctionVar {
     Single(SingleTestFunctionVar),
-    Multi(MultiTestFunctionVar, &'static str),
+    Multi(MultiTestFunctionVar, &'static str, Vec<f64>, Vec<f64>),
 }
 
 pub fn get_single(
@@ -26,9 +26,9 @@ pub fn get_single(
 
 pub fn get_multi(
     test_function_var: TestFunctionVar,
-) -> Result<(MultiTestFunctionVar, &'static str), &'static str> {
+) -> Result<(MultiTestFunctionVar, &'static str, Vec<f64>, Vec<f64>), &'static str> {
     match test_function_var {
-        TestFunctionVar::Multi(f, s) => Ok((f, s)),
+        TestFunctionVar::Multi(f, s, lb, ub) => Ok((f, s, lb, ub)),
         _ => Err("Algorithm only supports multi objective functions"),
     }
 }

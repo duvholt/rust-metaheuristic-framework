@@ -3,7 +3,7 @@ use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use multiobjective::archive::Archive;
 use multiobjective::domination::dominates;
-use operators::position::random_position;
+use operators::position::multi_random_position;
 use rand::{weak_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
 use std::hash;
@@ -76,8 +76,8 @@ pub fn run_subcommand(
     }
 
     let config = Config {
-        upper_bound: common.upper_bound,
-        lower_bound: common.lower_bound,
+        multi_upper_bound: common.multi_upper_bound.clone(),
+        multi_lower_bound: common.multi_lower_bound.clone(),
         dimensions: common.dimensions,
         iterations: common.iterations,
         population: common.population,
@@ -97,8 +97,8 @@ type Velocity = Position;
 
 #[derive(Debug)]
 pub struct Config {
-    pub upper_bound: f64,
-    pub lower_bound: f64,
+    pub multi_upper_bound: Vec<f64>,
+    pub multi_lower_bound: Vec<f64>,
     pub dimensions: usize,
     pub iterations: i64,
     pub population: usize,
@@ -164,9 +164,9 @@ impl<'a> Swarm<'a> {
     }
 
     fn random_position(&self) -> Position {
-        random_position(
-            self.config.lower_bound,
-            self.config.upper_bound,
+        multi_random_position(
+            &self.config.multi_lower_bound,
+            &self.config.multi_upper_bound,
             self.config.dimensions,
         )
     }
@@ -197,18 +197,19 @@ impl<'a> Swarm<'a> {
     }
 
     fn mutate(&self, position: &Vec<f64>, pm: f64) -> Vec<f64> {
-        let diff_position = pm * (self.config.upper_bound - self.config.lower_bound);
         let mut rng = weak_rng();
         let j: usize = rng.gen_range(0, self.config.dimensions);
+        let diff_position =
+            pm * (self.config.multi_upper_bound[j] - self.config.multi_lower_bound[j]);
 
         let mut lb = position[j] - diff_position;
-        if lb < self.config.lower_bound {
-            lb = self.config.lower_bound;
+        if lb < self.config.multi_lower_bound[j] {
+            lb = self.config.multi_lower_bound[j];
         }
 
         let mut ub = position[j] + diff_position;
-        if ub > self.config.upper_bound {
-            ub = self.config.upper_bound;
+        if ub > self.config.multi_upper_bound[j] {
+            ub = self.config.multi_upper_bound[j];
         }
         let mut mutated_position = position.to_vec();
         mutated_position[j] = rng.gen_range(lb, ub);
@@ -232,14 +233,14 @@ impl<'a> Swarm<'a> {
             let c2 = self.config.c2;
             let mut new_v = inertia * v + c1 * r1 * (x_p - x) + c2 * r2 * (x_l - x);
             let mut new_x = new_v + x;
-            if new_v + x > self.config.upper_bound {
+            if new_v + x > self.config.multi_upper_bound[i] {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = self.config.upper_bound;
-            } else if (new_v + x) < self.config.lower_bound {
+                new_x = self.config.multi_upper_bound[i];
+            } else if (new_v + x) < self.config.multi_lower_bound[i] {
                 // Bound hit, move in opposite direction
                 new_v *= -1.0;
-                new_x = self.config.lower_bound;
+                new_x = self.config.multi_lower_bound[i];
             }
             velocity.push(new_v);
             position.push(new_x);
@@ -338,8 +339,8 @@ mod tests {
 
     fn create_config() -> Config {
         Config {
-            upper_bound: 4.0,
-            lower_bound: -4.0,
+            multi_upper_bound: vec![4.0; 2],
+            multi_lower_bound: vec![-4.0; 2],
             dimensions: 2,
             iterations: 20,
             population: 50,
