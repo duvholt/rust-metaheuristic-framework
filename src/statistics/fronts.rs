@@ -30,6 +30,13 @@ pub fn normalize_front(front: &Vec<Vec<f64>>, minmax: &Vec<(f64, f64)>) -> Vec<V
         .collect()
 }
 
+pub fn invert_normalized_front(front: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
+    front
+        .iter()
+        .map(|point| point.iter().map(|&x_i| 1.0 - x_i).collect())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -86,6 +93,28 @@ mod tests {
                 vec![0.6000000000000001, 0.0, 0.15000000000000002],
                 vec![0.0, 0.0, 0.0],
                 vec![1.0, 1.0, 1.0],
+            ]
+        );
+    }
+
+    #[test]
+    fn inverts_front_correctly() {
+        let front = vec![
+            vec![0.3, 0.6, 0.1],
+            vec![0.6, 0.1, 0.2],
+            vec![1.0, 0.1, 1.0],
+            vec![0.0, 0.1, 0.0],
+        ];
+
+        let inverted_front = invert_normalized_front(&front);
+
+        assert_eq!(
+            inverted_front,
+            vec![
+                vec![0.7, 0.4, 0.9],
+                vec![0.4, 0.9, 0.8],
+                vec![0.0, 0.9, 0.0],
+                vec![1.0, 0.9, 1.0],
             ]
         );
     }
