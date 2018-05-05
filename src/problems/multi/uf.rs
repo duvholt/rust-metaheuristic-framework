@@ -33,6 +33,11 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "uf6",
         TestFunctionVar::Multi(uf6, "uf6-2d", bounds.0, bounds.1),
     );
+    let bounds = get_upper_bounds(7);
+    test_functions_map.insert(
+        "uf7",
+        TestFunctionVar::Multi(uf7, "uf7-2d", bounds.0, bounds.1),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
@@ -45,6 +50,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
             "uf4".to_string(),
             "uf5".to_string(),
             "uf6".to_string(),
+            "uf7".to_string(),
         ],
     );
 }
@@ -53,7 +59,7 @@ fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
     let mut ub = vec![1.0];
     let mut lb = vec![0.0];
     match i {
-        1 | 2 | 5 | 6 => {
+        1 | 2 | 5 | 6 | 7 => {
             for _ in 1..30 {
                 ub.push(1.0);
                 lb.push(-1.0);
@@ -231,9 +237,31 @@ pub fn uf6(x: &Vec<f64>) -> Vec<f64> {
     }
     let f1 = x[0] + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin())
         .max(0.0) + 2.0 / odd * (4.0 * odd_sum - 2.0 * odd_product + 2.0);
+
     let f2 = 1.0 - x[0]
         + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin()).max(0.0)
         + 2.0 / even * (4.0 * even_sum - 2.0 * even_product + 2.0);
+    vec![f1, f2]
+}
+
+pub fn uf7(x: &Vec<f64>) -> Vec<f64> {
+    let mut f1 = 0.0;
+    let mut f2 = 0.0;
+    let odd = odd(x);
+    let even = even(x);
+
+    for i in 1..x.len() {
+        let j = (i + 1) as f64;
+        let a = x[i] - (6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin();
+        let b = a.powi(2);
+        if (i + 1) % 2 == 1 {
+            f1 += b;
+        } else {
+            f2 += b;
+        }
+    }
+    f1 = x[0].powf(1.0 / 5.0) + 2.0 / odd * f1;
+    f2 = 1.0 - x[0].powf(1.0 / 5.0) + 2.0 / even * f2;
     vec![f1, f2]
 }
 
@@ -343,8 +371,6 @@ mod tests {
                 input.push((6.0 * consts::PI * x1 + (j * consts::PI) / dimensions).sin())
             }
             let result = uf4(&input);
-            println!("{:?}", input);
-            println!("{:?}", result);
             assert!(result[0] >= 0.0 && result[0] <= 1.0 && result[1] == 1.0 - result[0].powi(2));
         }
     }
@@ -356,6 +382,33 @@ mod tests {
             input[0] = 1.5;
             let result = uf4(&input);
             assert!(result[0] < 0.0 || result[0] > 1.0 || result[1] != 1.0 - result[0].powi(2));
+        }
+    }
+
+    #[test]
+    fn uf7_optimum() {
+        let mut rng = weak_rng();
+        for d in 3..31 {
+            let dimensions = d as f64;
+            let x1 = rng.gen_range(0.0, 1.0) as f64;
+            let mut input = vec![x1];
+            for i in 1..dimensions as usize {
+                let j = (i + 1) as f64;
+                input.push((6.0 * consts::PI * x1 + (j * consts::PI) / dimensions).sin())
+            }
+            let result = uf7(&input);
+            assert!(result[0] >= 0.0 && result[0] <= 1.0 && result[1] == 1.0 - result[0]);
+        }
+    }
+
+    #[test]
+    fn uf7_not_optimum() {
+        let mut rng = weak_rng();
+        for d in 3..31 {
+            let mut input = vec![rng.gen_range(-1.0, 1.0); d];
+            input[0] = 1.5;
+            let result = uf7(&input);
+            assert!(result[0] < 0.0 || result[0] > 1.0 || result[1] != 1.0 - result[0]);
         }
     }
 }
