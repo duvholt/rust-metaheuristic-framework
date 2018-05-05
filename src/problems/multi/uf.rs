@@ -13,36 +13,50 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "uf2",
         TestFunctionVar::Multi(uf2, "uf2-2d", bounds.0, bounds.1),
     );
+    let bounds = get_upper_bounds(3);
+    test_functions_map.insert(
+        "uf3",
+        TestFunctionVar::Multi(uf3, "uf3-2d", bounds.0, bounds.1),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
-    test_suites.insert("uf", vec!["uf1".to_string(), "uf2".to_string()]);
+    test_suites.insert(
+        "uf",
+        vec!["uf1".to_string(), "uf2".to_string(), "uf3".to_string()],
+    );
 }
 
 fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
+    let mut ub = vec![1.0];
+    let mut lb = vec![0.0];
     match i {
         1 | 2 => {
-            let mut ub = vec![1.0];
-            let mut lb = vec![0.0];
             for _ in 1..30 {
                 ub.push(1.0);
                 lb.push(-1.0);
             }
-            (lb, ub)
+        }
+        3 => {
+            for _ in 1..30 {
+                ub.push(1.0);
+                lb.push(0.0);
+            }
         }
         _ => panic!("Test function does not exist"),
     }
+    (lb, ub)
 }
-fn odd(x: &Vec<f64>) -> usize {
-    (x.len() - 1) / 2
+fn odd(x: &Vec<f64>) -> f64 {
+    ((x.len() - 1) / 2) as f64
 }
 
-fn even(x: &Vec<f64>) -> usize {
+fn even(x: &Vec<f64>) -> f64 {
     let length = x.len() - 1;
     if length % 2 == 1 {
-        length / 2
+        (length / 2) as f64
     } else {
-        (length / 2) + 1
+        ((length / 2) + 1) as f64
     }
 }
 pub fn uf1(x: &Vec<f64>) -> Vec<f64> {
@@ -52,9 +66,9 @@ pub fn uf1(x: &Vec<f64>) -> Vec<f64> {
     let even = even(x);
 
     for i in 1..x.len() {
-        let a = (x[i] - (6.0 * consts::PI * x[0] + ((i + 1) as f64 * consts::PI) / x.len() as f64)
-            .sin())
-            .powi(2);
+        let j = (i + 1) as f64;
+        let a =
+            (x[i] - (6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin()).powi(2);
         if (i + 1) % 2 == 1 {
             f1 += a;
         } else {
@@ -62,8 +76,8 @@ pub fn uf1(x: &Vec<f64>) -> Vec<f64> {
         }
     }
 
-    f1 = x[0] + 2.0 / odd as f64 * f1;
-    f2 = 1.0 - x[0].sqrt() + 2.0 / even as f64 * f2;
+    f1 = x[0] + 2.0 / odd * f1;
+    f2 = 1.0 - x[0].sqrt() + 2.0 / even * f2;
     vec![f1, f2]
 }
 
@@ -74,10 +88,11 @@ pub fn uf2(x: &Vec<f64>) -> Vec<f64> {
     let even = even(x);
 
     for i in 1..x.len() {
+        let j = (i + 1) as f64;
         let a = 0.3 * x[0].powi(2)
-            * (24.0 * consts::PI * x[0] + (4.0 * (i + 1) as f64 * consts::PI) / x.len() as f64)
-                .cos() + 0.6 * x[0];
-        let b = 6.0 * consts::PI * x[0] + ((i + 1) as f64 * consts::PI) / x.len() as f64;
+            * (24.0 * consts::PI * x[0] + (4.0 * j * consts::PI) / x.len() as f64).cos()
+            + 0.6 * x[0];
+        let b = 6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64;
         if (i + 1) % 2 == 1 {
             f1 += (x[i] - a * b.cos()).powi(2);
         } else {
@@ -85,8 +100,35 @@ pub fn uf2(x: &Vec<f64>) -> Vec<f64> {
         }
     }
 
-    f1 = x[0] + 2.0 / odd as f64 * f1;
-    f2 = 1.0 - x[0].sqrt() + 2.0 / even as f64 * f2;
+    f1 = x[0] + 2.0 / odd * f1;
+    f2 = 1.0 - x[0].sqrt() + 2.0 / even * f2;
+    vec![f1, f2]
+}
+
+pub fn uf3(x: &Vec<f64>) -> Vec<f64> {
+    let odd = odd(x);
+    let even = even(x);
+    let mut odd_sum = 0.0;
+    let mut even_sum = 0.0;
+    let mut odd_product = 1.0;
+    let mut even_product = 1.0;
+
+    for i in 1..x.len() {
+        let j = (i + 1) as f64;
+        let a = x[i] - x[0].powf(0.5 * (1.0 + (3.0 * (j - 2.0)) / (x.len() as f64 - 2.0)));
+        let b = a.powi(2);
+        let c = ((20.0 * a * consts::PI) / j.sqrt()).cos();
+        if (i + 1) % 2 == 1 {
+            odd_sum += b;
+            odd_product *= c;
+        } else {
+            even_sum += b;
+            even_product *= c;
+        }
+    }
+
+    let f1 = x[0] + (2.0 / odd) * (4.0 * odd_sum - 2.0 * odd_product + 2.0);
+    let f2 = 1.0 - x[0].sqrt() + (2.0 / even) * (4.0 * even_sum - 2.0 * even_product + 2.0);
     vec![f1, f2]
 }
 
@@ -153,6 +195,33 @@ mod tests {
             let mut input = vec![rng.gen_range(-1.0, 1.0); d];
             input[0] = 1.5;
             let result = uf2(&input);
+            assert!(result[0] < 0.0 || result[0] > 1.0 || result[1] != 1.0 - result[0].sqrt());
+        }
+    }
+    #[test]
+    fn uf3_optimum() {
+        let mut rng = weak_rng();
+        for d in 3..30 {
+            let dimensions = d as f64;
+            let x1 = rng.gen_range(0.0, 1.0) as f64;
+            let mut input = vec![x1];
+            for i in 1..dimensions as usize {
+                input.push(x1.powf(
+                    0.5 * (1.0 + (3.0 * ((i + 1) as f64 - 2.0)) / (dimensions - 2.0)),
+                ));
+            }
+            let result = uf3(&input);
+            assert!(result[0] >= 0.0 && result[0] <= 1.0 && result[1] == 1.0 - result[0].sqrt());
+        }
+    }
+
+    #[test]
+    fn uf3_not_optimum() {
+        let mut rng = weak_rng();
+        for d in 3..30 {
+            let mut input = vec![rng.gen_range(-1.0, 1.0); d];
+            input[0] = 1.5;
+            let result = uf3(&input);
             assert!(result[0] < 0.0 || result[0] > 1.0 || result[1] != 1.0 - result[0].sqrt());
         }
     }
