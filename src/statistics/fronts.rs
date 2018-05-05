@@ -14,7 +14,7 @@ pub fn front_min_max(front: &Vec<Vec<f64>>) -> Vec<(f64, f64)> {
         .collect()
 }
 
-pub fn normalize_front(front: Vec<Vec<f64>>, minmax: Vec<(f64, f64)>) -> Vec<Vec<f64>> {
+pub fn normalize_front(front: &Vec<Vec<f64>>, minmax: &Vec<(f64, f64)>) -> Vec<Vec<f64>> {
     front
         .iter()
         .map(|point| {
@@ -56,7 +56,7 @@ mod tests {
         ];
         let min_max = vec![(0.0, 1.0); 3];
 
-        let normalized_front = normalize_front(front.clone(), min_max);
+        let normalized_front = normalize_front(&front, &min_max);
 
         assert_eq!(front, normalized_front);
     }
@@ -72,7 +72,7 @@ mod tests {
         ];
         let min_max = vec![(1.0, 2.0), (1.1, 2.1), (1.0, 3.0)];
 
-        let normalized_front = normalize_front(front.clone(), min_max);
+        let normalized_front = normalize_front(&front, &min_max);
 
         assert_eq!(
             normalized_front,

@@ -3,6 +3,7 @@ use itertools::Itertools;
 use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
+use statistics::fronts::{front_min_max, normalize_front};
 use statistics::measure::igd;
 use std::cell::RefCell;
 use std::cmp::Ordering;
@@ -31,6 +32,7 @@ pub struct Sampler {
     solutions: RefCell<Vec<SolutionJSON>>,
     generations: RefCell<Vec<Vec<SolutionJSON>>>,
     pareto_front: Option<Vec<Vec<f64>>>,
+    min_max_front: Option<Vec<(f64, f64)>>,
     runs: RefCell<Vec<f64>>,
 }
 
@@ -49,11 +51,15 @@ impl Sampler {
             generations: RefCell::new(vec![]),
             objective,
             pareto_front: None,
+            min_max_front: None,
             runs: RefCell::new(vec![]),
         }
     }
 
     pub fn set_pareto_front(&mut self, pareto_front: Vec<Vec<f64>>) {
+        let min_max = front_min_max(&pareto_front);
+        let pareto_front = normalize_front(&pareto_front, &min_max);
+        self.min_max_front = Some(min_max);
         self.pareto_front = Some(pareto_front);
     }
 
@@ -205,12 +211,17 @@ impl Sampler {
         }
     }
 
+    fn calculate_igd(&self, front: &Vec<Vec<f64>>) -> f64 {
+        let front = normalize_front(&front, &self.min_max_front.clone().unwrap());
+        igd(&front, &self.pareto_front.clone().unwrap())
+    }
+
     fn print_igd(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
         let front = generation
             .iter()
             .map(|solution| solution.fitness.clone())
             .collect();
-        let igd_value = igd(&front, &self.pareto_front.clone().unwrap());
+        let igd_value = self.calculate_igd(&front);
         write!(
             &mut writer,
             "IGD: {}\n",
@@ -324,7 +335,7 @@ impl Sampler {
                     .iter()
                     .map(|solution| solution.fitness.clone())
                     .collect();
-                igd(&front, &self.pareto_front.clone().unwrap())
+                self.calculate_igd(&front)
             }
         }
     }
@@ -576,7 +587,7 @@ mod tests {
             output,
             format!(
                 "Mode: Evolution with 10 samples\n[ 0] IGD: {}\n",
-                Green.paint(" 4.0825e-2")
+                Green.paint(" 2.0412e-1")
             )
         );
     }
@@ -644,7 +655,7 @@ mod tests {
             output,
             format!(
                 "Mode: Last Generation\nIGD: {}\n",
-                Green.paint(" 4.0825e-2")
+                Green.paint(" 2.0412e-1")
             )
         );
     }
