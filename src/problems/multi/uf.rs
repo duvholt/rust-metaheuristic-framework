@@ -28,6 +28,11 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "uf5",
         TestFunctionVar::Multi(uf5, "uf5-2d", bounds.0, bounds.1),
     );
+    let bounds = get_upper_bounds(6);
+    test_functions_map.insert(
+        "uf6",
+        TestFunctionVar::Multi(uf6, "uf6-2d", bounds.0, bounds.1),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
@@ -39,6 +44,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
             "uf3".to_string(),
             "uf4".to_string(),
             "uf5".to_string(),
+            "uf6".to_string(),
         ],
     );
 }
@@ -47,7 +53,7 @@ fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
     let mut ub = vec![1.0];
     let mut lb = vec![0.0];
     match i {
-        1 | 2 | 5 => {
+        1 | 2 | 5 | 6 => {
             for _ in 1..30 {
                 ub.push(1.0);
                 lb.push(-1.0);
@@ -197,6 +203,37 @@ pub fn uf5(x: &Vec<f64>) -> Vec<f64> {
         + 2.0 / odd * f1;
     f2 = 1.0 - x[0] + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
         + 2.0 / even * f2;
+    vec![f1, f2]
+}
+
+pub fn uf6(x: &Vec<f64>) -> Vec<f64> {
+    let n = 2.0;
+    let epsilon = 0.1;
+    let odd = odd(x);
+    let even = even(x);
+    let mut odd_sum = 0.0;
+    let mut even_sum = 0.0;
+    let mut odd_product = 1.0;
+    let mut even_product = 1.0;
+
+    for i in 1..x.len() {
+        let j = (i + 1) as f64;
+        let a = x[i] - (6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin();
+        let b = a.powi(2);
+        let c = ((20.0 * a * consts::PI) / j.sqrt()).cos();
+        if (i + 1) % 2 == 1 {
+            odd_sum += b;
+            odd_product *= c;
+        } else {
+            even_sum += b;
+            even_product *= c;
+        }
+    }
+    let f1 = x[0] + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin())
+        .max(0.0) + 2.0 / odd * (4.0 * odd_sum - 2.0 * odd_product + 2.0);
+    let f2 = 1.0 - x[0]
+        + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin()).max(0.0)
+        + 2.0 / even * (4.0 * even_sum - 2.0 * even_product + 2.0);
     vec![f1, f2]
 }
 
