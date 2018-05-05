@@ -23,6 +23,11 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "uf4",
         TestFunctionVar::Multi(uf4, "uf4-2d", bounds.0, bounds.1),
     );
+    let bounds = get_upper_bounds(5);
+    test_functions_map.insert(
+        "uf5",
+        TestFunctionVar::Multi(uf5, "uf5-2d", bounds.0, bounds.1),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
@@ -33,6 +38,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
             "uf2".to_string(),
             "uf3".to_string(),
             "uf4".to_string(),
+            "uf5".to_string(),
         ],
     );
 }
@@ -41,7 +47,7 @@ fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
     let mut ub = vec![1.0];
     let mut lb = vec![0.0];
     match i {
-        1 | 2 => {
+        1 | 2 | 5 => {
             for _ in 1..30 {
                 ub.push(1.0);
                 lb.push(-1.0);
@@ -166,6 +172,31 @@ pub fn uf4(x: &Vec<f64>) -> Vec<f64> {
     }
     f1 = x[0] + 2.0 / odd * f1;
     f2 = 1.0 - x[0].powi(2) + 2.0 / even * f2;
+    vec![f1, f2]
+}
+
+pub fn uf5(x: &Vec<f64>) -> Vec<f64> {
+    let mut f1 = 0.0;
+    let mut f2 = 0.0;
+    let n = 10.0;
+    let epsilon = 0.1;
+    let odd = odd(x);
+    let even = even(x);
+
+    for i in 1..x.len() {
+        let j = (i + 1) as f64;
+        let a = x[i] - (6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin();
+        let h = 2.0 * a.powi(2) - (4.0 * consts::PI * a).cos() + 1.0;
+        if (i + 1) % 2 == 1 {
+            f1 += h;
+        } else {
+            f2 += h;
+        }
+    }
+    f1 = x[0] + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
+        + 2.0 / odd * f1;
+    f2 = 1.0 - x[0] + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
+        + 2.0 / even * f2;
     vec![f1, f2]
 }
 
