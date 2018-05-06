@@ -140,7 +140,7 @@ mod tests {
     }
 
     #[test]
-    fn calculates_hyper_volume() {
+    fn calculates_hyper_volume_zdt1() {
         let file = File::open("optimal_solutions/zdt1-2d.jmetal.json").unwrap();
         let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
         let minmax = front_min_max(&front);
@@ -149,6 +149,17 @@ mod tests {
         let volume = hyper_volume(&front);
 
         assert_eq!(volume, 0.6661601248750002);
+    }
+
+    #[test]
+    fn calculates_hyper_volume_dtlz1_2d() {
+        let file = File::open("optimal_solutions/dtlz1-2d.json").unwrap();
+        let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
+        let minmax = front_min_max(&front);
+
+        let volume = hyper_volume(&front);
+
+        assert_eq!(volume, 0.8748748748248245);
     }
 
     #[test]
