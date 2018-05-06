@@ -33,7 +33,20 @@ pub fn normalize_front(front: &Vec<Vec<f64>>, minmax: &Vec<(f64, f64)>) -> Vec<V
 pub fn invert_normalized_front(front: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     front
         .iter()
-        .map(|point| point.iter().map(|&x_i| 1.0 - x_i).collect())
+        .map(|point| {
+            point
+                .iter()
+                .map(|&x_i| {
+                    if x_i < 0.0 {
+                        1.0
+                    } else if x_i > 1.0 {
+                        0.0
+                    } else {
+                        1.0 - x_i
+                    }
+                })
+                .collect()
+        })
         .collect()
 }
 
