@@ -17,6 +17,7 @@ solutions_file = '../solutions.json'
 
 def plot_json_solutions(json_solutions):
     fig = plot.figure()
+    fig.canvas.set_window_title(json_solutions['test_function'])
     ax = Axes3D(fig)
     solutions = np.array(list(
         map(lambda s: [*s['x'][:2],
@@ -124,11 +125,11 @@ def multi_plot(json_solutions):
     function_name = json_solutions['test_function']
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-
+    fig = plot.figure()
+    fig.canvas.set_window_title(function_name)
     if len(solutions) == 2:
         ax = plot
     elif len(solutions) == 3:
-        fig = plot.figure()
         ax = Axes3D(fig)
     else:
         print('WARNING! Too many objectives to plot!')
