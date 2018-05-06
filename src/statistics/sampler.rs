@@ -4,7 +4,7 @@ use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
 use statistical::{mean, population_standard_deviation};
 use statistics::fronts::{front_min_max, normalize_front};
-use statistics::measure::{gd, igd};
+use statistics::measure::{gd, hyper_volume, igd};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::io::Write;
@@ -221,6 +221,11 @@ impl Sampler {
         gd(&front, &self.pareto_front.clone().unwrap())
     }
 
+    fn calculate_hv(&self, front: &Vec<Vec<f64>>) -> f64 {
+        let front = normalize_front(&front, &self.min_max_front.clone().unwrap());
+        hyper_volume(&front)
+    }
+
     fn print_multi_measures(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
         let front = generation
             .iter()
@@ -228,11 +233,15 @@ impl Sampler {
             .collect();
         let igd_value = self.calculate_igd(&front);
         let gd_value = self.calculate_gd(&front);
+        let hv_value = self.calculate_hv(&front);
         write!(
             &mut writer,
-            "IGD: {}\nGD: {}\n",
+            "IGD: {}\n\
+             GD: {}\n\
+             HV: {}\n",
             Green.paint(format!("{:10.4e}", igd_value)),
             Green.paint(format!("{:10.4e}", gd_value)),
+            Green.paint(format!("{:10.4e}", hv_value)),
         ).unwrap();
     }
 
@@ -595,9 +604,11 @@ mod tests {
             format!(
                 "Mode: Evolution with 10 samples\n\
                  [ 0] IGD: {}\n\
-                 GD: {}\n",
+                 GD: {}\n\
+                 HV: {}\n",
                 Green.paint(" 2.0412e-1"),
                 Green.paint(" 4.0825e-1"),
+                Green.paint(" 5.6250e-1"),
             )
         );
     }
@@ -666,9 +677,11 @@ mod tests {
             format!(
                 "Mode: Last Generation\n\
                  IGD: {}\n\
-                 GD: {}\n",
+                 GD: {}\n\
+                 HV: {}\n",
                 Green.paint(" 2.0412e-1"),
                 Green.paint(" 4.0825e-1"),
+                Green.paint(" 5.6250e-1"),
             )
         );
     }
