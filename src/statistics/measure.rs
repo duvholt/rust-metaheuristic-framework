@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn calculates_hyper_volume_zdt1() {
-        let file = File::open("optimal_solutions/zdt1-2d.jmetal.json").unwrap();
+        let file = File::open("optimal_solutions/zdt1-2d.json").unwrap();
         let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
         let minmax = front_min_max(&front);
         let front = normalize_front(&front, &minmax);
