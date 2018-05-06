@@ -12,6 +12,7 @@ use rustoa::config::CommonConfig;
 use rustoa::fitness_evaluation::{get_multi, get_single, FitnessEvaluator, TestFunctionVar};
 use rustoa::problems;
 use rustoa::problems::multi::dtlz;
+use rustoa::problems::multi::uf;
 use rustoa::problems::multi::zdt;
 use rustoa::problems::single::cec2014;
 use rustoa::solution::{Objective, SolutionJSON, Solutions};
@@ -283,9 +284,11 @@ fn start_algorithm() -> Result<(), &'static str> {
     problems::multi::misc::add_test_functions(&mut test_functions_map);
     dtlz::add_test_functions(&mut test_functions_map);
     zdt::add_test_functions(&mut test_functions_map);
+    uf::add_test_functions(&mut test_functions_map);
 
     let mut test_suites = HashMap::new();
     zdt::add_test_suite(&mut test_suites);
+    uf::add_test_suite(&mut test_suites);
     dtlz::add_test_suite(&mut test_suites);
     cec2014::add_test_suite(&mut test_suites);
     problems::single::add_test_suite(&mut test_suites);
