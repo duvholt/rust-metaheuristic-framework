@@ -3,11 +3,28 @@ use solution::Solution;
 use std::collections::HashSet;
 
 pub fn dominates(a: &Vec<f64>, b: &Vec<f64>) -> bool {
+    dominates_objectives(a, b, a.len())
+}
+
+// Dominates specified number of objectives
+pub fn dominates_objectives(a: &Vec<f64>, b: &Vec<f64>, objectives: usize) -> bool {
     let mut equal = true;
-    for i in 0..a.len() {
+    for i in 0..objectives {
         if a[i] > b[i] {
             return false;
         } else if a[i] < b[i] {
+            equal = false;
+        }
+    }
+    return !equal;
+}
+
+pub fn dominates_inverted_objectives(a: &Vec<f64>, b: &Vec<f64>, objectives: usize) -> bool {
+    let mut equal = true;
+    for i in 0..objectives {
+        if a[i] < b[i] {
+            return false;
+        } else if a[i] > b[i] {
             equal = false;
         }
     }
@@ -28,16 +45,32 @@ pub fn find_non_dominated<M>(solutions: &[M]) -> HashSet<usize>
 where
     M: Solution<Vec<f64>>,
 {
+    find_non_dominated_n_objectives(solutions, solutions[0].fitness().len(), false)
+}
+
+pub fn find_non_dominated_n_objectives<M>(
+    solutions: &[M],
+    objectives: usize,
+    inverted: bool,
+) -> HashSet<usize>
+where
+    M: Solution<Vec<f64>>,
+{
     let mut non_dominated = HashSet::new();
+    let dominates_func = if inverted {
+        dominates_inverted_objectives
+    } else {
+        dominates_objectives
+    };
     for (p_i, p) in solutions.iter().enumerate() {
         let mut dominated = false;
         non_dominated.retain(|&q_i| {
             let q: &M = &solutions[q_i];
-            if &p.fitness() == &q.fitness() {
+            if &p.fitness()[0..objectives] == &q.fitness()[0..objectives] {
                 return false;
-            } else if dominates(&p.fitness(), &q.fitness()) {
+            } else if dominates_func(&p.fitness(), &q.fitness(), objectives) {
                 return false;
-            } else if !dominated && dominates(&q.fitness(), &p.fitness()) {
+            } else if !dominated && dominates_func(&q.fitness(), &p.fitness(), objectives) {
                 dominated = true;
             }
             return true;

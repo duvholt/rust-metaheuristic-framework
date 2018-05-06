@@ -54,6 +54,17 @@ pub trait Solution<F> {
     }
 }
 
+// Allows passing a Vec<f64> as a Solution to generic functions
+impl Solution<Vec<f64>> for Vec<f64> {
+    fn position(&self) -> &Vec<f64> {
+        self
+    }
+
+    fn fitness(&self) -> &Vec<f64> {
+        self
+    }
+}
+
 pub fn solutions_to_json<S>(population: Vec<S>) -> Vec<SolutionJSON>
 where
     S: Solution<f64>,
