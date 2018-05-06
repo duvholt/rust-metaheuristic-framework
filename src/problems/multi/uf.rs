@@ -48,6 +48,11 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "uf9",
         TestFunctionVar::Multi(uf9, "uf9-3d", bounds.0, bounds.1),
     );
+    let bounds = get_upper_bounds(10);
+    test_functions_map.insert(
+        "uf10",
+        TestFunctionVar::Multi(uf10, "uf10-3d", bounds.0, bounds.1),
+    );
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
@@ -63,6 +68,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
             "uf7".to_string(),
             "uf8".to_string(),
             "uf9".to_string(),
+            "uf10".to_string(),
         ],
     );
 }
@@ -89,7 +95,7 @@ fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
                 lb.push(-2.0);
             }
         }
-        8 | 9 => {
+        8 | 9 | 10 => {
             ub.push(1.0);
             lb.push(0.0);
             for _ in 2..30 {
@@ -321,6 +327,33 @@ pub fn uf9(x: &Vec<f64>) -> Vec<f64> {
     vec![f1, f2, f3]
 }
 
+pub fn uf10(x: &Vec<f64>) -> Vec<f64> {
+    let one = ((x.len() - 1) / 3) as f64;
+    let two = ((x.len() - 2) / 3) as f64;
+    let three = (x.len() / 3) as f64;
+    let mut f1 = 0.0;
+    let mut f2 = 0.0;
+    let mut f3 = 0.0;
+    for i in 2..x.len() {
+        let j = (i + 1) as f64;
+        let a =
+            x[i] - 2.0 * x[1] * (2.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin();
+        let b = 4.0 * a.powi(2) - (8.0 * consts::PI * a).cos() + 1.0;
+        if (i) % 3 == 0 {
+            f1 += b;
+        } else if (i + 1) % 3 == 0 {
+            f3 += b;
+        } else {
+            f2 += b;
+        }
+    }
+
+    let f1 = (0.5 * x[0] * consts::PI).cos() * (0.5 * x[1] * consts::PI).cos() + 2.0 / one * f1;
+    let f2 = (0.5 * x[0] * consts::PI).cos() * (0.5 * x[1] * consts::PI).sin() + 2.0 / two * f2;
+    let f3 = (0.5 * x[0] * consts::PI).sin() + 2.0 / three * f3;
+    vec![f1, f2, f3]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -484,10 +517,6 @@ mod tests {
             assert!(result[0] >= 0.0 && result[0] <= 1.0);
             assert!(result[1] >= 0.0 && result[1] <= 1.0);
             assert!(result[2] >= 0.0 && result[2] <= 1.0);
-            println!(
-                "{}",
-                result[0].powi(2) + result[1].powi(2) + result[2].powi(2)
-            );
             assert_approx_eq!(
                 result[0].powi(2) + result[1].powi(2) + result[2].powi(2),
                 1.0
@@ -539,4 +568,31 @@ mod tests {
         }
     }
 
+    #[test]
+    fn uf10_optimum() {
+        let mut rng = weak_rng();
+        for d in 5..31 {
+            let dimensions = d as f64;
+            let x1 = if rng.next_f64() > 0.5 {
+                rng.gen_range(0.0, 0.25) as f64
+            } else {
+                rng.gen_range(0.75, 1.0) as f64
+            };
+            let x2 = rng.gen_range(0.0, 1.0) as f64;
+            let mut input = vec![x1, x2];
+            for i in 2..dimensions as usize {
+                let j = (i + 1) as f64;
+                input
+                    .push(2.0 * x2 * (2.0 * consts::PI * x1 + (j * consts::PI) / dimensions).sin());
+            }
+            let result = uf10(&input);
+            assert!(result[0] >= 0.0 && result[0] <= 1.0);
+            assert!(result[1] >= 0.0 && result[1] <= 1.0);
+            assert!(result[2] >= 0.0 && result[2] <= 1.0);
+            assert_approx_eq!(
+                result[0].powi(2) + result[1].powi(2) + result[2].powi(2),
+                1.0
+            );
+        }
+    }
 }
