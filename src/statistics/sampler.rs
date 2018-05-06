@@ -351,7 +351,7 @@ impl Sampler {
                     .iter()
                     .map(|solution| solution.fitness.clone())
                     .collect();
-                self.calculate_igd(&front)
+                self.calculate_hv(&front)
             }
         }
     }
