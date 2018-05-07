@@ -73,7 +73,7 @@ fn dtlz7g(x: &Vec<f64>, m: usize) -> f64 {
 }
 
 fn dtlz4y(x: &Vec<f64>) -> Vec<f64> {
-    x.iter().map(|i| i.powi(2)).collect()
+    x.iter().map(|i| i.powi(100)).collect()
 }
 
 fn dtlz5y(x: &Vec<f64>, m: usize, g: f64) -> Vec<f64> {
@@ -175,6 +175,7 @@ pub fn dtlz7(x: &Vec<f64>) -> Vec<f64> {
 mod tests {
     use super::*;
     use rand::{weak_rng, Rng};
+    use testing::utils::jmetal_compare;
 
     fn sum(vector: Vec<f64>) -> f64 {
         vector.iter().sum::<f64>()
@@ -266,6 +267,41 @@ mod tests {
     #[test]
     fn dtlz6_not_optimum() {
         dtlz_not_optimum(&dtlz6, &sum_pow, 1.0);
+    }
+
+    #[test]
+    fn dtlz1_jmetal_compare() {
+        jmetal_compare(1, &dtlz1, "dtlz");
+    }
+
+    #[test]
+    fn dtlz2_jmetal_compare() {
+        jmetal_compare(2, &dtlz2, "dtlz");
+    }
+
+    #[test]
+    fn dtlz3_jmetal_compare() {
+        jmetal_compare(3, &dtlz3, "dtlz");
+    }
+
+    #[test]
+    fn dtlz4_jmetal_compare() {
+        jmetal_compare(4, &dtlz4, "dtlz");
+    }
+
+    #[test]
+    fn dtlz5_jmetal_compare() {
+        jmetal_compare(5, &dtlz5, "dtlz");
+    }
+
+    #[test]
+    fn dtlz6_jmetal_compare() {
+        jmetal_compare(6, &dtlz6, "dtlz");
+    }
+
+    #[test]
+    fn dtlz7_jmetal_compare() {
+        jmetal_compare(7, &dtlz7, "dtlz");
     }
 
 }
