@@ -358,6 +358,8 @@ pub fn uf10(x: &Vec<f64>) -> Vec<f64> {
 mod tests {
     use super::*;
     use rand::{weak_rng, Rng};
+    use std::fs::File;
+    extern crate serde_json;
 
     #[test]
     fn uf1_optimum() {
@@ -594,5 +596,75 @@ mod tests {
                 1.0
             );
         }
+    }
+
+    fn jmetal_compare(number: i8, uf: &Fn(&Vec<f64>) -> Vec<f64>) {
+        let file = File::open(format!("jmetal_data/uf/variables-uf{}.json", number)).unwrap();
+        let data: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
+        let file = File::open(format!("jmetal_data/uf/fitness-uf{}.json", number)).unwrap();
+        let fitness: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
+        for i in 0..data.len() {
+            let test = uf(&data[i]);
+            for j in 0..fitness[i].len() {
+                // println!("{}", test[j]);
+                // println!("{}", fitness[i][j]);
+                // println!("");
+
+                assert_approx_eq!(test[j], fitness[i][j]);
+            }
+            // println!("");
+            // println!("");
+        }
+        // assert!(1 == 0);
+    }
+
+    #[test]
+    fn uf1_jmetal_compare() {
+        jmetal_compare(1, &uf1);
+    }
+
+    #[test]
+    fn uf2_jmetal_compare() {
+        jmetal_compare(2, &uf2);
+    }
+
+    #[test]
+    fn uf3_jmetal_compare() {
+        jmetal_compare(3, &uf3);
+    }
+
+    #[test]
+    fn uf4_jmetal_compare() {
+        jmetal_compare(4, &uf4);
+    }
+
+    #[test]
+    fn uf5_jmetal_compare() {
+        jmetal_compare(5, &uf5);
+    }
+
+    #[test]
+    fn uf6_jmetal_compare() {
+        jmetal_compare(6, &uf6);
+    }
+
+    #[test]
+    fn uf7_jmetal_compare() {
+        jmetal_compare(7, &uf7);
+    }
+
+    #[test]
+    fn uf8_jmetal_compare() {
+        jmetal_compare(8, &uf8);
+    }
+
+    #[test]
+    fn uf9_jmetal_compare() {
+        jmetal_compare(9, &uf9);
+    }
+
+    #[test]
+    fn uf10_jmetal_compare() {
+        jmetal_compare(10, &uf10);
     }
 }
