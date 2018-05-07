@@ -319,9 +319,9 @@ pub fn uf9(x: &Vec<f64>) -> Vec<f64> {
     let epsilon = 0.1;
     let sums = uf8_sums(x);
 
-    let f1 = 0.5 * (((1.0 - epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
+    let f1 = 0.5 * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
         + 2.0 * x[0]) * x[1] + 2.0 / one * sums.0;
-    let f2 = 0.5 * (((1.0 - epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
+    let f2 = 0.5 * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
         - 2.0 * x[0] + 2.0) * x[1] + 2.0 / two * sums.1;
     let f3 = 1.0 - x[1] + 2.0 / three * sums.2;
     vec![f1, f2, f3]
