@@ -358,8 +358,7 @@ pub fn uf10(x: &Vec<f64>) -> Vec<f64> {
 mod tests {
     use super::*;
     use rand::{weak_rng, Rng};
-    use std::fs::File;
-    extern crate serde_json;
+    use testing::utils::jmetal_compare;
 
     #[test]
     fn uf1_optimum() {
@@ -598,73 +597,53 @@ mod tests {
         }
     }
 
-    fn jmetal_compare(number: i8, uf: &Fn(&Vec<f64>) -> Vec<f64>) {
-        let file = File::open(format!("jmetal_data/uf/variables-uf{}.json", number)).unwrap();
-        let data: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
-        let file = File::open(format!("jmetal_data/uf/fitness-uf{}.json", number)).unwrap();
-        let fitness: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
-        for i in 0..data.len() {
-            let test = uf(&data[i]);
-            for j in 0..fitness[i].len() {
-                // println!("{}", test[j]);
-                // println!("{}", fitness[i][j]);
-                // println!("");
-
-                assert_approx_eq!(test[j], fitness[i][j]);
-            }
-            // println!("");
-            // println!("");
-        }
-        // assert!(1 == 0);
-    }
-
     #[test]
     fn uf1_jmetal_compare() {
-        jmetal_compare(1, &uf1);
+        jmetal_compare(1, &uf1, "uf");
     }
 
     #[test]
     fn uf2_jmetal_compare() {
-        jmetal_compare(2, &uf2);
+        jmetal_compare(2, &uf2, "uf");
     }
 
     #[test]
     fn uf3_jmetal_compare() {
-        jmetal_compare(3, &uf3);
+        jmetal_compare(3, &uf3, "uf");
     }
 
     #[test]
     fn uf4_jmetal_compare() {
-        jmetal_compare(4, &uf4);
+        jmetal_compare(4, &uf4, "uf");
     }
 
     #[test]
     fn uf5_jmetal_compare() {
-        jmetal_compare(5, &uf5);
+        jmetal_compare(5, &uf5, "uf");
     }
 
     #[test]
     fn uf6_jmetal_compare() {
-        jmetal_compare(6, &uf6);
+        jmetal_compare(6, &uf6, "uf");
     }
 
     #[test]
     fn uf7_jmetal_compare() {
-        jmetal_compare(7, &uf7);
+        jmetal_compare(7, &uf7, "uf");
     }
 
     #[test]
     fn uf8_jmetal_compare() {
-        jmetal_compare(8, &uf8);
+        jmetal_compare(8, &uf8, "uf");
     }
 
     #[test]
     fn uf9_jmetal_compare() {
-        jmetal_compare(9, &uf9);
+        jmetal_compare(9, &uf9, "uf");
     }
 
     #[test]
     fn uf10_jmetal_compare() {
-        jmetal_compare(10, &uf10);
+        jmetal_compare(10, &uf10, "uf");
     }
 }
