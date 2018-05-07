@@ -63,8 +63,34 @@ pub fn zdt3(x: &Vec<f64>) -> Vec<f64> {
 pub fn zdt6(x: &Vec<f64>) -> Vec<f64> {
     let f1 = 1.0 - (-4.0 * x[0]).exp() * (6.0 * consts::PI * x[0]).sin().powi(6);
     let sum: f64 = x.iter().skip(1).sum();
-    let g = 1.0 + 9.0 * (sum / 9.0).powf(0.25);
+    let g = 1.0 + 9.0 * (sum / (x.len() - 1) as f64).powf(0.25);
     let h = 1.0 - (f1 / g).powi(2);
     let f2 = g * h;
     vec![f1, f2]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use testing::utils::jmetal_compare;
+
+    #[test]
+    fn zdt1_jmetal_compare() {
+        jmetal_compare(1, &zdt1, "zdt");
+    }
+
+    #[test]
+    fn zdt2_jmetal_compare() {
+        jmetal_compare(2, &zdt2, "zdt");
+    }
+
+    #[test]
+    fn zdt3_jmetal_compare() {
+        jmetal_compare(3, &zdt3, "zdt");
+    }
+
+    #[test]
+    fn zdt6_jmetal_compare() {
+        jmetal_compare(6, &zdt6, "zdt");
+    }
 }
