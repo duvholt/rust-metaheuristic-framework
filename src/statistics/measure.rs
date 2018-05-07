@@ -66,17 +66,17 @@ fn hyper_volume_dimension(front: &Vec<Vec<f64>>, objectives: usize) -> f64 {
     let mut front = front.clone();
     while front.len() > 0 {
         let non_dominated_indices = find_non_dominated_n_objectives(&front, objectives - 1, true);
+        let new_front: Vec<_> = front
+            .clone()
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| non_dominated_indices.contains(i))
+            .map(|(_, s)| s)
+            .collect();
         let temp_volume = if objectives < 3 {
-            front[0][0]
+            new_front[0][0]
         } else {
-            let front = front
-                .clone()
-                .into_iter()
-                .enumerate()
-                .filter(|(i, _)| non_dominated_indices.contains(i))
-                .map(|(_, s)| s)
-                .collect();
-            hyper_volume_dimension(&front, objectives - 1)
+            hyper_volume_dimension(&new_front, objectives - 1)
         };
         let temp_distance = surface_unchanged_to(&front, objectives - 1);
         volume += temp_volume * (temp_distance - distance);
@@ -143,8 +143,6 @@ mod tests {
     fn calculates_hyper_volume_zdt1() {
         let file = File::open("optimal_solutions/zdt1-2d.json").unwrap();
         let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
-        let minmax = front_min_max(&front);
-        let front = normalize_front(&front, &minmax);
 
         let volume = hyper_volume(&front);
 
@@ -155,11 +153,29 @@ mod tests {
     fn calculates_hyper_volume_dtlz1_2d() {
         let file = File::open("optimal_solutions/dtlz1-2d.json").unwrap();
         let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
-        let minmax = front_min_max(&front);
 
         let volume = hyper_volume(&front);
 
         assert_eq!(volume, 0.8748748748248245);
+    }
+
+    #[test]
+    fn calculates_real_measures_correctly() {
+        let file = File::open("optimal_solutions/dtlz1-3d.json").unwrap();
+        let true_front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
+        let min_max = front_min_max(&true_front);
+        let true_front = normalize_front(&true_front, &min_max);
+        let file = File::open("dummy_solutions/dtlz1-solution-3d.json").unwrap();
+        let front: Vec<Vec<f64>> = serde_json::from_reader(file).unwrap();
+        let front = normalize_front(&front, &min_max);
+
+        let volume = hyper_volume(&front);
+        let igd = igd(&front, &true_front);
+        let gd = gd(&front, &true_front);
+
+        assert_eq!(gd, 0.0022431502283979284);
+        assert_eq!(igd, 0.0005439752181501875);
+        assert_eq!(volume, 0.7577640215299603);
     }
 
     #[test]
