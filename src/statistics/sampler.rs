@@ -607,7 +607,7 @@ mod tests {
                  GD: {}\n\
                  HV: {}\n",
                 Green.paint(" 2.0412e-1"),
-                Green.paint(" 4.0825e-1"),
+                Green.paint(" 3.0619e-1"),
                 Green.paint(" 4.3750e-1"),
             )
         );
@@ -680,7 +680,7 @@ mod tests {
                  GD: {}\n\
                  HV: {}\n",
                 Green.paint(" 2.0412e-1"),
-                Green.paint(" 4.0825e-1"),
+                Green.paint(" 3.0619e-1"),
                 Green.paint(" 4.3750e-1"),
             )
         );

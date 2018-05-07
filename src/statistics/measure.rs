@@ -29,7 +29,7 @@ pub fn gd(approx_set: &Vec<Vec<f64>>, pareto_set: &Vec<Vec<f64>>) -> f64 {
         .iter()
         .map(|pareto_point| distance_closest_point_to_front(pareto_point, &pareto_set).powi(2))
         .sum::<f64>()
-        .powf(1.0 / 2.0) / pareto_set.len() as f64
+        .powf(1.0 / 2.0) / approx_set.len() as f64
 }
 
 fn surface_unchanged_to(front: &Vec<Vec<f64>>, objective: usize) -> f64 {
