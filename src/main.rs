@@ -104,7 +104,7 @@ fn arguments(
                 .long("iterations")
                 .value_name("iterations")
                 .help("Max iterations")
-                .default_value("1000")
+                .default_value("10000")
                 .takes_value(true),
         )
         .arg(
@@ -141,7 +141,7 @@ fn arguments(
                 .long("dimensions")
                 .value_name("dimensions")
                 .help("Solution dimensions size")
-                .default_value("2")
+                .default_value("30")
                 .takes_value(true),
         )
         .arg(
