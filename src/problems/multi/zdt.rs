@@ -15,10 +15,25 @@ pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFun
         "zdt3",
         TestFunctionVar::Multi(zdt3, "zdt3-2d", vec![0.0; 30], vec![1.0; 30]),
     );
+    let bounds = zdt4_bounds();
+    test_functions_map.insert(
+        "zdt4",
+        TestFunctionVar::Multi(zdt4, "zdt4-2d", bounds.0, bounds.1),
+    );
     test_functions_map.insert(
         "zdt6",
         TestFunctionVar::Multi(zdt6, "zdt6-2d", vec![0.0; 30], vec![1.0; 30]),
     );
+}
+
+pub fn zdt4_bounds() -> (Vec<f64>, Vec<f64>) {
+    let mut upper_bound = vec![1.0];
+    let mut lower_bound = vec![0.0];
+    for _ in 0..29 {
+        upper_bound.push(5.0);
+        lower_bound.push(-5.0);
+    }
+    (lower_bound, upper_bound)
 }
 
 pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
@@ -28,6 +43,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
             "zdt1".to_string(),
             "zdt2".to_string(),
             "zdt3".to_string(),
+            "zdt4".to_string(),
             "zdt6".to_string(),
         ],
     );
@@ -60,6 +76,16 @@ pub fn zdt3(x: &Vec<f64>) -> Vec<f64> {
     vec![f1, f2]
 }
 
+pub fn zdt4(x: &Vec<f64>) -> Vec<f64> {
+    let g = 1.0 + 10.0 * (x.len() as f64 - 1.0)
+        + (1..x.len())
+            .map(|i| x[i].powi(2) - 10.0 * (4.0 * consts::PI * x[i]).cos())
+            .sum::<f64>();
+    let f1 = x[0];
+    let f2 = g * (1.0 - (x[0] / g).sqrt());
+    vec![f1, f2]
+}
+
 pub fn zdt6(x: &Vec<f64>) -> Vec<f64> {
     let f1 = 1.0 - (-4.0 * x[0]).exp() * (6.0 * consts::PI * x[0]).sin().powi(6);
     let sum: f64 = x.iter().skip(1).sum();
@@ -87,6 +113,11 @@ mod tests {
     #[test]
     fn zdt3_jmetal_compare() {
         jmetal_compare(3, &zdt3, "zdt");
+    }
+
+    #[test]
+    fn zdt4_jmetal_compare() {
+        jmetal_compare(4, &zdt4, "zdt");
     }
 
     #[test]
