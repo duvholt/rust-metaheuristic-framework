@@ -402,9 +402,11 @@ fn start_algorithm() -> Result<(), &'static str> {
             algorithm_info,
         )?;
 
-        let mut json_sample = sampler.to_json();
-        json_sample.test_function = test_function_name.to_string();
-        test_function_samples.push(json_sample);
+        let json_samples = sampler.to_json();
+        for mut json_sample in json_samples {
+            json_sample.test_function = test_function_name.to_string();
+            test_function_samples.push(json_sample);
+        }
 
         write_solutions(
             "solutions.json",

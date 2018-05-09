@@ -7,6 +7,7 @@ use statistics::fronts::{front_min_max, normalize_front};
 use statistics::measure::{gd, hyper_volume, igd};
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::io::Write;
 
 #[derive(Clone)]
@@ -22,6 +23,7 @@ pub struct SamplerJSON {
     mean: f64,
     standard_deviation: f64,
     pub test_function: String,
+    measure: &'static str,
 }
 
 pub struct Sampler {
@@ -33,7 +35,7 @@ pub struct Sampler {
     generations: RefCell<Vec<Vec<SolutionJSON>>>,
     pareto_front: Option<Vec<Vec<f64>>>,
     min_max_front: Option<Vec<(f64, f64)>>,
-    runs: RefCell<Vec<f64>>,
+    runs: RefCell<Vec<HashMap<&'static str, f64>>>,
 }
 
 impl Sampler {
@@ -338,20 +340,29 @@ impl Sampler {
         println!("{}", Yellow.underline().paint("End Sample Statistics"));
     }
 
-    fn best_fitness(&self) -> f64 {
+    fn best_fitness(&self) -> HashMap<&'static str, f64> {
         let solutions = self.solutions();
         match self.objective {
-            Objective::Single => solutions
-                .iter()
-                .map(|s| s.fitness[0])
-                .min_by(|a, b| a.partial_cmp(&b).unwrap())
-                .unwrap(),
+            Objective::Single => {
+                let best_fitness = solutions
+                    .iter()
+                    .map(|s| s.fitness[0])
+                    .min_by(|a, b| a.partial_cmp(&b).unwrap())
+                    .unwrap();
+                let mut map = HashMap::new();
+                map.insert("Fitness", best_fitness);
+                map
+            }
             Objective::Multi => {
                 let front = solutions
                     .iter()
                     .map(|solution| solution.fitness.clone())
                     .collect();
-                self.calculate_hv(&front)
+                let mut map = HashMap::new();
+                map.insert("IGD", self.calculate_igd(&front));
+                map.insert("GD", self.calculate_gd(&front));
+                map.insert("HV", self.calculate_hv(&front));
+                map
             }
         }
     }
@@ -366,22 +377,46 @@ impl Sampler {
         self.generations.borrow_mut().clear();
     }
 
+    fn runs_to_measures(runs: &Vec<HashMap<&'static str, f64>>) -> HashMap<&'static str, Vec<f64>> {
+        let mut measures = HashMap::new();
+        for run in runs {
+            for (measure, &value) in run {
+                let entry = measures.entry(measure.clone()).or_insert(vec![]);
+                entry.push(value);
+            }
+        }
+        measures
+    }
+
     pub fn print_statistics(&self, mut writer: impl Write) {
         println!("{}", Blue.underline().paint("Run Statistics"));
         let runs = self.runs.borrow().to_vec();
         write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
-        Sampler::print_mean_and_stddev(&mut writer, &runs);
-        Sampler::print_min_max(&mut writer, &runs);
+        let measures = Sampler::runs_to_measures(&runs);
+        for (measure, values) in measures.iter() {
+            write!(
+                &mut writer,
+                "Measure: {}\n",
+                Yellow.paint(measure.to_string())
+            ).unwrap();
+            Sampler::print_mean_and_stddev(&mut writer, &values);
+            Sampler::print_min_max(&mut writer, &values);
+        }
         println!("{}", Blue.underline().paint("End Run Statistics"));
     }
 
-    pub fn to_json(&self) -> SamplerJSON {
+    pub fn to_json(&self) -> Vec<SamplerJSON> {
         let runs = self.runs.borrow().to_vec();
-        SamplerJSON {
-            mean: mean(&runs),
-            standard_deviation: population_standard_deviation(&runs, None),
-            test_function: "".to_string(),
-        }
+        let measures = Sampler::runs_to_measures(&runs);
+        measures
+            .into_iter()
+            .map(|(measure, values)| SamplerJSON {
+                mean: mean(&values),
+                standard_deviation: population_standard_deviation(&values, None),
+                test_function: "".to_string(),
+                measure,
+            })
+            .collect()
     }
 }
 
@@ -764,8 +799,10 @@ mod tests {
             output,
             format!(
                 "Number of runs: 2\n\
+                 Measure: {}\n\
                  Average {} Standard deviation {}\n\
                  Min: {}. Max: {}\n",
+                Yellow.paint("Fitness"),
                 Green.paint(" 6.5000e-1"),
                 Green.paint(" 3.5000e-1"),
                 Cyan.paint(" 3.0000e-1"),
