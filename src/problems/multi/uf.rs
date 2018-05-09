@@ -3,52 +3,52 @@ use std::collections::HashMap;
 use std::f64::consts;
 
 pub fn add_test_functions(test_functions_map: &mut HashMap<&'static str, TestFunctionVar>) {
-    let bounds = get_upper_bounds(1);
+    let bounds = get_bounds(1);
     test_functions_map.insert(
         "uf1",
         TestFunctionVar::Multi(uf1, "uf1-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(2);
+    let bounds = get_bounds(2);
     test_functions_map.insert(
         "uf2",
         TestFunctionVar::Multi(uf2, "uf2-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(3);
+    let bounds = get_bounds(3);
     test_functions_map.insert(
         "uf3",
         TestFunctionVar::Multi(uf3, "uf3-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(4);
+    let bounds = get_bounds(4);
     test_functions_map.insert(
         "uf4",
         TestFunctionVar::Multi(uf4, "uf4-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(5);
+    let bounds = get_bounds(5);
     test_functions_map.insert(
         "uf5",
         TestFunctionVar::Multi(uf5, "uf5-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(6);
+    let bounds = get_bounds(6);
     test_functions_map.insert(
         "uf6",
         TestFunctionVar::Multi(uf6, "uf6-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(7);
+    let bounds = get_bounds(7);
     test_functions_map.insert(
         "uf7",
         TestFunctionVar::Multi(uf7, "uf7-2d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(8);
+    let bounds = get_bounds(8);
     test_functions_map.insert(
         "uf8",
         TestFunctionVar::Multi(uf8, "uf8-3d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(9);
+    let bounds = get_bounds(9);
     test_functions_map.insert(
         "uf9",
         TestFunctionVar::Multi(uf9, "uf9-3d", bounds.0, bounds.1),
     );
-    let bounds = get_upper_bounds(10);
+    let bounds = get_bounds(10);
     test_functions_map.insert(
         "uf10",
         TestFunctionVar::Multi(uf10, "uf10-3d", bounds.0, bounds.1),
@@ -73,7 +73,7 @@ pub fn add_test_suite(test_suites: &mut HashMap<&'static str, Vec<String>>) {
     );
 }
 
-fn get_upper_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
+fn get_bounds(i: i8) -> (Vec<f64>, Vec<f64>) {
     let mut ub = vec![1.0];
     let mut lb = vec![0.0];
     match i {
