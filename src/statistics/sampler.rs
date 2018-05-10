@@ -2,7 +2,7 @@ use ansi_term::Color::{Blue, Cyan, Green, Red, Yellow};
 use itertools::Itertools;
 use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
-use statistical::{mean, population_standard_deviation};
+use statistical::{mean, standard_deviation};
 use statistics::fronts::{front_min_max, normalize_front};
 use statistics::measure::{gd, hyper_volume, igd};
 use std::cell::RefCell;
@@ -182,10 +182,7 @@ impl Sampler {
             writer,
             "Average {} Standard deviation {}\n",
             Green.paint(format!("{:10.4e}", mean(&values))),
-            Green.paint(format!(
-                "{:10.4e}",
-                population_standard_deviation(&values, None)
-            )),
+            Green.paint(format!("{:10.4e}", standard_deviation(&values, None))),
         ).unwrap();
     }
 
@@ -415,7 +412,7 @@ impl Sampler {
             .into_iter()
             .map(|(measure, values)| SamplerJSON {
                 mean: mean(&values),
-                standard_deviation: population_standard_deviation(&values, None),
+                standard_deviation: standard_deviation(&values, None),
                 test_function: "".to_string(),
                 measure,
             })
@@ -618,7 +615,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
-                Green.paint(" 1.1180e-1"),
+                Green.paint(" 1.2910e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
                 Yellow.paint("[0.1, 0.1]"),
@@ -692,7 +689,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
-                Green.paint(" 1.1180e-1"),
+                Green.paint(" 1.2910e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
                 Yellow.paint("[0.1, 0.1]")
@@ -744,7 +741,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint("  2.0000e0"),
-                Green.paint(" 8.1650e-1"),
+                Green.paint("  1.0000e0"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
                 Yellow.paint("[0.1, 0.1]")
@@ -773,7 +770,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint("  2.0000e0"),
-                Green.paint(" 8.1650e-1"),
+                Green.paint("  1.0000e0"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
                 Yellow.paint("[0.2, 0.2]")
@@ -808,7 +805,7 @@ mod tests {
                  Min: {}. Max: {}\n",
                 Yellow.paint("Fitness"),
                 Green.paint(" 6.5000e-1"),
-                Green.paint(" 3.5000e-1"),
+                Green.paint(" 4.9497e-1"),
                 Cyan.paint(" 3.0000e-1"),
                 Red.paint("  1.0000e0"),
             ),
