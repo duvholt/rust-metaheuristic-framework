@@ -12,6 +12,7 @@ pub mod ewa;
 pub mod loa;
 pub mod mopso;
 pub mod nsamo;
+pub mod old_archive_amo;
 pub mod pso;
 pub mod sa;
 
@@ -74,6 +75,13 @@ pub fn add_algorithms(algorithms: &mut HashMap<&str, (AlgorithmSubCommand, Algor
         (
             archive_amo::subcommand,
             AlgorithmType::Multi(archive_amo::run_subcommand),
+        ),
+    );
+    algorithms.insert(
+        "old-archive-amo",
+        (
+            archive_amo::subcommand,
+            AlgorithmType::Multi(old_archive_amo::run_subcommand),
         ),
     );
 }

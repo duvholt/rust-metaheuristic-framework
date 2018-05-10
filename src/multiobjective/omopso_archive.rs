@@ -66,9 +66,3 @@ where
         self.solutions.clone()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use solution::MultiTestSolution;
-}
