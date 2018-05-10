@@ -1,6 +1,5 @@
 use fitness_evaluation::FitnessEvaluator;
 use rand::{SeedableRng, StdRng};
-use serde_json;
 use solution::Objective;
 use statistics::sampler::{Sampler, SamplerMode};
 use testing::test_functions::{multi_dummy, single_dummy};
@@ -28,6 +27,7 @@ pub fn create_rng() -> StdRng {
 
 #[cfg(test)]
 pub fn jmetal_compare(number: i8, uf: &Fn(&Vec<f64>) -> Vec<f64>, name: &str) {
+    use serde_json;
     use std::fs::File;
     let file = File::open(format!(
         "jmetal_data/{}/variables-{}{}.json",

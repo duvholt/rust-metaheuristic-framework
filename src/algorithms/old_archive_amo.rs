@@ -3,7 +3,6 @@ use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use multiobjective::domination::dominates;
 use multiobjective::domination::select_first;
-use multiobjective::non_dominated_sorting::sort;
 use multiobjective::omopso_archive::Archive;
 use operators::mutation;
 use operators::position::multi_random_position;
