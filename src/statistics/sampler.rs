@@ -2,11 +2,12 @@ use ansi_term::Color::{Blue, Cyan, Green, Red, Yellow};
 use itertools::Itertools;
 use itertools::MinMaxResult;
 use solution::{Objective, Solution, SolutionJSON};
-use statistical::{mean, population_standard_deviation};
+use statistical::{mean, standard_deviation};
 use statistics::fronts::{front_min_max, normalize_front};
 use statistics::measure::{gd, hyper_volume, igd};
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::io::Write;
 
 #[derive(Clone)]
@@ -22,6 +23,7 @@ pub struct SamplerJSON {
     mean: f64,
     standard_deviation: f64,
     pub test_function: String,
+    measure: &'static str,
 }
 
 pub struct Sampler {
@@ -33,7 +35,7 @@ pub struct Sampler {
     generations: RefCell<Vec<Vec<SolutionJSON>>>,
     pareto_front: Option<Vec<Vec<f64>>>,
     min_max_front: Option<Vec<(f64, f64)>>,
-    runs: RefCell<Vec<f64>>,
+    runs: RefCell<Vec<BTreeMap<&'static str, f64>>>,
 }
 
 impl Sampler {
@@ -180,10 +182,7 @@ impl Sampler {
             writer,
             "Average {} Standard deviation {}\n",
             Green.paint(format!("{:10.4e}", mean(&values))),
-            Green.paint(format!(
-                "{:10.4e}",
-                population_standard_deviation(&values, None)
-            )),
+            Green.paint(format!("{:10.4e}", standard_deviation(&values, None))),
         ).unwrap();
     }
 
@@ -226,23 +225,28 @@ impl Sampler {
         hyper_volume(&front)
     }
 
+    fn create_measure_map_multi(&self, front: &Vec<Vec<f64>>) -> BTreeMap<&'static str, f64> {
+        let mut map = BTreeMap::new();
+        map.insert("IGD", self.calculate_igd(&front));
+        map.insert("GD", self.calculate_gd(&front));
+        map.insert("HV", self.calculate_hv(&front));
+        map
+    }
+
     fn print_multi_measures(&self, mut writer: impl Write, generation: &Vec<SolutionJSON>) {
         let front = generation
             .iter()
             .map(|solution| solution.fitness.clone())
             .collect();
-        let igd_value = self.calculate_igd(&front);
-        let gd_value = self.calculate_gd(&front);
-        let hv_value = self.calculate_hv(&front);
-        write!(
-            &mut writer,
-            "IGD: {}\n\
-             GD: {}\n\
-             HV: {}\n",
-            Green.paint(format!("{:10.4e}", igd_value)),
-            Green.paint(format!("{:10.4e}", gd_value)),
-            Green.paint(format!("{:10.4e}", hv_value)),
-        ).unwrap();
+        let map = self.create_measure_map_multi(&front);
+        for (measure, value) in map {
+            write!(
+                &mut writer,
+                "{}: {}\n",
+                measure,
+                Green.paint(format!("{:10.4e}", value)),
+            ).unwrap();
+        }
     }
 
     fn print_evolution(&self, mut writer: impl Write) {
@@ -338,20 +342,25 @@ impl Sampler {
         println!("{}", Yellow.underline().paint("End Sample Statistics"));
     }
 
-    fn best_fitness(&self) -> f64 {
+    fn best_fitness(&self) -> BTreeMap<&'static str, f64> {
         let solutions = self.solutions();
         match self.objective {
-            Objective::Single => solutions
-                .iter()
-                .map(|s| s.fitness[0])
-                .min_by(|a, b| a.partial_cmp(&b).unwrap())
-                .unwrap(),
+            Objective::Single => {
+                let best_fitness = solutions
+                    .iter()
+                    .map(|s| s.fitness[0])
+                    .min_by(|a, b| a.partial_cmp(&b).unwrap())
+                    .unwrap();
+                let mut map = BTreeMap::new();
+                map.insert("Fitness", best_fitness);
+                map
+            }
             Objective::Multi => {
                 let front = solutions
                     .iter()
                     .map(|solution| solution.fitness.clone())
                     .collect();
-                self.calculate_hv(&front)
+                self.create_measure_map_multi(&front)
             }
         }
     }
@@ -366,22 +375,48 @@ impl Sampler {
         self.generations.borrow_mut().clear();
     }
 
+    fn runs_to_measures(
+        runs: &Vec<BTreeMap<&'static str, f64>>,
+    ) -> BTreeMap<&'static str, Vec<f64>> {
+        let mut measures = BTreeMap::new();
+        for run in runs {
+            for (measure, &value) in run {
+                let entry = measures.entry(measure.clone()).or_insert(vec![]);
+                entry.push(value);
+            }
+        }
+        measures
+    }
+
     pub fn print_statistics(&self, mut writer: impl Write) {
         println!("{}", Blue.underline().paint("Run Statistics"));
         let runs = self.runs.borrow().to_vec();
         write!(&mut writer, "Number of runs: {}\n", runs.len()).unwrap();
-        Sampler::print_mean_and_stddev(&mut writer, &runs);
-        Sampler::print_min_max(&mut writer, &runs);
+        let measures = Sampler::runs_to_measures(&runs);
+        for (measure, values) in measures.iter() {
+            write!(
+                &mut writer,
+                "Measure: {}\n",
+                Yellow.paint(measure.to_string())
+            ).unwrap();
+            Sampler::print_mean_and_stddev(&mut writer, &values);
+            Sampler::print_min_max(&mut writer, &values);
+        }
         println!("{}", Blue.underline().paint("End Run Statistics"));
     }
 
-    pub fn to_json(&self) -> SamplerJSON {
+    pub fn to_json(&self) -> Vec<SamplerJSON> {
         let runs = self.runs.borrow().to_vec();
-        SamplerJSON {
-            mean: mean(&runs),
-            standard_deviation: population_standard_deviation(&runs, None),
-            test_function: "".to_string(),
-        }
+        let measures = Sampler::runs_to_measures(&runs);
+        measures
+            .into_iter()
+            .map(|(measure, values)| SamplerJSON {
+                mean: mean(&values),
+                standard_deviation: standard_deviation(&values, None),
+                test_function: "".to_string(),
+                measure,
+            })
+            .collect()
     }
 }
 
@@ -580,7 +615,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
-                Green.paint(" 1.1180e-1"),
+                Green.paint(" 1.2910e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
                 Yellow.paint("[0.1, 0.1]"),
@@ -603,12 +638,13 @@ mod tests {
             output,
             format!(
                 "Mode: Evolution with 10 samples\n\
-                 [ 0] IGD: {}\n\
+                 [ 0] \
                  GD: {}\n\
-                 HV: {}\n",
-                Green.paint(" 2.0412e-1"),
+                 HV: {}\n\
+                 IGD: {}\n",
                 Green.paint(" 3.0619e-1"),
                 Green.paint(" 5.6250e-1"),
+                Green.paint(" 2.0412e-1"),
             )
         );
     }
@@ -653,7 +689,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint(" 2.5000e-1"),
-                Green.paint(" 1.1180e-1"),
+                Green.paint(" 1.2910e-1"),
                 Cyan.paint(" 1.0000e-1"),
                 Red.paint(" 4.0000e-1"),
                 Yellow.paint("[0.1, 0.1]")
@@ -676,12 +712,12 @@ mod tests {
             output,
             format!(
                 "Mode: Last Generation\n\
-                 IGD: {}\n\
                  GD: {}\n\
-                 HV: {}\n",
-                Green.paint(" 2.0412e-1"),
+                 HV: {}\n\
+                 IGD: {}\n",
                 Green.paint(" 3.0619e-1"),
                 Green.paint(" 5.6250e-1"),
+                Green.paint(" 2.0412e-1"),
             )
         );
     }
@@ -705,7 +741,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint("  2.0000e0"),
-                Green.paint(" 8.1650e-1"),
+                Green.paint("  1.0000e0"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
                 Yellow.paint("[0.1, 0.1]")
@@ -734,7 +770,7 @@ mod tests {
                  Min: {}. Max: {}\n\
                  Best position: {}\n",
                 Green.paint("  2.0000e0"),
-                Green.paint(" 8.1650e-1"),
+                Green.paint("  1.0000e0"),
                 Cyan.paint("  1.0000e0"),
                 Red.paint("  3.0000e0"),
                 Yellow.paint("[0.2, 0.2]")
@@ -764,10 +800,12 @@ mod tests {
             output,
             format!(
                 "Number of runs: 2\n\
+                 Measure: {}\n\
                  Average {} Standard deviation {}\n\
                  Min: {}. Max: {}\n",
+                Yellow.paint("Fitness"),
                 Green.paint(" 6.5000e-1"),
-                Green.paint(" 3.5000e-1"),
+                Green.paint(" 4.9497e-1"),
                 Cyan.paint(" 3.0000e-1"),
                 Red.paint("  1.0000e0"),
             ),
