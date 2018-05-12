@@ -4,6 +4,7 @@ use fitness_evaluation::FitnessEvaluator;
 use multiobjective::domination::dominates;
 use multiobjective::domination::select_first;
 use multiobjective::omopso_archive::Archive;
+use multiobjective::rank::calculate_domation_count;
 use operators::mutation;
 use operators::position::multi_random_position;
 use rand::distributions::normal::StandardNormal;
@@ -194,7 +195,13 @@ fn animal_replacement(
 }
 
 fn find_probabilities(solutions: &Vec<Animal>) -> Vec<f64> {
-    vec![0.5; solutions.len()]
+    let dominations = calculate_domation_count(&solutions);
+    let mut probabilities = vec![0.0; solutions.len()];
+    for (i, domination) in dominations.into_iter().enumerate() {
+        probabilities[i] =
+            (solutions.len() - domination.dominated_by()) as f64 / solutions.len() as f64;
+    }
+    probabilities
 }
 
 fn find_best_solutions(
@@ -409,11 +416,11 @@ mod tests {
             animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
         assert_eq!(new_population[1].fitness, vec![2.0, 2.1]);
+        assert_eq!(new_population[2].fitness, vec![1.3356651356791132, 2.3]);
         assert_eq!(
-            new_population[2].fitness,
-            vec![1.1308324484539276, -0.5797838825671282]
+            new_population[3].fitness,
+            vec![-1.306348201401438, 1.5661140513601106]
         );
-        assert_eq!(new_population[3].fitness, vec![-1.8521340101941757, 2.6]);
     }
 
     #[test]
