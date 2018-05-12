@@ -304,9 +304,9 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
     let mut rng = weak_rng();
     archive.update(&population);
     for i in 0..config.iterations {
-        population = mutate_population(population, i, &mut rng, fitness_evaluator, &config);
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
         archive.update(&population);
+        population = mutate_population(population, i, &mut rng, fitness_evaluator, &config);
         population =
             animal_replacement(population, &mut rng, &fitness_evaluator, &config, &archive);
         archive.update(&population);
