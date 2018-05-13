@@ -1,6 +1,64 @@
 use multiobjective::domination::dominates;
 use multiobjective::non_dominated_sorting::sort_on_objective;
 use solution::Solution;
+use std::cell::Cell;
+use std::collections::HashSet;
+use std::hash::Hash;
+
+#[derive(Clone)]
+pub struct Domination {
+    dominates: HashSet<(usize)>,
+    dominated_by: Cell<usize>,
+}
+
+impl Domination {
+    fn new() -> Domination {
+        Domination {
+            dominates: HashSet::new(),
+            dominated_by: Cell::new(0),
+        }
+    }
+
+    fn add(&mut self, solution: usize) {
+        self.dominates.insert(solution);
+    }
+
+    fn increment(&mut self) {
+        self.dominated_by.set(self.dominated_by.get() + 1);
+    }
+
+    pub fn dominated_by(&self) -> usize {
+        self.dominated_by.get()
+    }
+
+    fn dominates(&self, solution: &usize) -> bool {
+        self.dominates.contains(solution)
+    }
+}
+
+pub fn calculate_domation_count<S>(solutions: &[S]) -> Vec<Domination>
+where
+    S: Solution<Vec<f64>> + Eq + Hash,
+{
+    let mut dominations: Vec<_> = solutions.iter().map(|_| Domination::new()).collect();
+    for (i, solution1) in solutions.iter().enumerate() {
+        for (j, solution2) in solutions.iter().enumerate() {
+            if i == j {
+                continue;
+            }
+            if dominates(&solution1.fitness(), &solution2.fitness()) {
+                dominations[i].add(j);
+                dominations[j].increment();
+            } else if &solution1.fitness() == &solution2.fitness() {
+                if !dominations[j].dominates(&i) {
+                    dominations[i].add(j);
+                    dominations[j].increment();
+                }
+            }
+        }
+    }
+    dominations
+}
 
 fn sequential_search_front<S>(solution: &S, fronts: &Vec<Vec<usize>>, solutions: &[S]) -> usize
 where
