@@ -125,7 +125,7 @@ def multi_plot(json_solutions):
     function_name = json_solutions['test_function']
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-    fig = plot.figure()
+    fig = plot.figure(1)
     fig.canvas.set_window_title(function_name)
     if len(solutions) == 2:
         ax = plot
@@ -137,6 +137,12 @@ def multi_plot(json_solutions):
 
     ax.scatter(*solutions, marker='o', s=5)
     ax.scatter(*pf_true, marker='x', s=0.5)
+
+    if json_solutions['plot_input']:
+        input_variables = np.array(list(map(lambda s: s['x'][0:3], json_solutions['solutions'])))
+        input_variables = np.transpose(input_variables)
+        ax = Axes3D(plot.figure(2))
+        ax.scatter(*input_variables, marker='o', s=5)
     plot.show()
 
 
@@ -144,7 +150,6 @@ def read_and_plot():
     json_solutions = json.load(open(solutions_file))
     if len(json_solutions['solutions'][0]['x']) > 2:
         print('WARNING! Solutions with more than two dimensions is not supported!')
-
     if len(json_solutions['solutions'][0]['fitness']) > 1:
         multi_plot(json_solutions)
     else:

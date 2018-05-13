@@ -30,6 +30,7 @@ fn write_solutions(
     plot_bounds: bool,
     upper_bound: f64,
     lower_bound: f64,
+    plot_input: bool,
 ) {
     println!("Writing solutions to {}", filename);
     let mut file = File::create(filename).unwrap();
@@ -39,6 +40,7 @@ fn write_solutions(
         plot_bounds,
         upper_bound,
         lower_bound,
+        plot_input,
     };
     let json_solutions = serde_json::to_string(&solutions_struct).unwrap();
     file.write_all(json_solutions.as_bytes()).unwrap();
@@ -175,6 +177,11 @@ fn arguments(
             Arg::with_name("plot-bounds")
                 .long("plot-bounds")
                 .help("Extends the plot to include the upper and lower bounds"),
+        )
+        .arg(
+            Arg::with_name("plot-input")
+                .long("plot-input")
+                .help("plots the 3 first input variables"),
         )
         .arg(
             Arg::with_name("verbose")
@@ -352,6 +359,7 @@ fn start_algorithm() -> Result<(), &'static str> {
         }
     };
     let plot_bounds = matches.is_present("plot-bounds");
+    let plot_input = matches.is_present("plot-input");
 
     println!(
         "Running algorithm {} with bounds ({}, {}) and {} dimensions",
@@ -415,6 +423,7 @@ fn start_algorithm() -> Result<(), &'static str> {
             plot_bounds,
             common.upper_bound,
             common.lower_bound,
+            plot_input,
         );
     }
 
