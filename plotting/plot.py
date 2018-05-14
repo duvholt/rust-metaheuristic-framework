@@ -125,7 +125,7 @@ def multi_plot(json_solutions):
     function_name = json_solutions['test_function']
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-    fig = plot.figure(1)
+    fig = plot.figure(100)
     fig.canvas.set_window_title(function_name)
     if len(solutions) == 2:
         ax = plot
@@ -139,10 +139,16 @@ def multi_plot(json_solutions):
     ax.scatter(*pf_true, marker='x', s=0.5)
 
     if json_solutions['plot_input']:
-        input_variables = np.array(list(map(lambda s: s['x'][0:3], json_solutions['solutions'])))
-        input_variables = np.transpose(input_variables)
-        ax = Axes3D(plot.figure(2))
-        ax.scatter(*input_variables, marker='o', s=5)
+        for i in range(len(json_solutions['solutions'][0]['x']) - 25):
+            input_variables = np.array(list(map(lambda s: s['x'][i:i+3], json_solutions['solutions'])))
+            input_variables = np.transpose(input_variables)
+            input_data = json.load(open('../optimal_input/' + function_name + '-optimal-input.json'))
+            ps_true = np.transpose(np.unique(np.array(input_data), axis=0))
+            fig = plot.figure(i)
+            fig.canvas.set_window_title(function_name)
+            ax = Axes3D(fig)
+            ax.scatter(*input_variables, marker='o', s=5)
+            ax.scatter(*ps_true[i:i+3], marker='x', s=0.5)
     plot.show()
 
 
