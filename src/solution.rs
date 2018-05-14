@@ -15,6 +15,7 @@ pub struct Solutions {
     pub plot_bounds: bool,
     pub upper_bound: f64,
     pub lower_bound: f64,
+    pub plot_input: bool,
 }
 
 #[derive(Serialize, Clone)]
