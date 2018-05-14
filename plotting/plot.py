@@ -116,17 +116,15 @@ def plot_json_solutions(json_solutions):
     plot.show()
 
 
-def multi_plot(json_solutions):
-    solutions = np.array(list(
-        map(lambda s: s['fitness'], json_solutions['solutions'])
-    ))
-    solutions = np.transpose(solutions)
+def multi_plot(function_name, solutions, title=None):
 
-    function_name = json_solutions['test_function']
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-    fig = plot.figure(100)
-    fig.canvas.set_window_title(function_name)
+    fig = plot.figure()
+    if title:
+        fig.canvas.set_window_title(title)
+    else:
+        fig.canvas.set_window_title(function_name)
     if len(solutions) == 2:
         ax = plot
     elif len(solutions) == 3:
@@ -138,18 +136,15 @@ def multi_plot(json_solutions):
     ax.scatter(*solutions, marker='o', s=5)
     ax.scatter(*pf_true, marker='x', s=0.5)
 
-    if json_solutions['plot_input']:
-        for i in range(len(json_solutions['solutions'][0]['x']) - 25):
-            input_variables = np.array(list(map(lambda s: s['x'][i:i+3], json_solutions['solutions'])))
-            input_variables = np.transpose(input_variables)
-            input_data = json.load(open('../optimal_input/' + function_name + '-optimal-input.json'))
-            ps_true = np.transpose(np.unique(np.array(input_data), axis=0))
-            fig = plot.figure(i)
-            fig.canvas.set_window_title(function_name)
-            ax = Axes3D(fig)
-            ax.scatter(*input_variables, marker='o', s=5)
-            ax.scatter(*ps_true[i:i+3], marker='x', s=0.5)
     plot.show()
+
+
+def read_jmetal_algorithm_and_plot(algorithm, function_name):
+    suite = ''.join([i for i in function_name if not i.isdigit()])
+    solutions = json.load(open(
+        '../jmetal_data/{}/{}/{}/FUN1.tsv.json'.format(suite, algorithm, function_name.upper())))
+    solutions = np.transpose(solutions)
+    multi_plot(function_name, solutions, '{} on {}'.format(algorithm, function_name.upper()))
 
 
 def read_and_plot():
@@ -157,7 +152,26 @@ def read_and_plot():
     if len(json_solutions['solutions'][0]['x']) > 2:
         print('WARNING! Solutions with more than two dimensions is not supported!')
     if len(json_solutions['solutions'][0]['fitness']) > 1:
-        multi_plot(json_solutions)
+        solutions = np.array(list(
+            map(lambda s: s['fitness'], json_solutions['solutions'])
+        ))
+        solutions = np.transpose(solutions)
+        function_name = json_solutions['test_function']
+        multi_plot(function_name, solutions)
+        if json_solutions['plot_input']:
+            for i in range(len(json_solutions['solutions'][0]['x']) - 25):
+                input_variables = np.array(
+                    list(map(lambda s: s['x'][i:i+3], json_solutions['solutions'])))
+                input_variables = np.transpose(input_variables)
+                input_data = json.load(
+                    open('../optimal_input/' + function_name + '-optimal-input.json'))
+                ps_true = np.transpose(np.unique(np.array(input_data), axis=0))
+                fig = plot.figure(i)
+                fig.canvas.set_window_title(function_name)
+                ax = Axes3D(fig)
+                ax.scatter(*input_variables, marker='o', s=5)
+                ax.scatter(*ps_true[i:i+3], marker='x', s=0.5)
+        plot.show()
     else:
         plot_json_solutions(json_solutions)
 
@@ -186,6 +200,12 @@ def main():
         observer.stop()
     observer.join()
 
+def plot_jmetal():
+    json_solutions = json.load(open(solutions_file))
+    for alg in ['AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']:
+        read_jmetal_algorithm_and_plot(alg, json_solutions['test_function'])
+
 
 if __name__ == '__main__':
+    # plot_jmetal()
     main()
