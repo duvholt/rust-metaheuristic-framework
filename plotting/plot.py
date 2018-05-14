@@ -116,35 +116,39 @@ def plot_json_solutions(json_solutions):
     plot.show()
 
 
-def multi_plot(function_name, solutions, title=None):
+
+
+def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None):
 
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-    fig = plot.figure()
-    if title:
-        fig.canvas.set_window_title(title)
+    if not fig:
+        fig = plot.figure(100)
+    if algorithm:
+        fig.canvas.set_window_title('{} on {}'.format(algorithm, function_name.upper()))
     else:
-        fig.canvas.set_window_title(function_name)
+        fig.canvas.set_window_title(function_name.upper())
     if len(solutions) == 2:
         ax = plot
     elif len(solutions) == 3:
-        ax = Axes3D(fig)
+        if ax3d:
+            ax = ax3d
+        else:
+            ax = Axes3D(fig)
     else:
         print('WARNING! Too many objectives to plot!')
         return
 
-    ax.scatter(*solutions, marker='o', s=5)
+    ax.scatter(*solutions, marker='o', s=5, label=algorithm)
     ax.scatter(*pf_true, marker='x', s=0.5)
 
-    plot.show()
 
-
-def read_jmetal_algorithm_and_plot(algorithm, function_name):
+def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None):
     suite = ''.join([i for i in function_name if not i.isdigit()])
     solutions = json.load(open(
         '../jmetal_data/{}/{}/{}/FUN1.tsv.json'.format(suite, algorithm, function_name.upper())))
     solutions = np.transpose(solutions)
-    multi_plot(function_name, solutions, '{} on {}'.format(algorithm, function_name.upper()))
+    multi_plot(function_name, solutions, algorithm=algorithm, fig=fig, ax3d=ax3d)
 
 
 def read_and_plot():
@@ -175,6 +179,28 @@ def read_and_plot():
     else:
         plot_json_solutions(json_solutions)
 
+def several_multi_plot():
+    files = [
+        ('Archive', '../solutions.json'),
+        ('Hybrid', '../solutions.json'),
+        ('Non-dominated', '../solutions.json')
+    ]
+    fig = plot.figure()
+    json_solutions = json.load(open(files[0][1]))
+    if len(json_solutions['solutions'][0]['fitness']) > 2:
+        ax3d = Axes3D(fig)
+    else:
+        ax3d = None
+    for name, file in files:
+        json_solutions = json.load(open(file))
+        solutions = np.array(list(
+            map(lambda s: s['fitness'], json_solutions['solutions'])
+        ))
+        solutions = np.transpose(solutions)
+        function_name = json_solutions['test_function']
+        multi_plot(function_name, solutions, fig, name, ax3d)
+    plot.legend(loc=1)
+    plot.show()
 
 def plot_process():
     p = Process(target=read_and_plot)
@@ -200,12 +226,46 @@ def main():
         observer.stop()
     observer.join()
 
-def plot_jmetal():
+def plot_jmetal(same=False):
     json_solutions = json.load(open(solutions_file))
-    for alg in ['AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']:
-        read_jmetal_algorithm_and_plot(alg, json_solutions['test_function'])
+    if same:
+        fig = plot.figure()
+        if len(json_solutions['solutions'][0]['fitness']) > 2:
+            ax3d = Axes3D(fig)
+        else:
+            ax3d = None
+    else:
+        fig = None
+        ax3d = None
+    for alg in ['AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2', 'MOAMO']:
+        if alg == 'MOAMO':
+            json_solutions = json.load(open(solutions_file))
+            solutions = np.array(list(
+                map(lambda s: s['fitness'], json_solutions['solutions'])
+            ))
+            solutions = np.transpose(solutions)
+            function_name = json_solutions['test_function']
+            multi_plot(function_name, solutions, fig, alg, ax3d)
+        else:
+            read_jmetal_algorithm_and_plot(alg, json_solutions['test_function'], fig=fig, ax3d=ax3d)
+        if not same:
+            plot.show()
+    if same:
+        plot.legend(loc=1)
+        plot.show()
 
 
-if __name__ == '__main__':
-    # plot_jmetal()
-    main()
+if len(sys.argv) > 1:
+    mode = sys.argv[1]
+    if mode == 'jmetal':
+        if len(sys.argv) > 2:
+            same = sys.argv[2] == 'all'
+        else:
+            same = False
+        plot_jmetal(same)
+    elif mode == 'custom':
+        several_multi_plot()
+    elif mode == 'listen':
+        main()
+else:
+    print('Please select between listen, jmetal, and custom')
