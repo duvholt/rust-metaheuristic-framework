@@ -116,8 +116,6 @@ def plot_json_solutions(json_solutions):
     plot.show()
 
 
-
-
 def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None):
 
     plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
@@ -130,17 +128,21 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None):
         fig.canvas.set_window_title(function_name.upper())
     if len(solutions) == 2:
         ax = plot
+        ax.scatter(*solutions, marker='o', s=5, label=algorithm)
+        ax.scatter(*pf_true, marker='x', s=0.5)
     elif len(solutions) == 3:
         if ax3d:
             ax = ax3d
         else:
             ax = Axes3D(fig)
+        ax.view_init(elev=45, azim=45)
+        ax.tick_params(axis='both', which='major', labelsize=15)
+        ax.dist = 11
+        ax.scatter(*solutions, marker='o', s=5, label=algorithm, depthshade=False)
+        ax.scatter(*pf_true, marker='x', s=0.5, depthshade=False)
     else:
         print('WARNING! Too many objectives to plot!')
         return
-
-    ax.scatter(*solutions, marker='o', s=5, label=algorithm)
-    ax.scatter(*pf_true, marker='x', s=0.5)
 
 
 def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None):
