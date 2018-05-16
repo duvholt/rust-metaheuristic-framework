@@ -11,9 +11,16 @@ import test_functions as tf
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from multiprocessing import Process
+import matplotlib as mpl
 
 solutions_file = '../solutions.json'
 
+# Modified version of matplotlib's default color scheme
+optimal_color = '#ff7f0e'
+new_colors = ['#1f77b4', '#2ca02c', '#d62728',
+              '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
+              '#bcbd22', '#17becf']
+mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=new_colors)
 
 def plot_json_solutions(json_solutions):
     fig = plot.figure()
