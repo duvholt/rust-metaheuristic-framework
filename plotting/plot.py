@@ -122,21 +122,24 @@ def plot_json_solutions(json_solutions):
 
     plot.show()
 
-
-def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None):
-
-    plot_data = json.load(open('../optimal_solutions/' + function_name + '-' + str(len(solutions)) + 'd.json'))
+def multi_plot_optimal(ax, function_name, objectives, **kwargs):
+    plot_data = json.load(open(
+        '../optimal_solutions/' + function_name + '-' + str(objectives) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
+    if objectives > 2:
+        kwargs = {**kwargs, **{'depthshade': False}}
+    ax.scatter(*pf_true, marker='x', s=0.5, color=optimal_color, **kwargs)
+
+def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, optimal=True, color=None):
     if not fig:
         fig = plot.figure(100)
     if algorithm:
         fig.canvas.set_window_title('{} on {}'.format(algorithm, function_name.upper()))
     else:
         fig.canvas.set_window_title(function_name.upper())
+    kwargs = {}
     if len(solutions) == 2:
         ax = plot
-        ax.scatter(*solutions, marker='o', s=5, label=algorithm)
-        ax.scatter(*pf_true, marker='x', s=0.5)
     elif len(solutions) == 3:
         if ax3d:
             ax = ax3d
@@ -145,20 +148,22 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None):
         ax.view_init(elev=45, azim=45)
         ax.tick_params(axis='both', which='major', labelsize=15)
         ax.dist = 11
-        ax.scatter(*solutions, marker='o', s=5, label=algorithm, depthshade=False)
-        ax.scatter(*pf_true, marker='x', s=0.5, depthshade=False)
+        kwargs['depthshade'] = False
     else:
         print('WARNING! Too many objectives to plot!')
         return
+    if optimal:
+        multi_plot_optimal(ax, function_name, len(solutions), **kwargs)
+    ax.scatter(*solutions, marker='o', s=5, label=algorithm, color=color, **kwargs)
 
 
-def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None):
+def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None, same=False):
     suite = ''.join([i for i in function_name if not i.isdigit()])
+    i = 0
     solutions = json.load(open(
-        '../jmetal_data/{}/{}/{}/FUN1.tsv.json'.format(suite, algorithm, function_name.upper())))
+        '../jmetal_data/{}/{}/{}/FUN{}.tsv.json'.format(suite, algorithm, function_name.upper(), i)))
     solutions = np.transpose(solutions)
-    multi_plot(function_name, solutions, algorithm=algorithm, fig=fig, ax3d=ax3d)
-
+    multi_plot(function_name, solutions, algorithm=algorithm, fig=fig, ax3d=ax3d, optimal=not same)
 
 def read_and_plot():
     json_solutions = json.load(open(solutions_file))
@@ -199,7 +204,12 @@ def several_multi_plot():
     if len(json_solutions['solutions'][0]['fitness']) > 2:
         ax3d = Axes3D(fig)
     else:
-        ax3d = None
+        ax3d = plot
+    json_solutions = json.load(open(files[0][1]))
+    solutions = np.array(list(
+        map(lambda s: s['fitness'], json_solutions['solutions'])
+    ))
+    multi_plot_optimal(ax3d, json_solutions['test_function'], len(solutions[0]))
     for name, file in files:
         json_solutions = json.load(open(file))
         solutions = np.array(list(
@@ -207,7 +217,7 @@ def several_multi_plot():
         ))
         solutions = np.transpose(solutions)
         function_name = json_solutions['test_function']
-        multi_plot(function_name, solutions, fig, name, ax3d)
+        multi_plot(function_name, solutions, fig=fig, algorithm=name, ax3d=ax3d, optimal=False)
     plot.legend(loc=1)
     plot.show()
 
@@ -238,15 +248,18 @@ def main():
 def plot_jmetal(same=False):
     json_solutions = json.load(open(solutions_file))
     if same:
+        objectives = len(json_solutions['solutions'][0]['fitness'])
         fig = plot.figure()
-        if len(json_solutions['solutions'][0]['fitness']) > 2:
+        if objectives > 2:
             ax3d = Axes3D(fig)
         else:
-            ax3d = None
+            ax3d = plot
+        multi_plot_optimal(
+            ax3d, json_solutions['test_function'], objectives)
     else:
         fig = None
         ax3d = None
-    for alg in ['AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2', 'MOAMO']:
+    for alg in ['MOAMO', 'AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']:
         if alg == 'MOAMO':
             json_solutions = json.load(open(solutions_file))
             solutions = np.array(list(
@@ -254,9 +267,9 @@ def plot_jmetal(same=False):
             ))
             solutions = np.transpose(solutions)
             function_name = json_solutions['test_function']
-            multi_plot(function_name, solutions, fig, alg, ax3d)
+            multi_plot(function_name, solutions, fig, alg, ax3d, optimal=not same)
         else:
-            read_jmetal_algorithm_and_plot(alg, json_solutions['test_function'], fig=fig, ax3d=ax3d)
+            read_jmetal_algorithm_and_plot(alg, json_solutions['test_function'], fig=fig, ax3d=ax3d, same=same)
         if not same:
             plot.show()
     if same:
