@@ -24,7 +24,7 @@ algorithm_colors = {
     'MOCell': '#d62728',
     'MOEADD': '#9467bd',
     'NSGAII': '#8c564b',
-    'NSGAIII': '#e377c2',
+    'NSGAIII': '#F88297',
     'PAES': '#7f7f7f',
     'SMPSO': '#FFCC3D',
     'SPEA2': '#6CDBC2'
@@ -143,12 +143,21 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
     if not fig:
         fig = plot.figure(100)
     if algorithm:
-        fig.canvas.set_window_title('{} on {}'.format(algorithm, function_name.upper()))
+        if algorithm == 'MOEADD':
+            display_algorithm = 'MOEA/DD'
+        if algorithm == 'NSGAIII':
+            display_algorithm = 'NSGA-III'
+        if algorithm == 'NSGAII':
+            display_algorithm = 'NSGA-II'
+        else:
+            display_algorithm = algorithm
+        fig.canvas.set_window_title('{} on {}'.format(
+            display_algorithm, function_name.upper()))
     else:
         fig.canvas.set_window_title(function_name.upper())
     kwargs = {}
     if len(solutions) == 2:
-        ax = plot
+        ax = fig.add_subplot(111)
         ax.tick_params(axis='both', which='major', labelsize=15)
     elif len(solutions) == 3:
         if ax3d:
@@ -159,13 +168,20 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
         ax.tick_params(axis='both', which='major', labelsize=15)
         ax.dist = 11
         kwargs['depthshade'] = False
+        ax.set_zlabel('f3')
     else:
         print('WARNING! Too many objectives to plot!')
         return
+    ax.set_xlabel('f1', fontsize=15)
+    ax.set_ylabel('f2', fontsize=15)
     if optimal:
         multi_plot_optimal(ax, function_name, len(solutions), **kwargs)
+    if algorithm in algorithm_colors:
+        color = algorithm_colors[algorithm]
+    else:
+        color = None
     ax.scatter(*solutions, marker='o', s=30, label=algorithm, linewidths=0.5, alpha=0.8, edgecolors='black',
-               color=algorithm_colors[algorithm], **kwargs)
+               color=color, **kwargs)
 
 
 def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None, same=False):
@@ -215,7 +231,7 @@ def several_multi_plot():
     if len(json_solutions['solutions'][0]['fitness']) > 2:
         ax3d = Axes3D(fig)
     else:
-        ax3d = plot
+        ax3d = fig.add_subplot(111)
     json_solutions = json.load(open(files[0][1]))
     solutions = np.array(list(
         map(lambda s: s['fitness'], json_solutions['solutions'])
@@ -284,7 +300,7 @@ def plot_jmetal(same=False):
         if not same:
             plot.show()
     if same:
-        plot.legend(loc=1, fontsize=15)
+        plot.legend(loc=1, fontsize=14)
         plot.show()
 
 
