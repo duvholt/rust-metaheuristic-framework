@@ -17,9 +17,18 @@ solutions_file = '../solutions.json'
 
 # Modified version of matplotlib's default color scheme
 optimal_color = '#ff7f0e'
-new_colors = ['#1f77b4', '#2ca02c', '#d62728',
-              '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
-              '#bcbd22', '#17becf']
+new_colors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+algorithm_colors = {
+    'MOAMO': '#1f77b4',
+    'AbYSS': '#78C831',
+    'MOCell': '#d62728',
+    'MOEADD': '#9467bd',
+    'NSGAII': '#8c564b',
+    'NSGAIII': '#e377c2',
+    'PAES': '#7f7f7f',
+    'SMPSO': '#FFCC3D',
+    'SPEA2': '#6CDBC2'
+}
 mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=new_colors)
 
 def plot_json_solutions(json_solutions):
@@ -130,7 +139,7 @@ def multi_plot_optimal(ax, function_name, objectives, **kwargs):
         kwargs = {**kwargs, **{'depthshade': False}}
     ax.scatter(*pf_true, marker='x', s=0.5, color=optimal_color, **kwargs)
 
-def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, optimal=True, color=None):
+def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, optimal=True):
     if not fig:
         fig = plot.figure(100)
     if algorithm:
@@ -140,6 +149,7 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
     kwargs = {}
     if len(solutions) == 2:
         ax = plot
+        ax.tick_params(axis='both', which='major', labelsize=15)
     elif len(solutions) == 3:
         if ax3d:
             ax = ax3d
@@ -154,7 +164,8 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
         return
     if optimal:
         multi_plot_optimal(ax, function_name, len(solutions), **kwargs)
-    ax.scatter(*solutions, marker='o', s=5, label=algorithm, color=color, **kwargs)
+    ax.scatter(*solutions, marker='o', s=30, label=algorithm, linewidths=0.5, alpha=0.8, edgecolors='black',
+               color=algorithm_colors[algorithm], **kwargs)
 
 
 def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None, same=False):
@@ -273,7 +284,7 @@ def plot_jmetal(same=False):
         if not same:
             plot.show()
     if same:
-        plot.legend(loc=1)
+        plot.legend(loc=1, fontsize=15)
         plot.show()
 
 
