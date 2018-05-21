@@ -30,7 +30,11 @@ pub fn sort_on_objective(
         .collect()
 }
 
-pub fn crowding_distance(solutions: &Vec<&impl Solution<Vec<f64>>>) -> Vec<f64> {
+pub fn crowding_distance(
+    solutions: &Vec<&impl Solution<Vec<f64>>>,
+    min: &Vec<f64>,
+    max: &Vec<f64>,
+) -> Vec<f64> {
     let mut distances = vec![0.0; solutions.len()];
     let objectives = solutions[0].fitness().len();
     for objective in 0..objectives {
@@ -45,7 +49,8 @@ pub fn crowding_distance(solutions: &Vec<&impl Solution<Vec<f64>>>) -> Vec<f64> 
             let current = sorted_indices[i];
             let previous = &solutions[sorted_indices[i - 1]];
             let next = &solutions[sorted_indices[i + 1]];
-            distances[current] += next.fitness()[objective] - previous.fitness()[objective]
+            distances[current] += (next.fitness()[objective] - previous.fitness()[objective])
+                / (max[objective] - min[objective])
         }
     }
     distances
@@ -84,16 +89,34 @@ where
         .collect()
 }
 
+pub fn min_max_fitness(solutions: &[&impl Solution<Vec<f64>>]) -> (Vec<f64>, Vec<f64>) {
+    let objectives = solutions[0].fitness().len();
+    let mut min = vec![INFINITY; objectives];
+    let mut max = vec![-INFINITY; objectives];
+    for solution in solutions {
+        for (objective, &fitness) in solution.fitness().into_iter().enumerate() {
+            if min[objective] > fitness {
+                min[objective] = fitness;
+            }
+            if max[objective] < fitness {
+                max[objective] = fitness;
+            }
+        }
+    }
+    (min, max)
+}
+
 pub fn sort<S>(solutions: Vec<S>) -> Vec<(usize, S)>
 where
     S: Solution<Vec<f64>> + Eq + Hash + Clone + Debug,
 {
     let mut distances = vec![0.0; solutions.len()];
     let mut ranks = vec![0; solutions.len()];
+    let (min_fitness, max_fitness) = min_max_fitness(&solutions.iter().collect::<Vec<_>>());
     let fronts = calculate_fronts(&solutions);
     for (rank, front) in fronts.into_iter().enumerate() {
         let front_solutions: Vec<_> = front.iter().map(|&i| &solutions[i]).collect();
-        let front_distances = crowding_distance(&front_solutions);
+        let front_distances = crowding_distance(&front_solutions, &min_fitness, &max_fitness);
         for (i, distance) in front.into_iter().zip(front_distances) {
             distances[i] = distance;
             ranks[i] = rank;
@@ -139,7 +162,7 @@ mod tests {
     }
 
     #[test]
-    fn test_crowding_distance() {
+    fn test_min_max_fitness() {
         let solutions = vec_to_multi_solution(vec![
             vec![3.0, 6.0],
             vec![1.0, 5.0],
@@ -150,11 +173,38 @@ mod tests {
             vec![5.0, 6.5],
         ]);
 
-        let distances = crowding_distance(&solutions.iter().collect());
+        let (min_fitness, max_fitness) = min_max_fitness(&solutions.iter().collect::<Vec<_>>());
+
+        assert_eq!(min_fitness, vec![0.5, 2.0]);
+        assert_eq!(max_fitness, vec![5.0, 7.0]);
+    }
+
+    #[test]
+    fn test_crowding_distance() {
+        let solutions = vec_to_multi_solution(vec![
+            vec![3.0, 6.0],
+            vec![1.0, 5.0],
+            vec![2.0, 2.0],
+            vec![1.5, 4.0],
+            vec![4.0, 3.0],
+            vec![0.5, 7.0],
+            vec![5.0, 6.5],
+        ]);
+        let (min_fitness, max_fitness) = min_max_fitness(&solutions.iter().collect::<Vec<_>>());
+
+        let distances = crowding_distance(&solutions.iter().collect(), &min_fitness, &max_fitness);
 
         assert_eq!(
             distances,
-            vec![3.5, 3.0, INFINITY, 3.0, 4.0, INFINITY, INFINITY]
+            vec![
+                0.7444444444444445,
+                0.6222222222222222,
+                INFINITY,
+                0.6222222222222222,
+                0.8444444444444444,
+                INFINITY,
+                INFINITY,
+            ]
         );
     }
 

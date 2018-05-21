@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use multiobjective::domination::find_non_dominated;
-use multiobjective::non_dominated_sorting::crowding_distance;
+use multiobjective::non_dominated_sorting::{crowding_distance, min_max_fitness};
 use operators::selection::tournament_selection_crowding;
 use rand::weak_rng;
 use solution::Solution;
@@ -35,7 +35,11 @@ where
             .iter()
             .map(|p_i| self.solutions[*p_i].clone())
             .collect();
-        self.crowding_distance = crowding_distance(&self.solutions.iter().collect());
+        {
+            let solutions: Vec<_> = self.solutions.iter().collect();
+            let (min_fitness, max_fitness) = min_max_fitness(&solutions);
+            self.crowding_distance = crowding_distance(&solutions, &min_fitness, &max_fitness);
+        }
         if self.solutions.len() > self.archive_size {
             self.prune();
         }
@@ -53,7 +57,9 @@ where
             .map(|(i, _)| self.solutions[i].clone())
             .collect();
         self.solutions.retain(|solution| set.contains(solution));
-        self.crowding_distance = crowding_distance(&self.solutions.iter().collect());
+        let solutions: Vec<_> = self.solutions.iter().collect();
+        let (min_fitness, max_fitness) = min_max_fitness(&solutions);
+        self.crowding_distance = crowding_distance(&solutions, &min_fitness, &max_fitness);
     }
 
     pub fn select_leader(&self) -> &M {
