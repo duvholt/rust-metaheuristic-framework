@@ -31,6 +31,12 @@ algorithm_colors = {
 }
 mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=new_colors)
 
+markers = ['o', ',', 'X', '^', 'D', 'd', 'P', '*']
+big_markers = ['X', '*', 'P']
+marker_count = 0
+
+plot_objectives = [0, 1]
+
 def plot_json_solutions(json_solutions):
     fig = plot.figure()
     fig.canvas.set_window_title(json_solutions['test_function'])
@@ -135,19 +141,20 @@ def multi_plot_optimal(ax, function_name, objectives, **kwargs):
     plot_data = json.load(open(
         '../optimal_solutions/' + function_name + '-' + str(objectives) + 'd.json'))
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
-    if objectives > 2:
+    if len(plot_objectives) > 2:
         kwargs = {**kwargs, **{'depthshade': False}}
-    ax.scatter(*pf_true, marker='x', s=0.5, color=optimal_color, **kwargs)
+    ax.scatter(*[pf_true[i] for i in plot_objectives], marker='x', s=0.5, color=optimal_color, **kwargs)
 
 def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, optimal=True):
+    global marker_count
     if not fig:
         fig = plot.figure(100)
     if algorithm:
         if algorithm == 'MOEADD':
             display_algorithm = 'MOEA/DD'
-        if algorithm == 'NSGAIII':
+        elif algorithm == 'NSGAIII':
             display_algorithm = 'NSGA-III'
-        if algorithm == 'NSGAII':
+        elif algorithm == 'NSGAII':
             display_algorithm = 'NSGA-II'
         else:
             display_algorithm = algorithm
@@ -155,11 +162,12 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
             display_algorithm, function_name.upper()))
     else:
         fig.canvas.set_window_title(function_name.upper())
+        display_algorithm = None
     kwargs = {}
-    if len(solutions) == 2:
+    if len(plot_objectives) == 2:
         ax = fig.add_subplot(111)
         ax.tick_params(axis='both', which='major', labelsize=15)
-    elif len(solutions) == 3:
+    elif len(plot_objectives) == 3:
         if ax3d:
             ax = ax3d
         else:
@@ -173,14 +181,20 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
         print('WARNING! Too many objectives to plot!')
         return
     ax.set_xlabel('f1', fontsize=15)
-    ax.set_ylabel('f2', fontsize=15)
+    ax.set_ylabel('f3', fontsize=15)
     if optimal:
         multi_plot_optimal(ax, function_name, len(solutions), **kwargs)
     if algorithm in algorithm_colors:
         color = algorithm_colors[algorithm]
     else:
         color = None
-    ax.scatter(*solutions, marker='o', s=30, label=algorithm, linewidths=0.5, alpha=0.8, edgecolors='black',
+    marker = markers[marker_count]
+    marker_count = (marker_count + 1) % len(markers)
+    if marker in big_markers:
+        size = 140
+    else:
+        size = 100
+    ax.scatter(*[solutions[i] for i in plot_objectives], marker=marker, s=size, label=display_algorithm, linewidths=0.4, alpha=0.8, edgecolors='black',
                color=color, **kwargs)
 
 
@@ -277,10 +291,10 @@ def plot_jmetal(same=False):
     if same:
         objectives = len(json_solutions['solutions'][0]['fitness'])
         fig = plot.figure()
-        if objectives > 2:
+        if len(plot_objectives) > 2:
             ax3d = Axes3D(fig)
         else:
-            ax3d = plot
+            ax3d = fig.add_subplot(111)
         multi_plot_optimal(
             ax3d, json_solutions['test_function'], objectives)
     else:
