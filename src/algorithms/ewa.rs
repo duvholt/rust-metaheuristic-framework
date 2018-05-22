@@ -3,7 +3,7 @@ use config::CommonConfig;
 use distribution::cauchy;
 use fitness_evaluation::FitnessEvaluator;
 use operators::position::{limit_position_random, random_position};
-use operators::selection::roulette_wheel;
+use operators::selection::roulette_wheel_minimize;
 use rand::{weak_rng, Rng};
 use solution::{solutions_to_json, Solution, SolutionJSON};
 use std::f64::EPSILON;
@@ -162,7 +162,7 @@ impl<'a> Worms<'a> {
     }
 
     fn reproduction2(&self) -> Vec<f64> {
-        let (parent1index, parent1) = roulette_wheel(&self.population);
+        let (parent1index, parent1) = roulette_wheel_minimize(&self.population);
         let parent2 = self.random_other_worm(parent1index);
 
         // uniform crossover
