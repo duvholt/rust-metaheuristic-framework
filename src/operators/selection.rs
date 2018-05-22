@@ -20,6 +20,26 @@ where
     (population.len() - 1, population.last().unwrap())
 }
 
+pub fn roulette_wheel_minimize<S>(population: &[S]) -> (usize, &S)
+where
+    S: Solution<f64>,
+{
+    let mut rng = weak_rng();
+    let inverse_costs: Vec<_> = population.iter().map(|p| 1.0 / p.fitness()).collect();
+    let weight_sum: f64 = inverse_costs.iter().sum();
+    let mut selected_cost = inverse_costs[0];
+    let mut selected_index = 0;
+    let threshold = rng.gen_range(0.0, weight_sum);
+    while selected_cost < threshold {
+        if selected_index >= population.len() {
+            break;
+        }
+        selected_index += 1;
+        selected_cost += inverse_costs[selected_index];
+    }
+    (selected_index, &population[selected_index])
+}
+
 pub fn tournament_selection<S>(
     population: &[S],
     tournament_size: usize,
@@ -155,5 +175,20 @@ mod tests {
 
         assert_eq!(index, 3);
         assert_eq!(selected, &population[3]);
+    }
+
+    #[test]
+    fn test_roulette_wheel_minimize() {
+        let population = vec![
+            TestFitness::new(0.01),
+            TestFitness::new(0.99),
+            TestFitness::new(0.99),
+            TestFitness::new(0.02),
+        ];
+
+        let (index, _) = roulette_wheel_minimize(&population);
+
+        assert!(index >= 0);
+        assert!(index < population.len());
     }
 }
