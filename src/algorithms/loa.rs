@@ -1064,6 +1064,9 @@ fn run(config: Config, fitness_evaluator: &FitnessEvaluator<f64>) -> Vec<Solutio
         fitness_evaluator
             .sampler
             .population_sample_single(i, &combine_population(&prides, &nomad));
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
     }
     fitness_evaluator
         .sampler
