@@ -2,8 +2,8 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
 use multiobjective::domination::{find_non_dominated, select_first};
-use multiobjective::non_dominated_sorting::crowding_distance;
 use multiobjective::non_dominated_sorting::sort;
+use multiobjective::non_dominated_sorting::{crowding_distance, min_max_fitness};
 use operators::mutation;
 use operators::position::multi_random_position;
 use operators::selection::tournament_selection_crowding;
@@ -244,7 +244,9 @@ fn find_best_animal(population: &Vec<Animal>, mut rng: impl Rng) -> &Animal {
         .into_iter()
         .map(|i| population[i].clone())
         .collect::<Vec<_>>();
-    let distances = crowding_distance(&population.iter().collect());
+    let solutions: Vec<_> = population.iter().collect();
+    let (min_fitness, max_fitness) = min_max_fitness(&solutions);
+    let distances = crowding_distance(&solutions, &min_fitness, &max_fitness);
     let index = tournament_selection_crowding(&non_dominated, 2, &mut rng, &distances);
     &population[index]
 }
