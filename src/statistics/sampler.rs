@@ -177,12 +177,21 @@ impl Sampler {
         }
     }
 
+    fn mean_and_stddev(values: &Vec<f64>) -> (f64, f64) {
+        match values.len() {
+            0 => (0.0, 0.0),
+            1 => (values[0], 0.0),
+            _ => (mean(&values), standard_deviation(&values, None)),
+        }
+    }
+
     fn print_mean_and_stddev(mut writer: impl Write, values: &Vec<f64>) {
+        let (mean_value, std_dev) = Sampler::mean_and_stddev(&values);
         write!(
             writer,
             "Average {} Standard deviation {}\n",
-            Green.paint(format!("{:10.4e}", mean(&values))),
-            Green.paint(format!("{:10.4e}", standard_deviation(&values, None))),
+            Green.paint(format!("{:10.4e}", mean_value)),
+            Green.paint(format!("{:10.4e}", std_dev)),
         ).unwrap();
     }
 
@@ -410,11 +419,14 @@ impl Sampler {
         let measures = Sampler::runs_to_measures(&runs);
         measures
             .into_iter()
-            .map(|(measure, values)| SamplerJSON {
-                mean: mean(&values),
-                standard_deviation: standard_deviation(&values, None),
-                test_function: "".to_string(),
-                measure,
+            .map(|(measure, values)| {
+                let (mean_value, std_dev) = Sampler::mean_and_stddev(&values);
+                SamplerJSON {
+                    mean: mean_value,
+                    standard_deviation: std_dev,
+                    test_function: "".to_string(),
+                    measure,
+                }
             })
             .collect()
     }
