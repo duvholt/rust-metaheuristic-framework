@@ -1,6 +1,7 @@
 use rand::{seq, weak_rng, Rng};
 use solution::Solution;
 use std::cmp::{min, Ordering};
+use std::f64::EPSILON;
 use std::fmt::Debug;
 
 pub fn roulette_wheel<S>(population: &[S]) -> (usize, &S)
@@ -25,7 +26,10 @@ where
     S: Solution<f64>,
 {
     let mut rng = weak_rng();
-    let inverse_costs: Vec<_> = population.iter().map(|p| 1.0 / p.fitness()).collect();
+    let inverse_costs: Vec<_> = population
+        .iter()
+        .map(|p| 1.0 / (p.fitness() + EPSILON))
+        .collect();
     let weight_sum: f64 = inverse_costs.iter().sum();
     let mut selected_cost = inverse_costs[0];
     let mut selected_index = 0;
