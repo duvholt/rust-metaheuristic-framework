@@ -295,10 +295,15 @@ pub fn run(config: Config, fitness_evaluator: &FitnessEvaluator<Vec<f64>>) -> Ve
         generate_random_population(config.population, &fitness_evaluator, &config);
     let mut rng = weak_rng();
     for i in 0..config.iterations {
-        population = mutate_population(population, i, &mut rng, &fitness_evaluator, &config);
         population = animal_migration(population, &mut rng, &fitness_evaluator, &config);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
+        population = mutate_population(population, i, &mut rng, fitness_evaluator, &config);
+        if fitness_evaluator.end_criteria() {
+            break;
+        }
         population = animal_replacement(population, &mut rng, &fitness_evaluator, &config);
-
         fitness_evaluator
             .sampler
             .population_sample_multi(i, &non_dominated_population(&population));
