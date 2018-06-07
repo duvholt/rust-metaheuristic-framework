@@ -12,6 +12,7 @@ from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from multiprocessing import Process
 import matplotlib as mpl
+import random
 
 solutions_file = '../solutions.json'
 
@@ -27,20 +28,36 @@ algorithm_colors = {
     'NSGAIII': '#F88297',
     'PAES': '#7f7f7f',
     'SMPSO': '#FFCC3D',
-    'SPEA2': '#6CDBC2'
+    'SPEA2': '#6CDBC2',
+    'Hybrid': '#1f77b4',
+    'Archive': '#d62728',
+    'Non-dominated': '#FFCC3D',
 }
 mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=new_colors)
 
 markers = ['o', ',', 'X', '^', 'D', 'd', 'P', '*']
+markers = ['o'] * 10
 big_markers = ['X', '*', 'P']
 marker_count = 0
 
-plot_objectives = [0, 1]
+# font = {'family': 'serif', 'size': 16, 'serif': ['computer modern roman']}
+# plot.rc('font', **font)
+plot.rc('text', usetex=True)
+# mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
+label_size = 24
+# 2 obj: 8
+label_padding = 16
+label_grid_size = 20
+legend_size = 17
+legend_padding = 0.2
+
+plot_objectives = [0, 1, 2]
 
 def plot_json_solutions(json_solutions):
-    fig = plot.figure()
+    fig, ax = plot.subplots()
+    # ax = plot
     fig.canvas.set_window_title(json_solutions['test_function'])
-    ax = Axes3D(fig)
+    # ax = Axes3D(fig)
     solutions = np.array(list(
         map(lambda s: [*s['x'][:2],
                        float(s['fitness'][0])], json_solutions['solutions'])
@@ -54,7 +71,7 @@ def plot_json_solutions(json_solutions):
         min_x, min_y, _ = solutions.min(axis=0)
 
     padding = (max_y - min_y) * 0.1
-    linspace_size = 50
+    linspace_size = 500
     X = np.linspace(min_x - padding, max_x + padding, linspace_size)
     Y = np.linspace(min_y - padding, max_y + padding, linspace_size)
     X, Y = np.meshgrid(X, Y)
@@ -115,26 +132,37 @@ def plot_json_solutions(json_solutions):
         norm = colors.LogNorm(vmin=Z.min(), vmax=Z.max())
     else:
         norm = colors.Normalize()
-    ax.plot_surface(
-        X, Y, Z,
-        linewidth=1, edgecolors='#333333',
-        cmap=cm.jet, norm=norm
-    )
-    cset = ax.contour(X, Y, Z, zdir='z', offset=Z.min(), cmap=cm.jet)
+    # ax.plot_surface(
+    #     X, Y, Z, rcount=500, ccount=500,
+    #     linewidth=0, edgecolors='#333333',
+    #     cmap=cm.jet, norm=norm
+    # )
+    # plot.tight_layout()
+    # Moved axis
+    # cset = ax.contour(X, Y, Z, [1, 10, 50, 100, 200, 500, 1000, 2000, 3000, 4000, 6000, 10000, 15000, 20000, 30000], offset=Z.min(), cmap=cm.jet, norm=norm)
+    cset = ax.contour(X, Y, Z, [1, 10, 50, 100, 200, 500, 1000, 2000, 3000, 4000, 6000, 10000, 15000, 20000, 30000], offset=Z.min(), cmap=cm.jet, norm=norm)
 
     x, y, z = np.transpose(solutions)
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('Fitness')
+    ax.set_xlabel(r'$x$', fontsize=label_size, labelpad=label_padding - 15)
+    ax.set_ylabel(r'$y$', fontsize=label_size, labelpad=label_padding - 15)
+    # ax.set_zlabel('Fitness', fontsize=15, labelpad=8)
+    ax.tick_params(axis='both', which='major', labelsize=label_grid_size)
+    # ax.subplots_adjust(right=10)
+    # plot.rc('text', usetex=True)
+    # azim = ax.azim
+    # ax.view_init(elev=30, azim=-65)
+    # ax.rc('font', family='serif')
+    # ax.rc('text', usetex=True)
     ax.plot(
-        x, y, z, 'o',
-        mew=1, markersize=2, color='white',
+        x, y, 'o',
+        mew=1, markersize=1.5, color='white',
         path_effects=[PathEffects.withStroke(
-            linewidth=2, foreground='black')]
+            linewidth=2, foreground='#333333')]
     )
-    for iteration, solution in enumerate(solutions):
-        plot_solution(*solution, iteration)
+    # for iteration, solution in enumerate(solutions):
+    #     plot_solution(*solution, iteration)
 
+    fig.tight_layout()
     plot.show()
 
 def multi_plot_optimal(ax, function_name, objectives, **kwargs):
@@ -143,7 +171,10 @@ def multi_plot_optimal(ax, function_name, objectives, **kwargs):
     pf_true = np.transpose(np.unique(np.array(plot_data), axis=0))
     if len(plot_objectives) > 2:
         kwargs = {**kwargs, **{'depthshade': False}}
-    ax.scatter(*[pf_true[i] for i in plot_objectives], marker='x', s=0.5, color=optimal_color, **kwargs)
+    ax.scatter(*[pf_true[i] for i in plot_objectives],
+               zorder=0, marker='o', s=0.5, color=optimal_color, **kwargs)
+
+labelled = []
 
 def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, optimal=True):
     global marker_count
@@ -176,12 +207,13 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
         ax.tick_params(axis='both', which='major', labelsize=15)
         ax.dist = 11
         kwargs['depthshade'] = False
-        ax.set_zlabel('f3')
+        ax.zaxis.set_rotate_label(False)
+        ax.set_zlabel(r'$f_3$', fontsize=label_size, labelpad=label_padding - 3, rotation=90)
     else:
         print('WARNING! Too many objectives to plot!')
         return
-    ax.set_xlabel('f1', fontsize=15)
-    ax.set_ylabel('f3', fontsize=15)
+    ax.set_xlabel(r'$f_1$', fontsize=label_size, labelpad=label_padding)
+    ax.set_ylabel(r'$f_2$', fontsize=label_size, labelpad=label_padding)
     if optimal:
         multi_plot_optimal(ax, function_name, len(solutions), **kwargs)
     if algorithm in algorithm_colors:
@@ -190,17 +222,54 @@ def multi_plot(function_name, solutions, fig=None, algorithm=None, ax3d=None, op
         color = None
     marker = markers[marker_count]
     marker_count = (marker_count + 1) % len(markers)
+    size = 60
     if marker in big_markers:
-        size = 140
+        size *= 1.25
+    if marker == ',':
+        size = 50
+    # Adjust x axis
+    # plot.ylim(ymax=1.35)
+    # plot.xlim(xmax=1.35)
+    plot.tight_layout()
+    # plot.subplots_adjust(right=40)
+    # plot.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
+    # fig.subplots_adjust(left=0.5, right=1, bottom=0.5, top=1, hspace=50)
+    ax.tick_params(axis='both', which='major', labelsize=label_grid_size)
+    # plot.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    dumb_mode = len(plot_objectives) > 2
+    if dumb_mode:
+        if display_algorithm in labelled:
+            d_label = None
+        else:
+            d_label = display_algorithm
+            labelled.append(display_algorithm)
+        ax.scatter(*[solutions[i] for i in plot_objectives], marker=marker, s=size, label=d_label, linewidths=0.4, alpha=1.0, edgecolors='black',
+                   color=color, **kwargs)
     else:
-        size = 100
-    ax.scatter(*[solutions[i] for i in plot_objectives], marker=marker, s=size, label=display_algorithm, linewidths=0.4, alpha=0.8, edgecolors='black',
-               color=color, **kwargs)
+        for solution in np.transpose([solutions[i] for i in plot_objectives]):
+            if display_algorithm in labelled:
+                d_label = None
+            else:
+                d_label = display_algorithm
+                labelled.append(display_algorithm)
+            # print(solution)
+            ax.scatter(*solution, marker=marker, zorder=random.randint(0,100), s=size, label=d_label, linewidths=0.4, alpha=1.0, edgecolors='black',
+                color=color, **kwargs)
 
 
 def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None, same=False):
     suite = ''.join([i for i in function_name if not i.isdigit()])
-    i = 0
+    if function_name.upper() in ['UF1', 'UF3', 'UF5', 'UF6']:
+        i = 4
+    elif function_name.upper() == 'UF4':
+        i = 15
+    elif function_name.upper() == 'UF7':
+        i = 14
+    elif function_name.upper() == 'UF8':
+        i = 17
+    else:
+        i = 0
+    print(function_name)
     solutions = json.load(open(
         '../jmetal_data/{}/{}/{}/FUN{}.tsv.json'.format(suite, algorithm, function_name.upper(), i)))
     solutions = np.transpose(solutions)
@@ -234,15 +303,19 @@ def read_and_plot():
     else:
         plot_json_solutions(json_solutions)
 
-def several_multi_plot():
+def several_multi_plot(tf):
+    # tf = 'uf4'
     files = [
-        ('Archive', '../solutions.json'),
-        ('Hybrid', '../solutions.json'),
-        ('Non-dominated', '../solutions.json')
+        ('Archive', '../extension_graphs/{}_archive.json'.format(tf)),
+        ('Hybrid', '../extension_graphs/{}_hybrid.json'.format(tf)),
+        ('Non-dominated', '../extension_graphs/{}_nsamo.json'.format(tf))
     ]
     fig = plot.figure()
     json_solutions = json.load(open(files[0][1]))
-    if len(json_solutions['solutions'][0]['fitness']) > 2:
+    objectives = len(json_solutions['solutions'][0]['fitness'])
+    if objectives < len(plot_objectives):
+        plot_objectives.remove(2)
+    if objectives > 2:
         ax3d = Axes3D(fig)
     else:
         ax3d = fig.add_subplot(111)
@@ -259,7 +332,8 @@ def several_multi_plot():
         solutions = np.transpose(solutions)
         function_name = json_solutions['test_function']
         multi_plot(function_name, solutions, fig=fig, algorithm=name, ax3d=ax3d, optimal=False)
-    plot.legend(loc=1)
+    l = plot.legend(loc=1, fontsize=legend_size, borderpad=legend_padding)
+    l.set_zorder(1000)
     plot.show()
 
 def plot_process():
@@ -286,8 +360,15 @@ def main():
         observer.stop()
     observer.join()
 
-def plot_jmetal(same=False):
+
+def plot_jmetal(function_name, same=False):
+    solutions_file = '../moamo_solutions/{}/0.json'.format(function_name)
+    # test_function = 'ZDT1'
+    # solutions_file = '../uf_graph/{}_dumb.json'.format(test_function.lower())
     json_solutions = json.load(open(solutions_file))
+    objectives = len(json_solutions['solutions'][0]['fitness'])
+    if objectives < len(plot_objectives):
+        plot_objectives.remove(2)
     if same:
         objectives = len(json_solutions['solutions'][0]['fitness'])
         fig = plot.figure()
@@ -300,7 +381,50 @@ def plot_jmetal(same=False):
     else:
         fig = None
         ax3d = None
-    for alg in ['MOAMO', 'AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']:
+
+    test_function = json_solutions['test_function'].upper()
+    algos = ['MOAMO', 'AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']
+    if test_function == 'ZDT1':
+        algos = ['MOAMO', 'AbYSS', 'SMPSO']
+    elif test_function == 'ZDT2':
+        algos = ['MOAMO', 'MOCell', 'AbYSS']
+    elif test_function == 'ZDT3':
+        algos = ['MOAMO', 'MOCell', 'SMPSO']
+    elif test_function == 'ZDT4':
+        algos = ['MOAMO', 'SMPSO', 'MOCell']
+    elif test_function == 'ZDT6':
+        algos = ['MOAMO', 'SMPSO', 'ABySS']
+    elif test_function == 'DTLZ1':
+        algos = ['MOAMO', 'MOEADD', 'NSGAIII']
+    elif test_function == 'DTLZ2':
+        algos = ['MOAMO', 'NSGAIII', 'MOEADD']
+    elif test_function == 'DTLZ3':
+        algos = ['MOAMO', 'MOEADD', 'NSGAIII']
+    elif test_function == 'DTLZ4':
+        algos = ['MOAMO', 'AbYSS', 'MOEADD']
+    elif test_function == 'DTLZ5':
+        algos = ['MOAMO', 'AbYSS', 'SMPSO']
+    elif test_function == 'DTLZ6':
+        algos = ['MOAMO', 'SMPSO', 'PAES']
+    elif test_function == 'DTLZ7':
+        algos = ['MOAMO', 'NSGAII', 'NSGAIII']
+    elif test_function == 'UF1':
+        algos = ['MOAMO', 'AbYSS', 'MOEADD']
+    elif test_function in ['UF2', 'UF3']:
+        algos = ['MOAMO', 'AbYSS', 'SMPSO']
+    elif test_function == 'UF4':
+        algos = ['MOAMO', 'MOEADD', 'NSGAIII']
+    elif test_function in ['UF5', 'UF6']:
+        algos = ['MOAMO', 'SPEA2', 'NSGAII']
+    elif test_function == 'UF7':
+        algos = ['MOAMO', 'SMPSO', 'NSGAII']
+    elif test_function == 'UF8':
+        algos = ['MOAMO', 'MOEADD', 'NSGAIII']
+    # UF10
+    # for alg in ['MOAMO', 'NSGAIII', 'MOEADD']:
+    # algos = ['MOAMO']
+    # algos = ['MOAMO', 'AbYSS', 'MOCell', 'MOEADD', 'NSGAII', 'NSGAIII', 'PAES', 'SMPSO', 'SPEA2']
+    for alg in algos:
         if alg == 'MOAMO':
             json_solutions = json.load(open(solutions_file))
             solutions = np.array(list(
@@ -314,20 +438,21 @@ def plot_jmetal(same=False):
         if not same:
             plot.show()
     if same:
-        plot.legend(loc=1, fontsize=14)
+        l = plot.legend(loc=1, fontsize=legend_size, borderpad=legend_padding)
+        l.set_zorder(1000)
         plot.show()
 
 
 if len(sys.argv) > 1:
     mode = sys.argv[1]
     if mode == 'jmetal':
-        if len(sys.argv) > 2:
-            same = sys.argv[2] == 'all'
+        if len(sys.argv) > 3:
+            same = sys.argv[3] == 'all'
         else:
             same = False
-        plot_jmetal(same)
+        plot_jmetal(sys.argv[2], same)
     elif mode == 'custom':
-        several_multi_plot()
+        several_multi_plot(sys.argv[2])
     elif mode == 'listen':
         main()
 else:
