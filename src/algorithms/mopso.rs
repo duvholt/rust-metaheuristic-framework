@@ -1,8 +1,8 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use multiobjective::archive::Archive;
 use multiobjective::domination::dominates;
+use multiobjective::hypercube_archive::Archive;
 use operators::position::multi_random_position;
 use rand::{weak_rng, Rng};
 use solution::{multi_solutions_to_json, Solution, SolutionJSON};
@@ -296,7 +296,8 @@ impl<'a> Swarm<'a> {
 
     fn update_positions(&mut self, iteration: i64) {
         let leader = self.archive.select_leader();
-        self.population = self.population
+        self.population = self
+            .population
             .iter()
             .map(|particle| self.particle_move(particle, &leader, iteration))
             .collect();

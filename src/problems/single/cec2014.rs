@@ -137,7 +137,8 @@ pub fn ackley(x: &Vec<f64>) -> f64 {
     let d = x.len() as f64;
     let pow_sum: f64 = x.iter().map(|x_i| x_i.powf(2.0)).sum();
     let cos_sum: f64 = x.iter().map(|x_i| (c * x_i).cos()).sum();
-    return -a * (-b * ((1.0 / d) * (pow_sum)).sqrt()).exp() - ((1.0 / d) * (cos_sum)).exp() + a
+    return -a * (-b * ((1.0 / d) * (pow_sum)).sqrt()).exp() - ((1.0 / d) * (cos_sum)).exp()
+        + a
         + consts::E;
 }
 

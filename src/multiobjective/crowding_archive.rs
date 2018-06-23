@@ -46,7 +46,8 @@ where
     }
 
     fn prune(&mut self) {
-        let distance = self.crowding_distance
+        let distance = self
+            .crowding_distance
             .iter()
             .cloned()
             .enumerate()

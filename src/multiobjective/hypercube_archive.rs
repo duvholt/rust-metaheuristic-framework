@@ -114,7 +114,8 @@ where
                 .enumerate()
                 .map(|(f_i, &f)| self.hypercube_index(min[f_i], max[f_i], f))
                 .collect();
-            let hypercube = self.hypercube_map
+            let hypercube = self
+                .hypercube_map
                 .entry(hyper_indices)
                 .or_insert(Hypercube::new(HashSet::new()));
             hypercube.insert(solution);
@@ -124,7 +125,8 @@ where
     fn prune_population(&mut self) {
         while self.get_population().len() > self.population_size {
             let index = {
-                let (index, hypercube) = self.hypercube_map
+                let (index, hypercube) = self
+                    .hypercube_map
                     .iter_mut()
                     .max_by(|(_, ref h1), (_, ref h2)| h1.set.len().cmp(&h2.set.len()))
                     .unwrap();

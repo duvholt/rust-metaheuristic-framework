@@ -138,7 +138,8 @@ pub fn uf2(x: &Vec<f64>) -> Vec<f64> {
 
     for i in 1..x.len() {
         let j = (i + 1) as f64;
-        let a = 0.3 * x[0].powi(2)
+        let a = 0.3
+            * x[0].powi(2)
             * (24.0 * consts::PI * x[0] + (4.0 * j * consts::PI) / x.len() as f64).cos()
             + 0.6 * x[0];
         let b = 6.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64;
@@ -220,9 +221,11 @@ pub fn uf5(x: &Vec<f64>) -> Vec<f64> {
             f2 += h;
         }
     }
-    f1 = x[0] + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
+    f1 = x[0]
+        + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
         + 2.0 / odd * f1;
-    f2 = 1.0 - x[0] + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
+    f2 = 1.0 - x[0]
+        + (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin().abs()
         + 2.0 / even * f2;
     vec![f1, f2]
 }
@@ -250,8 +253,9 @@ pub fn uf6(x: &Vec<f64>) -> Vec<f64> {
             even_product *= c;
         }
     }
-    let f1 = x[0] + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin())
-        .max(0.0) + 2.0 / odd * (4.0 * odd_sum - 2.0 * odd_product + 2.0);
+    let f1 = x[0]
+        + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin()).max(0.0)
+        + 2.0 / odd * (4.0 * odd_sum - 2.0 * odd_product + 2.0);
 
     let f2 = 1.0 - x[0]
         + (2.0 * (1.0 / (2.0 * n) + epsilon) * (2.0 * n * consts::PI * x[0]).sin()).max(0.0)
@@ -286,8 +290,8 @@ fn uf8_sums(x: &Vec<f64>) -> (f64, f64, f64) {
     let mut f3 = 0.0;
     for i in 2..x.len() {
         let j = (i + 1) as f64;
-        let a = (x[i] - 2.0 * x[1]
-            * (2.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin())
+        let a = (x[i]
+            - 2.0 * x[1] * (2.0 * consts::PI * x[0] + (j * consts::PI) / x.len() as f64).sin())
             .powi(2);
         if (i) % 3 == 0 {
             f1 += a;
@@ -319,10 +323,12 @@ pub fn uf9(x: &Vec<f64>) -> Vec<f64> {
     let epsilon = 0.1;
     let sums = uf8_sums(x);
 
-    let f1 = 0.5 * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
-        + 2.0 * x[0]) * x[1] + 2.0 / one * sums.0;
-    let f2 = 0.5 * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0)
-        - 2.0 * x[0] + 2.0) * x[1] + 2.0 / two * sums.1;
+    let f1 = 0.5
+        * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0) + 2.0 * x[0])
+        * x[1] + 2.0 / one * sums.0;
+    let f2 = 0.5
+        * (((1.0 + epsilon) * (1.0 - 4.0 * (2.0 * x[0] - 1.0).powi(2))).max(0.0) - 2.0 * x[0] + 2.0)
+        * x[1] + 2.0 / two * sums.1;
     let f3 = 1.0 - x[1] + 2.0 / three * sums.2;
     vec![f1, f2, f3]
 }
@@ -429,9 +435,9 @@ mod tests {
             let x1 = rng.gen_range(0.0, 1.0) as f64;
             let mut input = vec![x1];
             for i in 1..dimensions as usize {
-                input.push(x1.powf(
-                    0.5 * (1.0 + (3.0 * ((i + 1) as f64 - 2.0)) / (dimensions - 2.0)),
-                ));
+                input.push(
+                    x1.powf(0.5 * (1.0 + (3.0 * ((i + 1) as f64 - 2.0)) / (dimensions - 2.0))),
+                );
             }
             let result = uf3(&input);
             assert!(result[0] >= 0.0 && result[0] <= 1.0 && result[1] == 1.0 - result[0].sqrt());
@@ -534,9 +540,13 @@ mod tests {
             input[1] = 1.5;
             let result = uf8(&input);
             assert!(
-                result[0].powi(2) + result[1].powi(2) + result[2].powi(2) != 1.0 || result[0] < 0.0
-                    || result[0] > 1.0 || result[1] < 0.0 || result[1] > 1.0
-                    || result[2] < 0.0 || result[2] > 1.0
+                result[0].powi(2) + result[1].powi(2) + result[2].powi(2) != 1.0
+                    || result[0] < 0.0
+                    || result[0] > 1.0
+                    || result[1] < 0.0
+                    || result[1] > 1.0
+                    || result[2] < 0.0
+                    || result[2] > 1.0
             );
         }
     }

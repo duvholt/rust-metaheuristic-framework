@@ -230,7 +230,8 @@ impl<'a> Worms<'a> {
     fn cauchy_mutation(&self, worm: &Worm) -> Worm {
         let population_size = self.population.len();
         let mut rng = weak_rng();
-        let mut position = worm.position
+        let mut position = worm
+            .position
             .iter()
             .enumerate()
             .map(|(j, value)| {

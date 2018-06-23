@@ -199,7 +199,8 @@ impl<'a> Swarm<'a> {
 
     fn update_positions(&mut self, iteration: i64) {
         let leader = self.get_leader();
-        self.population = self.population
+        self.population = self
+            .population
             .iter()
             .map(|particle| self.particle_move(particle, &leader, iteration))
             .collect();

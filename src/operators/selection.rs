@@ -192,7 +192,6 @@ mod tests {
 
         let (index, _) = roulette_wheel_minimize(&population);
 
-        assert!(index >= 0);
         assert!(index < population.len());
     }
 }

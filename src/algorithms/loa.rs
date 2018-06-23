@@ -236,7 +236,8 @@ struct Pride {
 
 impl Pride {
     fn random_female(&self, mut rng: impl Rng) -> Option<&Lion> {
-        let females = self.population
+        let females = self
+            .population
             .iter()
             .filter(|lion| lion.sex == Sex::Female);
 
@@ -271,9 +272,9 @@ fn partition_lions(config: &Config, mut population: Vec<Lion>) -> (Nomad, Vec<Pr
                 Sex::Male
             }
         } else {
-            let females_in_nomad = (config.population as f64 * config.nomad_percent
-                * (1.0 - config.sex_rate as f64))
-                .round() as usize;
+            let females_in_nomad =
+                (config.population as f64 * config.nomad_percent * (1.0 - config.sex_rate as f64))
+                    .round() as usize;
             if i < females_in_nomad {
                 Sex::Female
             } else {
@@ -465,7 +466,8 @@ fn roam_pride(
         .map(|lion| &lion.best_position)
         .collect();
     for roam_position in roam_positions {
-        let mut position: Vec<_> = lion.position
+        let mut position: Vec<_> = lion
+            .position
             .iter()
             .zip(roam_position)
             .map(|(p_i, r_i)| {
@@ -737,8 +739,10 @@ fn equilibrium(
         },
     );
 
-    let mut females_for_prides = (config.population as f64 * (1.0 - config.nomad_percent)
-        * config.sex_rate * config.immigate_rate) as usize;
+    let mut females_for_prides = (config.population as f64
+        * (1.0 - config.nomad_percent)
+        * config.sex_rate
+        * config.immigate_rate) as usize;
     if females_for_prides >= sorted_females.len() {
         println!(
             "Too few female lions {}/{}",

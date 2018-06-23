@@ -130,7 +130,8 @@ impl<'a> FitnessEvaluator<'a, f64> {
     pub fn calculate_fitness(&self, position: &Vec<f64>) -> f64 {
         self.evaluations.set(self.evaluations.get() + 1);
 
-        let shifted_position = self.shift_data
+        let shifted_position = self
+            .shift_data
             .as_ref()
             .map(|shift_data| self.shift_input(&position, shift_data));
         let position = shifted_position.as_ref().unwrap_or(position);
@@ -139,7 +140,8 @@ impl<'a> FitnessEvaluator<'a, f64> {
             .map(|x_i| x_i * self.input_scale)
             .collect();
         let position = &scaled_position;
-        let rotated_position = self.rotate_data
+        let rotated_position = self
+            .rotate_data
             .as_ref()
             .map(|rotate_data| self.rotate_input(&position, rotate_data));
         let position = rotated_position.as_ref().unwrap_or(position);

@@ -1,10 +1,9 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use config::CommonConfig;
 use fitness_evaluation::FitnessEvaluator;
-use multiobjective::domination::dominates;
+use multiobjective::crowding_archive::Archive;
 use multiobjective::domination::select_first;
-use multiobjective::omopso_archive::Archive;
-use multiobjective::rank::calculate_domation_count;
+use multiobjective::non_dominated_sorting::sort;
 use operators::mutation;
 use operators::position::multi_random_position;
 use rand::distributions::normal::StandardNormal;
@@ -14,7 +13,7 @@ use std::hash;
 
 pub fn subcommand(name: &str) -> App<'static, 'static> {
     SubCommand::with_name(name)
-        .about("Multi-Objective Animal migration optimization")
+        .about("Multi-Objective Animal Migration Optimization")
         .arg(
             Arg::with_name("radius")
                 .short("-r")
@@ -50,7 +49,7 @@ pub fn run_subcommand(
     let archive_size = value_t!(sub_m, "archive_size", usize).unwrap_or(common.population);
     let divisions = value_t!(sub_m, "divisions", usize).unwrap_or(30);
     if common.verbose >= 1 {
-        println!("Running Old Archive-AMO with radius: {}", radius);
+        println!("Running MOAMO with radius: {}", radius);
     }
     let config = Config {
         multi_upper_bound: common.multi_upper_bound.clone(),
@@ -141,7 +140,7 @@ fn animal_migration(
             }
         })
         .collect();
-    find_best_solutions(population, moved_animals, rng)
+    find_best_solutions(population, moved_animals)
 }
 
 fn animal_replacement(
@@ -169,7 +168,8 @@ fn animal_replacement(
                         let r2 = population[r.1].position[d];
                         let best = best_animal.position[d];
                         let current = current_animal.position[d];
-                        let mut pos_d = r1 + rng.next_f64() * (best - current)
+                        let mut pos_d = r1
+                            + rng.next_f64() * (best - current)
                             + rng.next_f64() * (r2 - current);
                         if pos_d > config.multi_upper_bound[d] {
                             pos_d = config.multi_upper_bound[d];
@@ -191,42 +191,32 @@ fn animal_replacement(
             })
             .collect()
     };
-    find_best_solutions(population, new_population, rng)
+    find_best_solutions(population, new_population)
 }
 
 fn find_probabilities(solutions: &Vec<Animal>) -> Vec<f64> {
-    let dominations = calculate_domation_count(&solutions);
+    let sorted: Vec<_> = sort(solutions.clone())
+        .into_iter()
+        .map(|(i, _)| i)
+        .collect();
     let mut probabilities = vec![0.0; solutions.len()];
-    for (i, domination) in dominations.into_iter().enumerate() {
-        probabilities[i] =
-            (solutions.len() - domination.dominated_by()) as f64 / solutions.len() as f64;
+    for i in 0..solutions.len() {
+        probabilities[sorted[i]] = (solutions.len() - i) as f64 / solutions.len() as f64;
     }
     probabilities
 }
 
 fn find_best_solutions(
     old_population: Vec<Animal>,
-    new_population: Vec<Animal>,
-    mut rng: impl Rng,
+    mut new_population: Vec<Animal>,
 ) -> Vec<Animal> {
-    old_population
+    let population_size = old_population.len();
+    let mut population = old_population;
+    population.append(&mut new_population);
+    sort(population)
         .into_iter()
-        .zip(new_population)
-        .map(|(old, new)| {
-            if dominates(&old.fitness, &new.fitness) {
-                old
-            } else if dominates(&new.fitness, &old.fitness) {
-                new
-            } else {
-                // If neither dominates the other select randomly
-                let r = rng.next_f64();
-                if r > 0.5 {
-                    old
-                } else {
-                    new
-                }
-            }
-        })
+        .take(population_size)
+        .map(|(_, animal)| animal)
         .collect()
 }
 
@@ -421,12 +411,12 @@ mod tests {
         let new_population =
             animal_replacement(population, rng, &fitness_evaluator, &config, &archive);
         assert_eq!(new_population[0].fitness, vec![0.1, 0.2]);
-        assert_eq!(new_population[1].fitness, vec![2.0, 2.1]);
-        assert_eq!(new_population[2].fitness, vec![1.3356651356791132, 2.3]);
         assert_eq!(
-            new_population[3].fitness,
+            new_population[1].fitness,
             vec![-1.306348201401438, 1.5661140513601106]
         );
+        assert_eq!(new_population[2].fitness, vec![0.1, 0.2]);
+        assert_eq!(new_population[3].fitness, vec![2.0, 2.1]);
     }
 
     #[test]

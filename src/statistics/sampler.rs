@@ -167,7 +167,8 @@ impl Sampler {
 
     pub fn solutions(&self) -> Vec<SolutionJSON> {
         match self.mode {
-            SamplerMode::Evolution => self.generations
+            SamplerMode::Evolution => self
+                .generations
                 .borrow()
                 .iter()
                 .cloned()
@@ -282,7 +283,8 @@ impl Sampler {
     fn print_last_generation(&self, mut writer: impl Write) {
         match self.objective {
             Objective::Single => {
-                let fitness_values: Vec<_> = self.solutions
+                let fitness_values: Vec<_> = self
+                    .solutions
                     .borrow()
                     .iter()
                     .map(|solution| solution.fitness[0])
@@ -310,7 +312,8 @@ impl Sampler {
     }
 
     fn print_fitness_search(&self, mut writer: impl Write) {
-        let fitness_values: Vec<_> = self.solutions
+        let fitness_values: Vec<_> = self
+            .solutions
             .borrow()
             .iter()
             .map(|solution| solution.fitness[0])

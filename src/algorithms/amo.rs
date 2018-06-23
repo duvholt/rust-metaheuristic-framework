@@ -137,7 +137,8 @@ fn animal_replacement(
                         let r2 = population[r.1].position[d];
                         let best = best_animal.position[d];
                         let current = current_animal.position[d];
-                        let pos_d = r1 + rng.next_f64() * (best - current)
+                        let pos_d = r1
+                            + rng.next_f64() * (best - current)
                             + rng.next_f64() * (r2 - current);
                         if pos_d > config.upper_bound || pos_d < config.lower_bound {
                             out_of_bounds = true;
