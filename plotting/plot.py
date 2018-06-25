@@ -167,8 +167,6 @@ def read_jmetal_algorithm_and_plot(algorithm, function_name, fig=None, ax3d=None
 
 def read_and_plot():
     json_solutions = json.load(open(solutions_file))
-    if len(json_solutions['solutions'][0]['x']) > 2:
-        print('WARNING! Solutions with more than two dimensions is not supported!')
     if len(json_solutions['solutions'][0]['fitness']) > 1:
         solutions = np.array(list(
             map(lambda s: s['fitness'], json_solutions['solutions'])
